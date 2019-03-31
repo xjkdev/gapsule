@@ -5,7 +5,7 @@ from gapsule import settings
 
 
 def make_app():
-    return tornado.web.Application(routes, template_path=settings.template_path)
+    return tornado.web.Application(routes, **settings.settings)
 
 
 if __name__ == "__main__":
