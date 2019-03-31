@@ -30,24 +30,26 @@
         >New pull request</button>
       </b-col>
       <!-- FIXME: 改变大小时显示错误 -->
-      <b-col cols="3" offset="3">
-        <b-btn-group class="d-none d-md-inline-flex">
+      <b-col cols="3" offset="3" style="overflow: hidden">
+        <b-btn-group class="-md-inline-flex">
           <b-button variant="secondary" size="sm">Create new file</b-button>
           <b-button variant="secondary" size="sm">Upload files</b-button>
           <b-button variant="secondary" size="sm">Find file</b-button>
         </b-btn-group>&nbsp;
       </b-col>
-      <b-dropdown
-        class="col-2"
-        variant="success"
-        boundary="window"
-        right
-        size="sm"
-        text="Clone or download"
-      >
-        <b-dropdown-item>Clone: http...git</b-dropdown-item>
-        <b-dropdown-item>Download: http...zip</b-dropdown-item>
-      </b-dropdown>
+      <div class="clone">
+        <b-dropdown
+          class="col-2"
+          variant="success"
+          boundary="window"
+          right
+          size="sm"
+          text="Clone or download"
+        >
+          <b-dropdown-item>Clone: http...git</b-dropdown-item>
+          <b-dropdown-item>Download: http...zip</b-dropdown-item>
+        </b-dropdown>
+      </div>
     </b-row>
 
     <b-card no-body class="filelist">
@@ -76,6 +78,7 @@ export default {
   },
   components: { RepoNav }
 };
+
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
@@ -88,5 +91,10 @@ export default {
 }
 .card-header {
   padding: 0.3rem 1rem;
+}
+.clone {
+  position: absolute;
+  right: 0;
+  z-index: 90;
 }
 </style>

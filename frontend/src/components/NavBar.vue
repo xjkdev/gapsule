@@ -29,6 +29,12 @@
         />
         <b-button variant="outline-success" class="my-2 my-sm-0" type="submit">Search</b-button>
       </b-nav-form>
+      &nbsp;&nbsp;&nbsp;
+      <a :href="'/'+'signin'" style="color: white">Sign in</a>
+      &nbsp;&nbsp;&nbsp;
+      <a :href="'/'+'signup'" style="color: white">
+        <b-button class="my-2 my-sm-0" type="submit">Sign Up</b-button>
+      </a>
     </b-collapse>
   </b-navbar>
 </template>
