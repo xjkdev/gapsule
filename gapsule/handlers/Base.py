@@ -1,7 +1,7 @@
 from tornado import web
 import json
 import base64
-from gapsule.models import check_session_state
+from gapsule.models.user import check_session_status
 
 
 class AuthState():
@@ -23,7 +23,7 @@ class BaseHandler(web.RequestHandler):
             user = dataobj.get('user', None)
             session = dataobj.get('session', None)
             logged_time = dataobj.get('logged_time', None)
-            if check_session_state(user, session, logged_time):
+            if check_session_status(user, session, logged_time):
                 return AuthState(user, True)
             elif user is not None:
                 return AuthState(user, False)

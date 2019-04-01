@@ -4,7 +4,7 @@ import datetime
 
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import unauthenticated
-from gapsule.models import verify_user
+from gapsule.models.user import verify_user
 
 
 class SignInHandler(BaseHandler):
