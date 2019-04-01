@@ -3,14 +3,16 @@
 
     <h2 style="text-align: center">Join Gapsule</h2>
 
-    <b-form @submit="onSubmit" @reset="onReset" v-if="show">
+    <b-form @submit="onSubmit">
       <ul class="main">
+        <span style="color: red">{{ errormessage }}</span>
         <li class="username">
           <label for="username">Username</label>
+          <span style="color: red">*</span>
           <b-form-input
             id="username"
             type="text"
-            v-model="form.username"
+            v-model="username"
             required
             placeholder="Enter Username"
           />
@@ -18,10 +20,11 @@
 
         <li class="email">
           <label for="email">Email</label>
+          <span style="color: red">*</span>
           <b-form-input
             id="email"
             type="email"
-            v-model="form.email"
+            v-model="email"
             required
             placeholder="Enter Username"
           />
@@ -29,24 +32,32 @@
 
         <li class="password">
           <label for="password">Password</label>
+          <span style="color: red">*</span>
           <b-input 
-            v-model="form.password" 
+            v-if="hascharacter"
+            v-model="password" 
             id="password" 
             required
             :state="validation" 
             type="password"
           />
-          <b-form-invalid-feedback :state="validation">
+          <b-input
+            v-else
+            v-model="password" 
+            id="password" 
+            required
+            type="password"
+          />
+          <b-form-invalid-feedback v-if="hascharacter" :state="validation">
             Your password must be 6-18 characters long
           </b-form-invalid-feedback>
-          <b-form-valid-feedback :state="validation">
+          <b-form-valid-feedback v-if="hascharacter" :state="validation">
             Looks good
           </b-form-valid-feedback>
         </li>
 
         <li class="operation">
-          <b-button type="submit" variant="primary" class="submit">Submit</b-button>
-          <b-button type="reset" variant="danger" class="reset">Reset</b-button>
+          <b-button type="submit" variant="primary" class="submit">Next</b-button>
         </li>
       </ul>
     </b-form>
@@ -55,35 +66,44 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   data() {
     return {
-      form: {
-        username: '',
-        password: '',
-        email: ''
-      },
-      show: true
+      username: '',
+      email: '',
+      password: '',
+      errormessage: ''
     }
   },
   methods: {
-    onSubmit(event) {
-      event.preventDefault();
-    },
-    onReset(event) {
-      event.preventDefault();
-      this.form.username = '';
-      this.form.password = '';
-      this.form.email = '';
-      this.show = false;
-      this.$nextTick(() => {
-        this.show = true;
+    onSubmit() {
+      axios({
+        method: 'POST',
+        url: window.location.href,
+        data: {
+          username: this.username,
+          email: this.email,
+          password: this.password
+        },
+      }).then((response) =>{
+        if(response.data.state == 'ok') {
+          window.location.href = '/userinfo-filling'
+        }
+        else {
+          this.errormessage = response.data.error;
+        }
+      }).catch((error) =>{
+        console.log(error);
       })
     }
   },
   computed: {
     validation() {
-      return this.form.password.length >= 6 && this.form.password.length <= 18
+      return this.password.length >= 6 && this.password.length <= 18
+    },
+    hascharacter() {
+      return this.password.length > 0
     }
   }
 };
@@ -106,8 +126,5 @@ ul li {
   width: 100%;
   margin-left: -20px;
   padding: 0.6rem 0;
-}
-.reset {
-  margin-left: 5px;
 }
 </style>

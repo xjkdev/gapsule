@@ -3,14 +3,12 @@ import App from './App.vue'
 import router from './router';
 import NavBar from '@/components/NavBar.vue';
 import BootstrapVue from 'bootstrap-vue';
-import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue/dist/bootstrap-vue.css';
 
 Vue.use(BootstrapVue);
 
 Vue.config.productionTip = false
-Vue.prototype.$http = axios
 
 new Vue({
   router,

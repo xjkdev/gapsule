@@ -6,14 +6,14 @@
 
     <h2 style="text-align: center">Sign in to Gapsule</h2>
 
-    <b-form @submit="onSubmit" @reset="onReset" v-if="show">
+    <b-form @submit="onSubmit">
       <ul class="main">
         <li class="username">
           <label for="username">Username</label>
           <b-form-input
             id="username"
             type="text"
-            v-model="form.username"
+            v-model="username"
             required
             placeholder="Enter Username"
           />
@@ -25,7 +25,7 @@
           <b-form-input
             id="password"
             type="password"
-            v-model="form.password"
+            v-model="password"
             required
             placeholder="Enter password"
           />
@@ -33,7 +33,6 @@
 
         <li class="operation">
           <b-button type="submit" variant="primary" class="submit">Submit</b-button>
-          <b-button type="reset" variant="danger" class="reset">Reset</b-button>
         </li>
       </ul>
     </b-form>
@@ -50,35 +49,24 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      form: {
-        username: '',
-        password: ''
-      },
-      show: true
+      username: '',
+      password: ''
     }
   },
   methods: {
     onSubmit() {
       axios({
         method: 'POST',
+        url: window.location.href,
         data: {
-          username: this.form.username,
-          password: this.form.password
+          username: this.username,
+          password: this.password
         }
       }).then((response) =>{
         if(response.status == 200) {
           window.location.href = '/index';
         }
       });
-    },
-    onReset(event) {
-      event.preventDefault();
-      this.form.username = '';
-      this.form.password = '';
-      this.show = false;
-      this.$nextTick(() => {
-        this.show = true;
-      })
     }
   }
 };
@@ -119,9 +107,6 @@ ul li {
   width: 100%;
   margin-left: -20px;
   padding: 0.6rem 0;
-}
-.reset {
-  margin-left: 5px;
 }
 .create-account {
   width: 100%;
