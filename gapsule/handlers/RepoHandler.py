@@ -1,8 +1,5 @@
-# -*- coding=utf-8 _*_
-
 import os
 import json
-import tornado
 import tornado.web
 from gapsule.models.repo import (get_commits_num, get_branches_name, get_releases_num,
                                 get_contributors_info, get_specified_path,
@@ -23,10 +20,12 @@ class CodeListHandler(tornado.web.RequestHandler):
         code_dict["foider"] = code_state
         self.write(code_dict)
 
-class FioderListHandler(tornado.web.RequestHandler):
+class FolderListHandler(tornado.web.RequestHandler):
     def get(self):
-        fioder_dict = get_specified_path()
-        self.write(json.dumps(fioder_dict))
+        folder_dict = {}
+        folder_state = get_specified_path()
+        folder_dict["folder"] = folder_state
+        self.write(folder_dict)
 
 class FileContentHandler(tornado.web.RequestHandler):
     def get(self):
