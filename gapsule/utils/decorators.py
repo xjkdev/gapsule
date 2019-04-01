@@ -39,23 +39,25 @@ def active_authenticated(f):
     return _wrapper
 
 
-def unauthenticated(f, url='/'):
+def unauthenticated(url='/'):
     """ Decorate an function that only run when user unauthenticated. """
-    @functools.wraps(f)
-    def _wrapper(self, *args, **kwargs):
-        nonlocal url
-        if self.current_user:
-            if self.request.method in ("GET", "HEAD"):
-                if "?" not in url:
-                    if urllib.parse.urlsplit(url).scheme:
-                        # if login url is absolute, make next absolute too
-                        next_url = self.request.full_url()
-                    else:
-                        assert self.request.uri is not None
-                        next_url = self.request.uri
-                    url += "?" + urlencode(dict(next=next_url))
-                self.redirect(url)
-                return None
-            raise HTTPError(403)
-        return f(self, *args, **kwargs)
-    return _wrapper
+    def decorator(f):
+        @functools.wraps(f)
+        def _wrapper(self, *args, **kwargs):
+            nonlocal url
+            if self.current_user:
+                if self.request.method in ("GET", "HEAD"):
+                    if "?" not in url:
+                        if urllib.parse.urlsplit(url).scheme:
+                            # if login url is absolute, make next absolute too
+                            next_url = self.request.full_url()
+                        else:
+                            assert self.request.uri is not None
+                            next_url = self.request.uri
+                        url += "?" + urlencode(dict(next=next_url))
+                    self.redirect(url)
+                    return None
+                raise HTTPError(403)
+            return f(self, *args, **kwargs)
+        return _wrapper
+    return decorator
