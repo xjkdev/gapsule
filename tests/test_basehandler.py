@@ -13,8 +13,8 @@ test_time = datetime.datetime.now().strftime("%Y/%m/%d% %H:%M:%S")
 
 class BaseHandlerTestCase(unittest.TestCase):
     def create_query(self, chk_session_res, session_cookie):
-        check_session_state = Mock(return_value=chk_session_res)
-        gapsule.handlers.Base.check_session_state = check_session_state
+        check_session_status = Mock(return_value=chk_session_res)
+        gapsule.handlers.Base.check_session_status = check_session_status
         if session_cookie is not None:
             get_secure_cookie = Mock(return_value=base64.encodebytes(
                 json.dumps(session_cookie).encode()))
@@ -24,7 +24,7 @@ class BaseHandlerTestCase(unittest.TestCase):
             spec=BaseHandler, get_secure_cookie=get_secure_cookie,
             get_current_uesr=BaseHandler.get_current_user
         )
-        return base_handler, get_secure_cookie, check_session_state
+        return base_handler, get_secure_cookie, check_session_status
 
     def test_get_current_user1(self):
         cookie = dict(user="test-user", session="test-session",
