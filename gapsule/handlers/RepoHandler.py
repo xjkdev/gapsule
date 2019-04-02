@@ -1,12 +1,15 @@
 import os
 import json
 import tornado.web
+from gapsule.utils.decorators import ajaxquery
 from gapsule.models.repo import (get_commits_num, get_branches_name, get_releases_num,
                                 get_contributors_info, get_specified_path,
                                 get_file_content)
 
 class CodeListHandler(tornado.web.RequestHandler):
-    def get(self):
+    @ajaxquery
+    def get(self, *args, **kwargs):
+        #goto: args中存有username，数据库给的接口不完全没有数据输入，函数暂未完成
         code_dict = {}
         code_state = get_commits_num()
         code_dict["commits"] = code_state
@@ -21,14 +24,18 @@ class CodeListHandler(tornado.web.RequestHandler):
         self.write(code_dict)
 
 class FolderListHandler(tornado.web.RequestHandler):
-    def get(self):
+    @ajaxquery
+    def get(self, *args, **kwargs):
+        # args的第一个存有username，第二个为分支，后面是具体的文件路劲
         folder_dict = {}
         folder_state = get_specified_path()
         folder_dict["folder"] = folder_state
         self.write(folder_dict)
 
 class FileContentHandler(tornado.web.RequestHandler):
-    def get(self):
+    @ajaxquery
+    def get(self, *args, **kwargs):
+         # args的第一个存有username，第二个为分支，后面是具体的文件路劲
         file_dict = {}
         path = self.request.path
         file_dict["file"] = get_file_content(path)
