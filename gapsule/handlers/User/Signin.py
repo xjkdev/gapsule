@@ -1,9 +1,8 @@
-import json
-import base64
 import datetime
 
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import unauthenticated
+from gapsule.utils.cookie_session import session_encode
 from gapsule.models.user import verify_user
 
 
@@ -22,7 +21,7 @@ class SignInHandler(BaseHandler):
             dataobj = dict(user=username, session=session,
                            logged_time=logged_time)
             self.set_secure_cookie(
-                'session', base64.encodestring(json.dumps(dataobj)))
+                'session', session_encode(dataobj))
             self.write(dict(state='ok.'))
         else:
             self.write(dict(error='validation failed.'))
