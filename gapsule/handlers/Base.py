@@ -1,6 +1,6 @@
-from tornado import web
-import json
-import base64
+from typing import Union
+from tornado import web, escape
+from gapsule.utils.cookie_session import session_decode
 from gapsule.models.user import check_session_status
 
 
@@ -19,7 +19,7 @@ class BaseHandler(web.RequestHandler):
         if data is None:
             return None
         try:
-            dataobj = json.loads(base64.decodebytes(data))
+            dataobj = session_decode(data)
             user = dataobj.get('user', None)
             session = dataobj.get('session', None)
             logged_time = dataobj.get('logged_time', None)
@@ -42,3 +42,24 @@ class BaseHandler(web.RequestHandler):
         self.require_setting(
             "verify_url", "@gapsule.utils.active_authenticated")
         return self.application.settings["verify_url"]
+
+    def write(self, chunk: Union[str, bytes, dict]) -> None:
+        """Writes the given chunk to the output buffer.
+
+        To write the output to the network, use the `flush()` method below.
+
+        If the given chunk is a dictionary or list, we write it as JSON and set
+        the Content-Type of the response to be ``application/json``.
+        (if you want to send JSON as a different ``Content-Type``, call
+        ``set_header`` *after* calling ``write()``).
+
+        Note that lists are not converted to JSON because of a potential
+        cross-site security vulnerability.  All JSON output should be
+        wrapped in a dictionary.  More details at
+        http://haacked.com/archive/2009/06/25/json-hijacking.aspx/ and
+        https://github.com/facebook/tornado/issues/1009
+        """
+        if isinstance(chunk, list):
+            chunk = escape.json_encode(chunk)
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
+        super().write(chunk)
