@@ -6,7 +6,7 @@ async def make_connect(config_info):
     try:
         con = await asyncpg.connect(user=config_info['dbuser'], database=config_info['dbname'])
     except asyncpg.InvalidCatalogNameError:
-        con1 = await asyncpg.connect(user=config_info['dbuser'])
+        con1 = await asyncpg.connect(user=config_info['dbuser'], database='postgres')
         await con1.execute('''create database '''+config_info['dbname']+''';''')
         await con1.close()
         con = await asyncpg.connect(user=config_info['dbuser'], database=config_info['dbname'])
