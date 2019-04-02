@@ -1,8 +1,8 @@
-import functools
 import crypt
 import re
 import asyncpg
 import asyncio
+import functools
 from gapsule import models
 
 
@@ -27,7 +27,7 @@ def log_call(f, log_func=None):
     return _wrapper
 
 
-def check_un_validity(username):
+def check_username_validity(username):
     if(len(username) == 0 | len(username) > 20):
         return False
     if not (re.match('([a-z]|[A-Z]|[0-9]|_)+', username)):
@@ -43,7 +43,7 @@ def check_mail_validity(mail_address):
     return True
 
 
-def check_pw_validity(password):
+def check_password_validity(password):
     if(len(password) < 8 | len(password) == 0 | len(password) > 40):
         return False
     if not (re.search('[A-Z]+', password)):
@@ -57,26 +57,24 @@ def check_pw_validity(password):
 
 @log_call
 async def create_new_user(username, mail_address, password):
-    if (check_un_validity(username) == False):
+    if (check_username_validity(username) == False):
         return False
     if (check_mail_validity(mail_address) == False):
         return False
-    if(check_pw_validity(password) != False):
+    if(check_password_validity(password) != False):
         temp = await models.connection.fetchrow(
             '''
-            SELECT username FROM users_info
-            WHERE username=$1
-            ''',
-            username
+        SELECT username FROM users_info
+        WHERE username =$1''', username
         )
         if(temp != None):
             raise NameError()
         else:
-            encrypted_password = crypt.crypt(password, crypt.mksalt())
+            salt = crypt.mksalt()
+            encrypted_password = crypt.crypt(password, salt)
             await models.connection.execute(
                 '''
-                INSERT INTO users_info(username,mail_address,password) VALUES($1,$2,$3)
-                ''', username, mail_address, encrypted_password
+            INSERT INTO users_info(username, mail_address, password, salt) VALUES($1, $2, $3, $4)''', username, mail_address, encrypted_password, salt
             )
             return True
     else:
@@ -84,20 +82,107 @@ async def create_new_user(username, mail_address, password):
 
 
 @log_call
-def verify_user(username, password):
-    return True
+async def verify_user(username, password):
+    if (check_username_validity(username) == False):
+        return False
+    if(check_password_validity(password) != False):
+        temp_name = await models.connection.fetchrow(
+            '''
+            SELECT username FROM users_info
+            WHERE username =$1
+            ''',
+            username
+        )
+        if(temp_name == None):
+            raise NameError()
+        else:
+            temp_salt = await models.connection.fetchrow(
+                '''
+                SELECT salt FROM users_info
+                WHERE username =$1
+                ''',
+                username
+            )
+            temp_encrypted_pw = crypt.crypt(password, salt=temp_salt['salt'])
+            print(temp_encrypted_pw)
+            temp_password = await models.connection.fetchrow(
+                '''
+                SELECT password FROM users_info
+                WHERE username =$1
+                ''',
+                username
+            )
+            if(temp_encrypted_pw == temp_password['password']):
+                print('ok')
+                return True
+            else:
+                print('no')
+                return False
 
 
 @log_call
-def alter_username(old_username, new_username):
-    return True
+async def set_profile(username, icon_url, introduction):
+    if (check_username_validity(username) == False):
+        return False
+    else:
+        temp_name = await models.connection.fetchrow(
+            '''
+        SELECT username FROM users_info
+        WHERE username =$1
+            ''',
+            username
+        )
+        if(temp_name == None):
+            raise NameError()
+        else:
+            temp_name = await models.connection.fetchrow(
+                '''
+            SELECT username FROM profiles
+            WHERE username =$1
+            ''',
+                username
+            )
+            if(temp_name == None):
+                await models.connection.execute(
+                    '''
+                    INSERT INTO profiles(username, icon_url, introduction) VALUES($1, $2, $3)
+                    ''', username, icon_url, introduction
+                )
+            else:
+                await models.connection.execute(
+                    '''
+                    UPDATE profiles
+                    SET icon_url = $1, introduction = $2
+                    ''', icon_url, introduction
+                )  # update
+            return True
 
 
 @log_call
-def creat_new_repo(reponame, description, visibility):
-    return True
+async def get_icon_url(username):
+    url = await models.connection.fetchrow(
+        '''
+                SELECT icon_url FROM profiles
+                WHERE username =$1
+                ''',
+        username
+    )
+    if (url == None):
+        raise NameError()
+    else:
+        return url['icon_url']
 
 
 @log_call
-def sign_out():
-    return True
+async def get_introduction(username):
+    url = await models.connection.fetchrow(
+        '''
+                SELECT introduction FROM profiles
+                WHERE username =$1
+                ''',
+        username
+    )
+    if (url == None):
+        raise NameError()
+    else:
+        return url['introduction']
