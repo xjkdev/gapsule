@@ -3,8 +3,13 @@ import datetime
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import unauthenticated
 from gapsule.utils.cookie_session import session_encode
+from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.models.user import verify_user
-from gapsule.viewmodels.user import SignInResult
+
+
+class SignInResult(ViewModelDict):
+    state = ViewModelField(required=False)
+    error = ViewModelField(required=False)
 
 
 class SignInHandler(BaseHandler):
