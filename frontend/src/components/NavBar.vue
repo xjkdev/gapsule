@@ -5,7 +5,7 @@
       <span class="navbar-toggler-icon"></span>
     </b-navbar-toggle>
 
-    <b-collapse class="navbar-collapse" id="navbarSupportedContent">
+    <b-collapse id="navbarSupportedContent" is-nav>
       <b-navbar-nav class="mr-auto">
         <b-nav-item active href="#">
           Home
@@ -20,15 +20,25 @@
         </b-nav-item-dropdown>
         <b-nav-item href="#">Disabled</b-nav-item>
       </b-navbar-nav>
-      <b-nav-form inline class="my-2 my-lg-0">
+      <b-navbar-nav class="ml-auto">
+        <b-nav-form>
         <b-form-input
-          class="form-control mr-sm-2"
+        size="sm"
+          class="mr-sm-2"
           type="search"
           placeholder="Search"
           aria-label="Search"
         />
-        <b-button variant="outline-success" class="my-2 my-sm-0" type="submit">Search</b-button>
+        <b-button variant="outline-success" class="my-2 my-sm-0" size="sm">Search</b-button>
       </b-nav-form>
+      &nbsp;&nbsp;
+      <b-nav-item href="/signin" style="color: white">Sign in</b-nav-item>
+      &nbsp;&nbsp;
+      <b-nav-form>
+        <b-button href="/signup" size="sm" class="my-2 my-sm-0" >Sign Up</b-button>
+      </b-nav-form>
+      </b-navbar-nav>
+      
     </b-collapse>
   </b-navbar>
 </template>

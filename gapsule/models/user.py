@@ -1,61 +1,28 @@
 import crypt
 import re
+import time
+import secrets
 import asyncpg
 import asyncio
+from datetime import datetime
 import functools
 from gapsule import models
+from gapsule.utils.log_call import log_call
+from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity
 
 
-def log_call(f, log_func=None):
-    if log_func is None:
-        log_func = print
-
-    @functools.wraps(f)
-    def _wrapper(*args, **kwargs):
-        nonlocal log_func
-        name = f.__name__ if hasattr(f, '__name__') else '<Anonymous Function>'
-        sarg = ', '.join(str(a) for a in args)
-        skarg = ', '.join('%s=%s' % (k, v) for k, v in kwargs.items())
-        if len(skarg) > 0:
-            tmp = ', '.join((sarg, skarg))
-        else:
-            tmp = sarg
-        result = f(*args, **kwargs)
-        log_func('Function Called {}({}) -> {}'.format(
-            name, tmp, str(result)))
-        return result
-    return _wrapper
+@log_call()
+def create_token(username, mail_address):
+    if(check_username_validity(username) == True and check_mail_validity(mail_address) == True):
+        pending_info = {}
+        pending_info['username'] = username
+        pending_info['mail_address'] = mail_address
+        pending_info['token'] = secrets.token_urlsafe(16)
+        models.token_to_check.append(pending_info)
+        return pending_info['token']
 
 
-def check_username_validity(username):
-    if(len(username) == 0 | len(username) > 20):
-        return False
-    if not (re.match('([a-z]|[A-Z]|[0-9]|_)+', username)):
-        return False
-    return True
-
-
-def check_mail_validity(mail_address):
-    if(len(mail_address) == 0 | len(mail_address) > 40):
-        return False
-    if not (re.match('([a-z]|[A-Z]|[0-9]|_|\.)*?@.+', mail_address)):
-        return False
-    return True
-
-
-def check_password_validity(password):
-    if(len(password) < 8 | len(password) == 0 | len(password) > 40):
-        return False
-    if not (re.search('[A-Z]+', password)):
-        return False
-    if not (re.search('[0-9]+', password)):
-        return False
-    if not (re.match('([a-z]|[A-Z]|[0-9]|_)+', password)):
-        return False
-    return True
-
-
-@log_call
+@log_call()
 async def create_new_user(username, mail_address, password):
     if (check_username_validity(username) == False):
         return False
@@ -81,7 +48,7 @@ async def create_new_user(username, mail_address, password):
         return False
 
 
-@log_call
+@log_call()
 async def verify_user(username, password):
     if (check_username_validity(username) == False):
         return False
@@ -104,7 +71,6 @@ async def verify_user(username, password):
                 username
             )
             temp_encrypted_pw = crypt.crypt(password, salt=temp_salt['salt'])
-            print(temp_encrypted_pw)
             temp_password = await models.connection.fetchrow(
                 '''
                 SELECT password FROM users_info
@@ -113,14 +79,12 @@ async def verify_user(username, password):
                 username
             )
             if(temp_encrypted_pw == temp_password['password']):
-                print('ok')
                 return True
             else:
-                print('no')
                 return False
 
 
-@log_call
+@log_call()
 async def set_profile(username, icon_url, introduction):
     if (check_username_validity(username) == False):
         return False
@@ -153,12 +117,13 @@ async def set_profile(username, icon_url, introduction):
                     '''
                     UPDATE profiles
                     SET icon_url = $1, introduction = $2
-                    ''', icon_url, introduction
+                    WHERE username = $3
+                    ''', icon_url, introduction, username
                 )  # update
             return True
 
 
-@log_call
+@log_call()
 async def get_icon_url(username):
     url = await models.connection.fetchrow(
         '''
@@ -173,7 +138,7 @@ async def get_icon_url(username):
         return url['icon_url']
 
 
-@log_call
+@log_call()
 async def get_introduction(username):
     url = await models.connection.fetchrow(
         '''
@@ -186,3 +151,90 @@ async def get_introduction(username):
         raise NameError()
     else:
         return url['introduction']
+
+
+@log_call()
+async def alter_username(old_username, new_username):
+    if(check_username_validity(new_username) == False or check_username_validity(old_username) == False):
+        raise NameError()
+    else:
+        temp_name = await models.connection.fetchrow(
+            '''
+        SELECT username FROM users_info
+        WHERE username =$1
+            ''',
+            old_username
+        )
+        if(temp_name == None):
+            raise NameError()
+        else:
+            await models.connection.execute(
+                '''
+                    UPDATE users_info
+                    SET username = $1
+                    WHERE username = $2
+                ''', new_username, old_username
+            )
+            await models.connection.execute(
+                '''
+                    UPDATE profiles
+                    SET username = $1
+                    WHERE username = $2
+                ''', new_username, old_username
+            )
+            return True
+
+
+@log_call()
+async def alter_icon(username, new_url):
+    await models.connection.execute(
+        '''
+            UPDATE  profiles
+            SET icon_url = $1
+            WHERE username = $2
+        ''', new_url, username
+    )
+    return True
+
+
+@log_call()
+async def alter_introduction(username, new_intro):
+    await models.connection.execute(
+        '''
+            UPDATE  profiles
+            SET introduction = $1
+            WHERE username = $2
+        ''', new_intro, username
+    )
+    return True
+
+
+@log_call()
+async def user_login(username, password):
+    flag = await verify_user(username, password)
+    if(flag == True):
+        temp = await models.connection.fetchrow(
+            '''
+        SELECT username FROM log_info
+        WHERE username =$1''', username
+        )
+        if(temp != None):
+            await models.connection.execute(
+                '''
+            DELETE FROM log_info WHERE username=$1
+            ''', username)
+        session = secrets.token_urlsafe()
+        await models.connection.execute(
+            '''
+                INSERT INTO log_info(username,session,login_time) VALUES($1,$2,$3)
+            ''', username, session, datetime.now()
+        )
+        return session
+    else:
+        return False
+
+
+@log_call()
+async def check_session_status(username, session):
+
+    return True
