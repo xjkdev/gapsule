@@ -4,7 +4,7 @@ import os
 from gapsule.handlers.Main import MainHandler
 from gapsule import settings
 from gapsule.handlers.RepoHandler import (CodeListHandler, FolderListHandler,
-                                          FileContentHandler)
+                                          FileContentHandler,)
 
 routes = [
     (r"/", MainHandler),
@@ -12,6 +12,6 @@ routes = [
         'path': settings.static_path
     }),
     (r"/(w+)/", CodeListHandler),
-    (r"/(w+)/tree/(w+)/(^/]+)", FolderListHandler),
-    (r"/(w+)/blob/(w+)/(^/]+)", FileContentHandler),
+    (r"/(w+)/(w+)/tree/(w+)/(^/]+)", FolderListHandler),
+    (r"/(w+)/(w+)/blob/(w+)/(^/]+)", FileContentHandler),
 ]

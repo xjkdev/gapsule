@@ -26,7 +26,7 @@ class CodeListHandler(tornado.web.RequestHandler):
 class FolderListHandler(tornado.web.RequestHandler):
     @ajaxquery
     def get(self, *args, **kwargs):
-        # args的第一个存有username，第二个为分支，后面是具体的文件路劲
+        # args的第一个存有username，第二个为项目，第三个分支，后面是具体的文件路径
         folder_dict = {}
         folder_state = get_specified_path()
         folder_dict["folder"] = folder_state
@@ -35,8 +35,8 @@ class FolderListHandler(tornado.web.RequestHandler):
 class FileContentHandler(tornado.web.RequestHandler):
     @ajaxquery
     def get(self, *args, **kwargs):
-         # args的第一个存有username，第二个为分支，后面是具体的文件路劲
+         # args的第一个存有username，第二个为项目，第三个分支，后面是具体的文件路径
         file_dict = {}
-        path = self.request.path
+        path = self.request.path #URI路径
         file_dict["file"] = get_file_content(path)
         self.write(file_dict)
