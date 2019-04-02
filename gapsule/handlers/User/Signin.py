@@ -8,7 +8,7 @@ from gapsule.models.user import verify_user
 
 
 class SignInResult(ViewModelDict):
-    state = ViewModelField(required=False)
+    state = ViewModelField(required=True)
     error = ViewModelField(required=False)
 
 
@@ -30,4 +30,4 @@ class SignInHandler(BaseHandler):
                 'session', session_encode(dataobj))
             self.write(SignInResult(state='ok'))
         else:
-            self.write(SignInResult(error='validation failed.'))
+            self.write(SignInResult(state='error', error='validation failed.'))

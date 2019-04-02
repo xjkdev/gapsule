@@ -93,8 +93,10 @@ class ViewModelTestCase(unittest.TestCase):
 
     def test_isdict(self):
         self.assertTrue(issubclass(ViewModelDict, dict))
+        self.assertIsInstance(ViewModelDict(), dict)
 
 
 class ViewModelListTestCase(unittest.TestCase):
     def test_islist(self):
         self.assertTrue(issubclass(ViewModelList, list))
+        self.assertIsInstance(ViewModelList(), list)
