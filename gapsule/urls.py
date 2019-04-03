@@ -14,9 +14,9 @@ routes = [
     (r"/static/(.*)", tornado.web.StaticFileHandler, {
         'path': settings['static_path']
     }),
-    (r"/?<username>(w+)/?<projectname>(w+)/", CodeListHandler),
-    (r"/?<username>(w+)/?<projectname>(w+)/tree/?<branch>(w+)/?<restpath>(^/]+)", FolderListHandler),
-    (r"/?<username>(w+)/?<projectname>(w+)/blob/?<branch>(w+)/?<restpath>(^/]+)", FileContentHandler),
+    (r"/?p<username>(w+)/?p<projectname>(w+)/", CodeListHandler),
+    (r"/?p<username>(w+)/?p<projectname>(w+)/tree/?p<branch>(w+)/?p<restpath>(^/]+)", FolderListHandler),
+    (r"/?p<username>(w+)/?p<projectname>(w+)/blob/?p<branch>(w+)/?p<restpath>(^/]+)", FileContentHandler),
     #(r"/(w+)/(w+)/pulls", PullRequestPageHandler),
     (r"/.*", MainHandler),
 ]
