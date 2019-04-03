@@ -85,7 +85,7 @@ async def verify_user(username, password):
 
 
 @log_call()
-async def set_profile(username, icon_url, introduction):
+async def set_profile(username, icon_url=None, introduction=None, company=None, location=None, website=None):
     if (check_username_validity(username) == False):
         return False
     else:
@@ -109,8 +109,8 @@ async def set_profile(username, icon_url, introduction):
             if(temp_name == None):
                 await models.connection.execute(
                     '''
-                    INSERT INTO profiles(username, icon_url, introduction) VALUES($1, $2, $3)
-                    ''', username, icon_url, introduction
+                    INSERT INTO profiles(username, icon_url, introduction, company, location, website) VALUES($1, $2, $3, $4, $5, $6)
+                    ''', username, icon_url, introduction, company, location, website
                 )
             else:
                 await models.connection.execute(
@@ -182,6 +182,13 @@ async def alter_username(old_username, new_username):
                     WHERE username = $2
                 ''', new_username, old_username
             )
+            await models.connection.execute(
+                '''
+                    UPDATE log_info
+                    SET username = $1
+                    WHERE username = $2
+                ''', new_username, old_username
+            )
             return True
 
 
@@ -235,6 +242,25 @@ async def user_login(username, password):
 
 
 @log_call()
-async def check_session_status(username, session):
+async def user_logout(username):
+    await models.connection.execute(
+        '''
+            DELETE FROM log_info WHERE username=$1
+            ''', username)
 
-    return True
+
+@log_call()
+async def check_session_status(username, session):
+    temp = await models.connection.fetchrow(
+        '''
+        SELECT username, session FROM log_info
+        WHERE username =$1
+        ''', username
+    )
+    if(temp == None):
+        return False
+    else:
+        if(temp['username'] == username and temp['session'] == session):
+            return True
+        else:
+            return False

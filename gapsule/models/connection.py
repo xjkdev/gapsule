@@ -21,7 +21,10 @@ async def make_connect(config_info):
             CREATE TABLE profiles(
             username   varchar(20) NOT NULL,
             icon_url   varchar(40),
-            introduction    varchar(200)
+            introduction    varchar,
+            company     varchar,
+            location    varchar,
+            website     varchar
             );
             CREATE TABLE log_info(
             username   varchar(20) NOT NULL,
