@@ -35,7 +35,7 @@ def check_password_validity(password):
     return True
 
 
-@log_call
+@log_call()
 async def create_new_user(username, mail_address, password):
     if (check_username_validity(username) == False):
         return False
@@ -63,26 +63,31 @@ async def create_new_user(username, mail_address, password):
         return False
 
 
-@log_call
+@log_call()
+def add_user_pending_verifying(username, email, password):
+    return 'Token'
+
+
+@log_call()
 def verify_user(username, password):
     return True
 
 
-@log_call
+@log_call()
 def check_session_status(username, session, logged_time):
     return True
 
 
-@log_call
+@log_call()
 def alter_username(old_username, new_username):
     return True
 
 
-@log_call
+@log_call()
 def creat_new_repo(reponame, description, visibility):
     return True
 
 
-@log_call
+@log_call()
 def sign_out():
     return True
