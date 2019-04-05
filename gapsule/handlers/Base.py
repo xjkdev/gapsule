@@ -43,6 +43,9 @@ class BaseHandler(web.RequestHandler):
             "verify_url", "@gapsule.utils.active_authenticated")
         return self.application.settings["verify_url"]
 
+    def get_template_name(self):
+        return 'index.html'
+
     def write(self, chunk: Union[str, bytes, dict]) -> None:
         """Writes the given chunk to the output buffer.
 

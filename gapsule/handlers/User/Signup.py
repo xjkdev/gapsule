@@ -1,6 +1,7 @@
 from tornado.escape import json_decode
+from tornado.web import HTTPError
 from gapsule.handlers.Base import BaseHandler
-from gapsule.utils import unauthenticated
+from gapsule.utils import unauthenticated, ajaxquery
 from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.models.user import add_user_pending_verifying, create_new_user
 
@@ -36,8 +37,14 @@ class SignUpResult(ViewModelDict):
 
 class SignUpHandler(BaseHandler):
     @unauthenticated('/')
+    @ajaxquery
     def get(self, action=None):
-        self.render('index.html')
+        if action == '/verify':
+            token = self.get_query_argument('token')
+            pending_data = 'pending'
+            self.write(dict(username="pending_data's username"))
+        else:
+            raise HTTPError(403)
 
     @unauthenticated('/')
     def post(self, action=None):
