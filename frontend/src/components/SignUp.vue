@@ -68,6 +68,7 @@
 <script>
 import axios from 'axios';
 export default {
+  name: 'SignUp',
   data() {
     return {
       username: '',
@@ -80,17 +81,17 @@ export default {
     onSubmit() {
       axios({
         method: 'POST',
-        url: window.location.href,
+        url: '/signup',
         data: {
+          ajax: 1,
           username: this.username,
           email: this.email,
           password: this.password
         },
       }).then((response) =>{
         if(response.data.state == 'ok') {
-          window.location.href = '/userinfo-filling'
-        }
-        else {
+          this.$router.replace('/signup/verify');
+        }else {
           this.errormessage = response.data.error;
         }
       }).catch((error) =>{

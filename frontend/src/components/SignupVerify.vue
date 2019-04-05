@@ -1,10 +1,7 @@
 <template>
   <div id="login">
-    <div class="logo">
-      <img src="../images/logo.jpg" alt="Logo">
-    </div>
 
-    <h2 style="text-align: center">Sign in to Gapsule</h2>
+    <h3 style="text-align: center">Vertify your password</h3>
 
     <b-form @submit="onSubmit">
       <ul class="main">
@@ -13,15 +10,13 @@
           <b-form-input
             id="username"
             type="text"
-            v-model="username"
-            required
-            placeholder="Enter Username"
+            disabled
+            :placeholder="username"
           />
         </li>
 
         <li class="password">
           <label for="password">Password</label>
-          <a href="#" style="float: right">Forget Password?</a>
           <b-form-input
             id="password"
             type="password"
@@ -37,39 +32,73 @@
       </ul>
     </b-form>
 
-      <div class="create-account">
-        <span>New to Gapsule?</span>
-        <!-- <a href="#">Create an account</a> -->
-        <router-link to="#">Create an account</router-link>
-      </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter'
 export default {
-  name: 'SignIn',
+  name: 'SignupVerify',
   data() {
     return {
       username: '',
       password: ''
     }
   },
+  created() {
+    this.fetchUsername()
+  },
+  watch: {
+    '$route': 'fetchUsername'
+  },
   methods: {
-    onSubmit() {
+    onSubmit(e) {
+      e.preventDefault();
+      let mock = new MockAdapter(axios);
+      // eslint-disable-next-line
+      mock.onPost('/signup/verify').reply(config => {
+        // eslint-disable-next-line
+        return new Promise((resolve, reject) => {
+          resolve([200, {state: 'ok', error: 'error'}]);
+        });
+      });
       axios({
         method: 'POST',
-        url: '/signin',
+        url: '/signup/verify',
         data: {
           ajax: 1,
-          username: this.username,
           password: this.password
         }
       }).then((response) =>{
-        if(response.status == 200) {
-          this.$router.replace('/index');
+        if(response.data.state == 'ok') {
+          this.$router.replace('/signup/finishing');
         }
       });
+    },
+    fetchUsername() {
+      let mock = new MockAdapter(axios);
+      // eslint-disable-next-line
+      mock.onPost('/signup/verify').reply(config => {
+        // eslint-disable-next-line
+        return new Promise((resolve, reject) => {
+          resolve([200, {state: 'ok', error: 'error', username: '123'}]);
+        });
+      });
+      axios({
+          method: 'POST',
+          url: '/signup/verify',
+          data: {
+            ajax: 1,
+          }
+      }).then(response => {
+          if(response.data.state == 'ok') {
+              console.log(response.data.username);
+              this.username = response.data.username;
+          }else {
+              console.log(response.data.error)
+          }
+      })
     }
   }
 };
@@ -80,24 +109,6 @@ export default {
   width: 320px;
   height: 100%;
   margin: 0 auto;
-}
-.logo {
-  width: 100%;
-  height: 16%;
-  position: relative;
-}
-.logo img {
-  width: 60px;
-  height: 60px;
-  background-size: 100%;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  margin-left: -30px;
-  margin-top: -30px;
-}
-#password {
-  display: inline-block;
 }
 ul {
   list-style: none;
