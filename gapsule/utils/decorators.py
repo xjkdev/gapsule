@@ -1,14 +1,15 @@
-from tornado.web import RequestHandler, HTTPError, urlencode
+from tornado.web import HTTPError, urlencode
+from gapsule.handlers.Base import BaseHandler
 import urllib
 import functools
 
 
-def ajaxquery(f, template_name='index.html', **kwargs):
+def ajaxquery(f):
     """ Decorated function only runs if ajax-querying, otherwise render 'index.html'. """
     @functools.wraps(f)
     def _wrapper(self, *args, **kwargs):
         if self.request.method in ("GET", "HEAD") and not self.get_query_argument('ajax', '0') == '1':
-            self.render(template_name, **kwargs)
+            self.render(self.get_template_name(), **kwargs)
             return None
         else:
             return f(self, *args, **kwargs)
@@ -39,25 +40,14 @@ def active_authenticated(f):
     return _wrapper
 
 
-def unauthenticated(url='/'):
+def unauthenticated(f):
     """ Decorate an function that only run when user unauthenticated. """
-    def decorator(f):
-        @functools.wraps(f)
-        def _wrapper(self, *args, **kwargs):
-            nonlocal url
-            if self.current_user:
-                if self.request.method in ("GET", "HEAD"):
-                    if "?" not in url:
-                        if urllib.parse.urlsplit(url).scheme:
-                            # if login url is absolute, make next absolute too
-                            next_url = self.request.full_url()
-                        else:
-                            assert self.request.uri is not None
-                            next_url = self.request.uri
-                        url += "?" + urlencode(dict(next=next_url))
-                    self.redirect(url)
-                    return None
-                raise HTTPError(403)
-            return f(self, *args, **kwargs)
-        return _wrapper
-    return decorator
+    @functools.wraps(f)
+    def _wrapper(self, *args, **kwargs):
+        if self.current_user:
+            if self.request.method in ("GET", "HEAD"):
+                self.redirect('/')
+                return None
+            raise HTTPError(403)
+        return f(self, *args, **kwargs)
+    return _wrapper

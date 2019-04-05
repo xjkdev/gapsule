@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, MagicMock, NonCallableMock
 from gapsule.utils.decorators import ajaxquery, unauthenticated, active_authenticated
-from tornado.web import RequestHandler
+from gapsule.handlers.Base import BaseHandler
 
 
 class AjaxQueryTestCase(unittest.TestCase):
@@ -9,10 +9,12 @@ class AjaxQueryTestCase(unittest.TestCase):
         render_mock = Mock()
         handle_mock = Mock()
         ajax_arg_mock = Mock(return_value=ajax_value)
-        query = NonCallableMock(spec=RequestHandler,
+        query = NonCallableMock(spec=BaseHandler,
                                 get_query_argument=ajax_arg_mock,
                                 request=Mock(method=method),
                                 render=render_mock,
+                                get_template_name=Mock(
+                                    return_value='index.html'),
                                 )
         return query, handle_mock, render_mock
 
@@ -37,14 +39,23 @@ class AjaxQueryTestCase(unittest.TestCase):
         handle_mock.assert_not_called()
         render_mock.assert_called_once_with('index.html')
 
+    def test_decorator_usage(self):
+        query, handle_mock, render_mock = self.create_query('GET', '0')
+        @ajaxquery
+        def func(self_):
+            return handle_mock(self_)
+        func(query)
+        handle_mock.assert_not_called()
+        render_mock.assert_called_once_with('index.html')
+
 
 class AuthenticatedTestCase(unittest.TestCase):
     def create_query(self, method, user):
         redirect = Mock()
-        query = NonCallableMock(spec=RequestHandler,
+        query = NonCallableMock(spec=BaseHandler,
                                 current_user=user,
                                 request=Mock(
-                                    method='GET', fullurl=Mock(return_value='/fullurl'), uri='/uri'),
+                                    method=method, fullurl=Mock(return_value='/fullurl'), uri='/uri'),
                                 redirect=redirect,
                                 get_login_url=Mock(return_value='/login'),
                                 get_verify_url=Mock(
@@ -56,7 +67,7 @@ class AuthenticatedTestCase(unittest.TestCase):
         handle_mock = Mock()
         user = NonCallableMock(user='alice', active=False)
         query, redirect = self.create_query('GET', user)
-        f = unauthenticated('/')(handle_mock)
+        f = unauthenticated(handle_mock)
         f(query)
         redirect.assert_called_once()
         handle_mock.assert_not_called()
@@ -65,7 +76,7 @@ class AuthenticatedTestCase(unittest.TestCase):
         handle_mock = Mock()
         user = None
         query, redirect = self.create_query('GET', user)
-        f = unauthenticated('/')(handle_mock)
+        f = unauthenticated(handle_mock)
         f(query)
         redirect.assert_not_called()
         handle_mock.assert_called_once_with(query)
