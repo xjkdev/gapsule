@@ -3,7 +3,13 @@ import datetime
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import unauthenticated
 from gapsule.utils.cookie_session import session_encode
+from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.models.user import verify_user
+
+
+class SignInResult(ViewModelDict):
+    state = ViewModelField(required=True)
+    error = ViewModelField(required=False)
 
 
 class SignInHandler(BaseHandler):
@@ -22,6 +28,6 @@ class SignInHandler(BaseHandler):
                            logged_time=logged_time)
             self.set_secure_cookie(
                 'session', session_encode(dataobj))
-            self.write(dict(state='ok.'))
+            self.write(SignInResult(state='ok'))
         else:
-            self.write(dict(error='validation failed.'))
+            self.write(SignInResult(state='error', error='validation failed.'))
