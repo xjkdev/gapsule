@@ -5,9 +5,9 @@
       <b-list-group flush>
         <b-list-group-item v-for="project in projects" :key="project.repo" class="list-group-item">
           <span v-if="project.pinned" class="oi oi-pin" title="pin" aria-hidden="true"></span>
-          <a :href="'/' +project.owner">{{project.owner}}</a>
+          <router-link :to="'/' +project.owner">{{project.owner}}</router-link>
           <span>/</span>
-          <a :href="'/' + project.repo">{{project.repo.replace(project.owner+'/','')}}</a>
+          <router-link :to="'/' + project.repo">{{project.repo.replace(project.owner+'/','')}}</router-link>
         </b-list-group-item>
       </b-list-group>
     </b-card>
@@ -20,11 +20,11 @@
           :key="topic.type+'/'+topic.repo+'/'+topic.id"
         >
           <span v-if="topic.pinned" class="oi oi-pin" title="pin" aria-hidden="true"></span>
-          <a :href="(topic.repo?'/'+topic.repo:'')+'/'+topic.type+'/'+topic.id">
+          <router-link :to="(topic.repo?'/'+topic.repo:'')+'/'+topic.type+'/'+topic.id">
             <span class="topic-prefix-brief">{{ topicPrefixBrief(topic) }}</span>
             <span class="topic-prefix">{{ topicPrefix(topic) }}</span>
             <span>{{topic.title}}</span>
-          </a>
+          </router-link>
         </b-list-group-item>
       </b-list-group>
     </b-card>
@@ -33,7 +33,7 @@
       <b-list-group flush>
         <b-list-group-item v-for="person in people" :key="person.name">
           <span v-if="person.pinned" class="oi oi-pin" title="pin" aria-hidden="true"></span>
-          <a :href="'/' +person.name">{{person.name}}</a>
+          <router-link :to="'/' +person.name">{{person.name}}</router-link>
         </b-list-group-item>
       </b-list-group>
     </b-card>

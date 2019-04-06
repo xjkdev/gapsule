@@ -23,7 +23,7 @@ class BaseHandler(web.RequestHandler):
             user = dataobj.get('user', None)
             session = dataobj.get('session', None)
             logged_time = dataobj.get('logged_time', None)
-            if check_session_status(user, session, logged_time):
+            if check_session_status(user, session):
                 return AuthState(user, True)
             elif user is not None:
                 return AuthState(user, False)

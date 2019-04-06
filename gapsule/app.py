@@ -1,7 +1,6 @@
 import asyncio
 import tornado.ioloop
 import tornado.web
-from gapsule.models.user import create_new_user
 from gapsule.urls import routes
 from gapsule.models.connection import make_connect
 from gapsule import settings

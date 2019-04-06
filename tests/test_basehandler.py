@@ -32,7 +32,7 @@ class BaseHandlerTestCase(unittest.TestCase):
         b, g, c = self.create_query(True, cookie)
         res = BaseHandler.get_current_user(b)
         g.assert_called_with('session')
-        c.assert_called_with('test-user', 'test-session', test_time)
+        c.assert_called_with('test-user', 'test-session')
         self.assertEqual((res.user, res.active), ('test-user', True))
 
     def test_get_current_user2(self):
@@ -41,7 +41,7 @@ class BaseHandlerTestCase(unittest.TestCase):
         b, g, c = self.create_query(False, cookie)
         res = BaseHandler.get_current_user(b)
         g.assert_called_with('session')
-        c.assert_called_with('test-user', 'test-session', test_time)
+        c.assert_called_with('test-user', 'test-session')
         self.assertEqual((res.user, res.active), ('test-user', False))
 
     def test_get_current_user3(self):
