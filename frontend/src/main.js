@@ -10,6 +10,16 @@ Vue.use(BootstrapVue);
 
 Vue.config.productionTip = false
 
+const DEFAULT_TITLE = 'Gapsule';
+// eslint-disable-next-line
+router.afterEach((to, from) => {
+  if ( typeof to.meta == 'function') {
+    document.title = to.meta.call(to) || DEFAULT_TITLE;
+  }else{
+    document.title = to.meta.title || DEFAULT_TITLE;
+  }
+});
+
 new Vue({
   router,
   render: h => h(App),
@@ -19,3 +29,4 @@ new Vue({
   router,
   render: h => h(NavBar),
 }).$mount('#navbar')
+
