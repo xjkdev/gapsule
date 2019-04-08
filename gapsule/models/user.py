@@ -1,11 +1,9 @@
 import crypt
 import re
-import time
 import secrets
 import asyncpg
 import asyncio
 from datetime import datetime
-import functools
 from gapsule import models
 from gapsule.utils.log_call import log_call
 from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity
@@ -18,7 +16,7 @@ def create_token(username, mail_address):
         pending_info['username'] = username
         pending_info['mail_address'] = mail_address
         pending_info['token'] = secrets.token_urlsafe(16)
-        models.token_to_check.append(pending_info)
+        models.signup_token.append_token(pending_info)
         return pending_info['token']
 
 
@@ -158,6 +156,10 @@ async def get_introduction(username):
 
 
 @log_call()
+def add_user_pending_verifying(username, email, password):
+    return 'Token'
+
+
 async def alter_username(old_username, new_username):
     if(check_username_validity(new_username) == False or check_username_validity(old_username) == False):
         raise NameError()
@@ -215,6 +217,10 @@ async def alter_introduction(username, new_intro):
 
 
 @log_call()
+def creat_new_repo(reponame, description, visibility):
+    return True
+
+
 async def user_login(username, password):
     flag = await verify_user(username, password)
     if(flag == True):
@@ -240,6 +246,7 @@ async def user_login(username, password):
 
 
 @log_call()
+<<<<<<< HEAD
 async def user_logout(username):
     await models.connection.execute(
         '''
@@ -262,3 +269,12 @@ async def check_session_status(username, session):
             return True
         else:
             return False
+=======
+async def check_session_status(username, session):
+    return True
+
+
+@log_call()
+def sign_out():
+    return True
+>>>>>>> 029e31928a6e043139796a790862312100bed377
