@@ -23,18 +23,40 @@ def create_token(username, mail_address):
 
 
 @log_call()
+async def check_user_existing(username):
+    temp = await models.connection.fetchrow(
+        '''
+        SELECT username FROM users_info
+        WHERE username =$1''', username
+    )
+    if(temp != None):
+        return True
+    else:
+        return False
+
+
+@log_call()
+async def check_profile_existing(username):
+    temp = await models.connection.fetchrow(
+        '''
+        SELECT username FROM profiles
+        WHERE username =$1''', username
+    )
+    if(temp != None):
+        return True
+    else:
+        return False
+
+
+@log_call()
 async def create_new_user(username, mail_address, password):
     if (check_username_validity(username) == False):
         return False
     if (check_mail_validity(mail_address) == False):
         return False
     if(check_password_validity(password) != False):
-        temp = await models.connection.fetchrow(
-            '''
-        SELECT username FROM users_info
-        WHERE username =$1''', username
-        )
-        if(temp != None):
+        flag = await check_user_existing(username)
+        if(flag == True):
             raise NameError()
         else:
             salt = crypt.mksalt()
@@ -53,14 +75,8 @@ async def verify_user(username, password):
     if (check_username_validity(username) == False):
         return False
     if(check_password_validity(password) != False):
-        temp_name = await models.connection.fetchrow(
-            '''
-            SELECT username FROM users_info
-            WHERE username =$1
-            ''',
-            username
-        )
-        if(temp_name == None):
+        flag = check_user_existing(username)
+        if(flag == False):
             raise NameError()
         else:
             temp_salt = await models.connection.fetchrow(
@@ -89,24 +105,12 @@ async def set_profile(username, icon_url=None, introduction=None, company=None, 
     if (check_username_validity(username) == False):
         return False
     else:
-        temp_name = await models.connection.fetchrow(
-            '''
-        SELECT username FROM users_info
-        WHERE username =$1
-            ''',
-            username
-        )
-        if(temp_name == None):
+        flag = check_user_existing(username)
+        if(flag == False):
             raise NameError()
         else:
-            temp_name = await models.connection.fetchrow(
-                '''
-            SELECT username FROM profiles
-            WHERE username =$1
-            ''',
-                username
-            )
-            if(temp_name == None):
+            flag = check_profile_existing(username)
+            if(flag == False):
                 await models.connection.execute(
                     '''
                     INSERT INTO profiles(username, icon_url, introduction, company, location, website) VALUES($1, $2, $3, $4, $5, $6)
@@ -158,14 +162,8 @@ async def alter_username(old_username, new_username):
     if(check_username_validity(new_username) == False or check_username_validity(old_username) == False):
         raise NameError()
     else:
-        temp_name = await models.connection.fetchrow(
-            '''
-        SELECT username FROM users_info
-        WHERE username =$1
-            ''',
-            old_username
-        )
-        if(temp_name == None):
+        flag = check_user_existing(old_username)
+        if(flag == False):
             raise NameError()
         else:
             await models.connection.execute(

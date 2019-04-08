@@ -5,6 +5,8 @@ from gapsule.urls import routes
 from gapsule.models.connection import make_connect
 from gapsule import settings
 
+from gapsule.models.user import create_new_user, set_profile
+
 
 def make_app():
     settings.read_config()

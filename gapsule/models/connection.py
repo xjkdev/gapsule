@@ -12,14 +12,14 @@ async def make_connect(config_info):
         con = await asyncpg.connect(user=config_info['dbuser'], database=config_info['dbname'])
         await con.execute(
             '''CREATE TABLE users_info(
-            UID SERIAL PRIMARY KEY,
-            username  varchar(20) NOT NULL,
+            UID SERIAL,
+            username  varchar(20) primary key,
             mail_address varchar(40),
             password varchar(40) NOT NULL,
             salt char(10)
             );
             CREATE TABLE profiles(
-            username   varchar(20) NOT NULL,
+            username   varchar(20) references users_info(username),
             icon_url   varchar(40),
             introduction    varchar,
             company     varchar,
@@ -27,7 +27,7 @@ async def make_connect(config_info):
             website     varchar
             );
             CREATE TABLE log_info(
-            username   varchar(20) NOT NULL,
+            username   varchar(20) references users_info(username),
             session     varchar,
             login_time  TIMESTAMP
             );
