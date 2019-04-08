@@ -154,6 +154,10 @@ async def get_introduction(username):
 
 
 @log_call()
+def add_user_pending_verifying(username, email, password):
+    return 'Token'
+
+
 async def alter_username(old_username, new_username):
     if(check_username_validity(new_username) == False or check_username_validity(old_username) == False):
         raise NameError()
@@ -210,6 +214,10 @@ async def alter_introduction(username, new_intro):
 
 
 @log_call()
+def creat_new_repo(reponame, description, visibility):
+    return True
+
+
 async def user_login(username, password):
     flag = await verify_user(username, password)
     if(flag == True):
@@ -236,5 +244,9 @@ async def user_login(username, password):
 
 @log_call()
 async def check_session_status(username, session):
+    return True
 
+
+@log_call()
+def sign_out():
     return True

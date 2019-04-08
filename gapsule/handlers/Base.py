@@ -23,7 +23,7 @@ class BaseHandler(web.RequestHandler):
             user = dataobj.get('user', None)
             session = dataobj.get('session', None)
             logged_time = dataobj.get('logged_time', None)
-            if check_session_status(user, session, logged_time):
+            if check_session_status(user, session):
                 return AuthState(user, True)
             elif user is not None:
                 return AuthState(user, False)
@@ -42,6 +42,9 @@ class BaseHandler(web.RequestHandler):
         self.require_setting(
             "verify_url", "@gapsule.utils.active_authenticated")
         return self.application.settings["verify_url"]
+
+    def get_template_name(self):
+        return 'index.html'
 
     def write(self, chunk: Union[str, bytes, dict]) -> None:
         """Writes the given chunk to the output buffer.
