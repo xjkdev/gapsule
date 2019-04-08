@@ -1,6 +1,6 @@
 import os
+import warnings
 import configparser
-
 
 settings = dict(
     template_path=os.path.join(os.path.dirname(__file__), "templates"),
@@ -19,4 +19,7 @@ def read_config():
     settings['cookie_secret'] = config.get(
         'app', 'cookie_secret', fallback='secret_string')
     if settings['cookie_secret'] == 'secret_string':
-        print("WARNING: it's dangerous")  # TODO
+        warnings.warn("WARNING: it's dangerous")  # TODO
+
+
+read_config()

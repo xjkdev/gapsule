@@ -1,35 +1,47 @@
 <template>
   <div id="userinfo">
 
-    <h4 style="text-align: center">Fill in your information</h4>
+    <h4 style="text-align: center; padding: 10px 0">Fill in your information</h4>
 
     <b-form @submit="onSubmit">
       <ul class="main">
         <li class="icon">
           <label for="icon">Choose an image as your icon</label>
-          <img :src="icon" alt="User Icon">
-          <input type="file" name="icon" accept="image/*" @change="changeImg($event)" ref="icon">
+          <img :src="icon" alt="User Icon" id="icon">
+          <input
+            id="choose" 
+            type="file" 
+            name="icon" 
+            accept="image/*" 
+            @change="changeImg($event)" 
+            ref="icon"
+          >
         </li>
 
         <li class="name">
-          <b-form inline>
-            <span style="color: red">*</span>
-            <label for="firstname">FirstName:</label>
-            <b-form-input
-              id="firstname"
-              type="text"
-              v-model="firstname"
-              required
-            />
-            <span style="color: red">*</span>
-            <label for="secondname">SecondName:</label>
-            <b-form-input
-              id="secondname"
-              type="text"
-              v-model="secondname"
-              required
-            />
-          </b-form>
+          <b-form-group class="fullname" label="Name" label-for="firstname" horizontal>
+            <b-row>
+            <b-col cols="6">
+              <b-form-input
+                id="firstname"
+                type="text"
+                v-model="firstname"
+                placeholder="firstname"
+                required
+              />
+              
+            </b-col>
+            <b-col cols="6">
+              <b-form-input
+                id="secondname"
+                type="text"
+                v-model="secondname"
+                placeholder="secondname"
+                required
+              />
+            </b-col>
+            </b-row>
+          </b-form-group>
         </li>
 
         <li class="biography">
@@ -78,14 +90,15 @@
 
 <script>
 // window.onload = function() {
-//   let icon = document.getElementsByClassName('icon')[0];
-//   let img = icon.getElementsByTagName('img')[0];
-//   let input = icon.getElementsByTagName('input')[0];
-//   img.click(function() {
+//   let img = document.getElementById('icon');
+//   let input = document.getElementById('choose');
+//   img.onclick = function() {
 //     input.click();
-//   });
+//   }
 // }
+import axios from 'axios';
 export default {
+  name: 'SignupFinishing',
   data() {
     return {
       icon: require('../images/choose_icon.jpg'),
@@ -105,12 +118,16 @@ export default {
       reader.readAsDataURL(file);
       reader.onload = function() {
         that.icon = this.result;
+        // console.log(that.icon);
       } 
     },
-    onSubmit() {
-      this.$http({
+    onSubmit(e) {
+      e.preventDefault();
+      axios({
         method: 'POST',
+        url: '/signup/verify/finishing',
         data: {
+          ajax: 1,
           icon: this.icon,
           firstname: this.firstname,
           secondname: this.secondname,
@@ -119,6 +136,14 @@ export default {
           location: this.location,
           website: this.website
         }
+      }).then(response => {
+        if(response.data.state == 'ok') {
+          this.$router.replace('/index');
+        }else {
+          console.log(response.data.error);
+        }
+      }).catch(error => {
+        console.log(error);
       })
     }
   }
@@ -153,3 +178,9 @@ ul li {
 } */
 </style>
 
+<style>
+#userinfo .name .fullname label:after{
+  content: " *";
+  color:red;
+}
+</style>

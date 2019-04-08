@@ -1,9 +1,22 @@
 import datetime
 
+from tornado.escape import json_decode
+
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import unauthenticated
 from gapsule.utils.cookie_session import session_encode
+from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.models.user import verify_user
+
+
+class SignInInput(ViewModelDict):
+    username = ViewModelField(required=True)
+    password = ViewModelField(required=True)
+
+
+class SignInResult(ViewModelDict):
+    state = ViewModelField(required=True)
+    error = ViewModelField(required=False)
 
 
 class SignInHandler(BaseHandler):
@@ -13,15 +26,14 @@ class SignInHandler(BaseHandler):
 
     @unauthenticated('/')
     def post(self):
-        username = self.get_body_argument('username')
-        password = self.get_body_argument('password')
-        session = verify_user(username, password)
+        data = SignInInput(json_decode(self.request.body))
+        session = verify_user(data.username, data.password)
         logged_time = datetime.datetime.now().strftime("%Y/%m/%d% %H:%M:%S")
-        if session is not None and username is not None and password is not None:
-            dataobj = dict(user=username, session=session,
+        if session is not None:
+            dataobj = dict(user=data.username, session=session,
                            logged_time=logged_time)
             self.set_secure_cookie(
                 'session', session_encode(dataobj))
-            self.write(dict(state='ok.'))
+            self.write(SignInResult(state='ok'))
         else:
-            self.write(dict(error='validation failed.'))
+            self.write(SignInResult(state='error', error='validation failed.'))
