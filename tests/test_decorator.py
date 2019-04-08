@@ -13,6 +13,8 @@ class AjaxQueryTestCase(unittest.TestCase):
                                 get_query_argument=ajax_arg_mock,
                                 request=Mock(method=method),
                                 render=render_mock,
+                                get_template_name=Mock(
+                                    return_value='index.html')
                                 )
         return query, handle_mock, render_mock
 

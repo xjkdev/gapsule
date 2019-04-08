@@ -3,12 +3,12 @@ import urllib
 import functools
 
 
-def ajaxquery(f, template_name='index.html', **kwargs):
+def ajaxquery(f):
     """ Decorated function only runs if ajax-querying, otherwise render 'index.html'. """
     @functools.wraps(f)
     def _wrapper(self, *args, **kwargs):
         if self.request.method in ("GET", "HEAD") and not self.get_query_argument('ajax', '0') == '1':
-            self.render(template_name, **kwargs)
+            self.render(self.get_template_name(), **kwargs)
             return None
         else:
             return f(self, *args, **kwargs)

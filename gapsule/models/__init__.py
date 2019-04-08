@@ -1,4 +1,1 @@
-
-connection = None
-
-__all__ = ['connection']
+import gapsule.models.connection
