@@ -1,11 +1,9 @@
 import crypt
 import re
-import time
 import secrets
 import asyncpg
 import asyncio
 from datetime import datetime
-import functools
 from gapsule import models
 from gapsule.utils.log_call import log_call
 from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity
@@ -18,7 +16,7 @@ def create_token(username, mail_address):
         pending_info['username'] = username
         pending_info['mail_address'] = mail_address
         pending_info['token'] = secrets.token_urlsafe(16)
-        models.token_to_check.append(pending_info)
+        models.signup_token.append_token(pending_info)
         return pending_info['token']
 
 
