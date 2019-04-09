@@ -89,3 +89,24 @@ def path_exists():
 @log_call()
 def get_history():
     return 'edition:1 time:xxx'
+
+
+class RepoNotFoundException(FileNotFoundError):
+    pass
+
+# 查询仓库是否为仓库对某用户可读，如果为不可读返回假，当且仅当可读或为公有仓库返回真，不存在raise RepoNotFoundException
+# 当username=None时，表示查询匿名用户的权限，当且仅当为公有仓库时返回真，不存在raise exception，私有返回假。
+@log_call()
+def check_read_permission(owner, reponame, username=None):
+
+    return True
+
+# 查询仓库是否为仓库对某用户可写，当且仅当可写返回真，不存在raise RepoNotFoundException
+@log_call()
+def check_write_permission(owner, reponame, username):
+    return True
+
+# 查询仓库是否为仓库对某用户有管理权限，当且仅当有管理权限返回真，不存在raise RepoNotFoundException
+@log_call()
+def check_admin_permission(owner, reponame, username):
+    return True
