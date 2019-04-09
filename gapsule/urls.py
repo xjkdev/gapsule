@@ -9,7 +9,7 @@ from gapsule.handlers.RepoHandler import (CodeListHandler, FolderListHandler,
 
 routes = [
     (r"/", MainHandler),
-    (r"/signin", Signin.SignInHandler),
+    (r"/signin/?", Signin.SignInHandler),
     (r"/signup(/verify|/finishing)?/?", Signup.SignUpHandler),
     (r"/static/(.*)", tornado.web.StaticFileHandler, {
         'path': settings['static_path']
