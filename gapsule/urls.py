@@ -2,7 +2,7 @@ import tornado.web
 import os
 
 from gapsule.handlers.Main import MainHandler
-from gapsule.handlers.User import Signin
+from gapsule.handlers.User import Signin, Signup
 from gapsule.settings import settings
 from gapsule.handlers.RepoHandler import (CodeListHandler, FolderListHandler,
                                           FileContentHandler,)
@@ -10,11 +10,13 @@ from gapsule.handlers.RepoHandler import (CodeListHandler, FolderListHandler,
 routes = [
     (r"/", MainHandler),
     (r"/signin", Signin.SignInHandler),
+    (r"/signup(/verify|/finishing)?/?", Signup.SignUpHandler),
     (r"/static/(.*)", tornado.web.StaticFileHandler, {
-       'path': settings['static_path']
+        'path': settings['static_path']
     }),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/?", CodeListHandler),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/tree/(?P<branch>\w+)/(?P<restpath>.*)/?", FolderListHandler),
-    (r"/(?P<username>\w+)/(?P<projectname>\w+)/blob/(?P<branch>\w+)/(?P<restpath>.*)/?", FileContentHandler),
+    (r"/(?P<username>\w+)/(?P<projectname>\w+)/blob/(?P<branch>\w+)/(?P<restpath>.*)/?",
+     FileContentHandler),
     (r"/.*", MainHandler),
 ]
