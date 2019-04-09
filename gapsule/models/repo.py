@@ -72,7 +72,7 @@ def get_specified_path():
 
 # 查询  对应路径下的某个文件的内容
 @log_call()
-def get_file_content(path):
+def get_file_content(path, branch=None):
     return 'content:...'
 
 # 查询  所有仓库文件
