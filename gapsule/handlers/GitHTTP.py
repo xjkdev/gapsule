@@ -1,15 +1,13 @@
 import subprocess
 import os
 import re
-import asyncio
 import base64
 
 from tornado.web import RequestHandler, HTTPError
-from tornado.iostream import PipeIOStream
 
-from gapsule.models import repo, user
+from gapsule.models import repo, user, git
 from gapsule.settings import settings
-
+from gapsule.utils.async_proc import async_communicate
 
 GIT_URL_PATTERNS = [
     ("GET", "/HEAD"),
@@ -27,10 +25,8 @@ GIT_URL_PATTERNS = [
 GIT_URL_PATTERNS_REGEX = '|'.join(p[1] for p in GIT_URL_PATTERNS)
 
 
-def create_git_backend(method, query_string, root, path_info, content_type=None,
-                       remote_user=None, remote_addr=None,
-                       ):
-
+def spawn_git_http_backend(method, query_string, root, path_info, content_type=None,
+                           remote_user=None, remote_addr=None):
     env = dict(
         REQUEST_METHOD=method,
         GIT_PROJECT_ROOT=root,
@@ -46,33 +42,13 @@ def create_git_backend(method, query_string, root, path_info, content_type=None,
     return proc
 
 
-async def async_communicate(proc, indata, timeout=None):
-    async_in = PipeIOStream(proc.stdin.fileno())
-    async_out = PipeIOStream(proc.stdout.fileno())
-    async_err = PipeIOStream(proc.stderr.fileno())
-
-    async def _write_and_close():
-        await async_in.write(indata)
-        async_in.close()
-    future_in = async_in.write(indata)
-    future_in.add_done_callback(lambda future: async_in.close())
-    future_out = async_out.read_until_close()
-    future_err = async_err.read_until_close()
-    _done, pending = await asyncio.wait((future_in, future_out, future_err),
-                                        timeout=timeout)
-    if len(pending) > 0:
-        proc.kill()
-        raise TimeoutError()
-    return future_out.result(), future_err.result()
-
-
-def split_cgi_stdout(data):
+def parse_cgi_stdout(data):
     maxi = data.find(b'\r\n\r\n')
     if maxi < 0:
         body = ''
     else:
         body = data[maxi+4:]
-    data = data[:maxi].split(b'\r\n')
+        data = data[:maxi].split(b'\r\n')
     header = dict()
     for line in data:
         k, v = line.split(b': ', 1)
@@ -82,18 +58,13 @@ def split_cgi_stdout(data):
 
 class GitHTTPHandler(RequestHandler):
 
-    def base_auth(self, authname=None):
+    def request_auth(self, authname=None):
         if authname is None:
             authname = "Git Access"
-
-        def _request_auth(authname):
-            self.set_header('WWW-Authenticate',
-                            'Basic realm="{}"'.format(authname))
-            self.set_status(401)
-            self.finish()
-
-        if self.current_user is None:
-            _request_auth(authname)
+        self.set_header('WWW-Authenticate',
+                        'Basic realm="{}"'.format(authname))
+        self.set_status(401)
+        self.finish()
 
     async def prepare(self):
         auth = self.request.headers.get('Authorization')
@@ -113,8 +84,13 @@ class GitHTTPHandler(RequestHandler):
             self.write("Request not supported: {}/{}".format(owner, reponame))
             raise HTTPError(404)
 
-        root = os.path.join(
-            settings['repository_path'], '{}/{}'.format(owner, reponame))
+        try:
+            root = git.get_repo_dirpath(owner, reponame)
+        except ValueError as e:
+            raise HTTPError(404) from e
+
+        if not os.path.exists(root):
+            raise HTTPError(404)
 
         query_string = self.request.query
         if method == 'POST':
@@ -122,7 +98,7 @@ class GitHTTPHandler(RequestHandler):
                 'Accept', '').replace('result', 'request')
         else:
             content_type = None
-        proc = create_git_backend(
+        proc = spawn_git_http_backend(
             method, query_string, root, path_info, content_type)
         # print(self.request.body)
         out, err = await async_communicate(proc, self.request.body, timeout=10)
@@ -130,7 +106,7 @@ class GitHTTPHandler(RequestHandler):
         # print(out, err)
         if len(err) > 0:
             raise HTTPError(500)
-        header, body = split_cgi_stdout(out)
+        header, body = parse_cgi_stdout(out)
         for k, v in header.items():
             self.set_header(k, v)
         self.write(body)
@@ -140,7 +116,7 @@ class GitHTTPHandler(RequestHandler):
             owner, reponame, self.current_user)
         if per is False:
             if self.current_user is None:
-                self.base_auth("Private Git Access")
+                self.request("Private Git Access")
                 return False
             if not repo.check_read_permission(owner, reponame, self.current_user):
                 raise HTTPError(403)
@@ -159,7 +135,7 @@ class GitHTTPHandler(RequestHandler):
         try:
             if re.match('/git-upload-pack$', path_info) is not None:
                 if self.current_user is None:
-                    self.base_auth()
+                    self.request_auth()
                     return
                 if not repo.check_write_permission(owner, reponame, self.current_user):
                     raise HTTPError(403)
