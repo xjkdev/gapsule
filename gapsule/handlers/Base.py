@@ -17,7 +17,7 @@ class BaseHandler(web.RequestHandler):
     async def prepare(self):
         data = self.get_secure_cookie('session')
         if data is None:
-            return None
+            self.current_user = None
         try:
             dataobj = session_decode(data)
             user = dataobj.get('user', None)

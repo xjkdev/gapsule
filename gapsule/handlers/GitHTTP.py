@@ -1,4 +1,5 @@
-import subprocess
+import asyncio
+from asyncio.subprocess import PIPE
 import os
 import re
 import base64
@@ -7,7 +8,6 @@ from tornado.web import RequestHandler, HTTPError
 
 from gapsule.models import repo, user, git
 from gapsule.settings import settings
-from gapsule.utils.async_proc import async_communicate
 
 GIT_URL_PATTERNS = [
     ("GET", "/HEAD"),
@@ -36,9 +36,8 @@ def spawn_git_http_backend(method, query_string, root, path_info, content_type=N
     )
     if content_type is not None:
         env['CONTENT_TYPE'] = content_type
-    proc = subprocess.Popen(['git', 'http-backend'], env=env,
-                            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = asyncio.create_subprocess_exec('git', 'http-backend', env=env,
+                                          stdin=PIPE, stdout=PIPE, stderr=PIPE)
     return proc
 
 
@@ -98,11 +97,11 @@ class GitHTTPHandler(RequestHandler):
                 'Accept', '').replace('result', 'request')
         else:
             content_type = None
-        proc = spawn_git_http_backend(
+        proc = await spawn_git_http_backend(
             method, query_string, root, path_info, content_type)
         # print(self.request.body)
-        out, err = await async_communicate(proc, self.request.body, timeout=10)
-        proc.kill()
+        out, err = await asyncio.wait_for(proc.communicate(self.request.body), 10)
+        await asyncio.wait_for(proc.wait(), 1)
         # print(out, err)
         if len(err) > 0:
             raise HTTPError(500)
