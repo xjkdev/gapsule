@@ -3,6 +3,8 @@ from gapsule.utils.log_call import log_call
 from gapsule.models.connection import fetch, fetchrow, execute
 from gapsule.models.post import check_post_existing, PostNotFoundException
 
+# 一个post（帖子）下的所有跟帖都是comment。reply是特殊的comment。
+
 
 class CommentNotFoundException(FileNotFoundError):
     pass
@@ -83,6 +85,7 @@ async def delete_comment(repo_id, post_id, comment_id):
 
 @log_call()
 async def get_comment_info(repo_id, post_id, comment_id):
+    # 根据三个id得到对应commnet的信息
     if check_comment_existing(repo_id, post_id, comment_id):
         temp = await fetchrow(
             '''

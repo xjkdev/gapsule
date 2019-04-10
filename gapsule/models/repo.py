@@ -1,7 +1,12 @@
-from datetime import datetime
+from gapsule.models import git
+from logging import warning
+import os
+from typing import List, Tuple, Dict
+from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
 from gapsule.models.connection import _connection, fetchrow, execute, fetch
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
+from gapsule.models.git import init_git_repo
 
 
 class RepoNotFoundException(FileNotFoundError):
@@ -15,11 +20,12 @@ async def creat_new_repo(owner, reponame, introduction='', star_num=0, fork_num=
         raise NameError('Invalid reponame')
     flag = await check_repo_existing(owner, reponame)
     if(flag == False):
+        init_git_repo(owner, reponame)
         await execute(
             '''
                 INSERT INTO repos(username,reponame,introduction,create_time,star_num,fork_num,visibility)
                 VALUES($1,$2,$3,$4,$5,$6,$7)
-            ''', owner, reponame, introduction, datetime.now(), star_num, fork_num, visibility
+            ''', owner, reponame, introduction, datetime_now(), star_num, fork_num, visibility
         )
     else:
         raise NameError('Repo already exists')
@@ -111,6 +117,22 @@ async def check_read_permission(owner, reponame, username=None):
         raise RepoNotFoundException()
 
 
+def get_commits_num(owner, repo, branch):
+    """ 查询 repo的提交次数commits """
+    return len(git.git_commit_logs(owner, repo, branch, pretty=git.ONELINE))
+
+# 修改 repo的提交次数commits
+@log_call(warning)
+def set_commits_num(new_num):
+    print('commits_num set as'+str(new_num)+' successfully')
+    return True
+
+
+def get_branches_num(owner, repo):
+    """ 查询  repo的分支数branch """
+    return len(git.git_branches(owner, repo)[1])
+
+
 @log_call()
 async def check_write_permission(owner, reponame, username):
     if(await check_repo_existing(owner, reponame) == True):
@@ -196,6 +218,10 @@ async def remove_collaborator(owner, reponame, collaborator_name):
         raise RepoNotFoundException()
 
 
+def get_releases_num():
+    return 0
+
+
 @log_call()
 async def get_repo_names(owner):
     # 查询一个用户所有的repo名，返回repo名列表
@@ -276,6 +302,13 @@ async def set_repo_introduction(owner, reponame, new_introduction):
         raise RepoNotFoundException()
 
 
+def get_specified_path(owner, reponame, branch, path=None) -> List[Tuple[str, str, bool]]:
+    """ 查询  对应版本对应路径下的某个文件夹包含的文件夹（名称）和文件（名称）
+        返回三元组，分别为name, hash, is_dir
+    """
+    return git.git_ls_files(owner, reponame, branch, path=path, show_tree=True)
+
+
 @log_call()
 async def get_repo_star_num(owner, reponame):
     # 根据owner名和repo名查该repo的star数
@@ -349,3 +382,25 @@ async def get_repo_visibility(owner, reponame):
         return result['visibility']
     else:
         raise RepoNotFoundException()
+
+
+def get_file_content(path, branch=None):
+    return 'content:...'
+
+
+def get_all_files(owner, reponame, branch) -> List[Tuple[str, str]]:
+    """ 查询  所有仓库文件 """
+    return git.git_ls_files(owner, reponame, branch)
+
+
+def path_exists(owner, reponame, branch, path) -> bool:
+    """ 查询  对应路径的文件（夹）是否存在 """
+    files = git.git_ls_files(owner, reponame, branch, show_tree=True)
+    files = [info[0] for info in files]
+    path = path.rstrip('/')
+    return path in files
+
+
+def get_history(owner, reponame, branch) -> List[Dict[str, str]]:
+    """ 查询 历史提交的版本与时间 """
+    return git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)

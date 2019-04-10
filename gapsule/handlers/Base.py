@@ -1,6 +1,9 @@
 from typing import Union
 from tornado import web, escape
-from gapsule.utils.cookie_session import session_decode
+from datetime import timedelta
+import logging
+
+from gapsule.utils.cookie_session import session_decode, parse_log_time, datetime_now
 from gapsule.models.user import check_session_status
 
 
@@ -17,7 +20,8 @@ class BaseHandler(web.RequestHandler):
     async def get_current_user(self):
         data = self.get_secure_cookie('session')
         if data is None:
-            return None
+            self.current_user = None
+            return
         try:
             dataobj = session_decode(data)
             user = dataobj.get('user', None)
@@ -28,10 +32,10 @@ class BaseHandler(web.RequestHandler):
             elif user is not None:
                 return AuthState(user, False)
             else:
-                return None
+                self.current_user = AuthState(user, False)
         except Exception as e:
-            print(e)
-            return None
+            logging.error(str(e))
+            self.current_user = None
 
     def get_login_url(self):
         self.require_setting(

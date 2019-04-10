@@ -1,7 +1,9 @@
-from datetime import datetime
+from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
 from gapsule.models.repo import get_repo_id, check_repo_existing
 from gapsule.models.connection import fetch, fetchrow, execute
+
+# post分为attached_post 和 nonattached_post，前者依附于一个repo，由repo_id和post_id标识。后者由0 (repo_id=0)+post_id标识
 
 
 class PostNotFoundException(FileNotFoundError):
@@ -24,7 +26,7 @@ async def creat_new_attached_post(repo_id, postername, title, status, visibility
         '''
         INSERT INTO posts(post_id,repo_id,postername,title,status,visibility,post_time)
         VALUES($1,$2,$3,$4,$5,$6,$7)
-        ''', this_id, repo_id, postername, title, status, visibility, datetime.now()
+        ''', this_id, repo_id, postername, title, status, visibility, datetime_now()
     )
     return this_id
 
@@ -51,6 +53,7 @@ async def check_post_existing(repo_id, post_id):
 
 @log_call()
 async def get_all_posts(postername):
+    # 查一个用户发过的所有posts
     results = []
     temps = await fetch(
         '''
