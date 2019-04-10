@@ -18,6 +18,9 @@ def read_config():
     settings['dbname'] = config.get('database', 'dbname', fallback=None)
     settings['cookie_secret'] = config.get(
         'app', 'cookie_secret', fallback='secret_string')
+    repository_path = config.get(
+        'app', 'repository_path', fallback='./repos')
+    settings['repository_path'] = os.path.abspath(repository_path)
     if settings['cookie_secret'] == 'secret_string':
         warnings.warn("WARNING: it's dangerous")  # TODO
 
