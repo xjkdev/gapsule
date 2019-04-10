@@ -1,4 +1,5 @@
 import os
+import warnings
 import configparser
 
 settings = dict(
@@ -21,4 +22,7 @@ def read_config():
         'app', 'repository_path', fallback='./repos')
     settings['repository_path'] = os.path.abspath(repository_path)
     if settings['cookie_secret'] == 'secret_string':
-        print("WARNING: it's dangerous")  # TODO
+        warnings.warn("WARNING: it's dangerous")  # TODO
+
+
+read_config()
