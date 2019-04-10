@@ -1,6 +1,5 @@
 import tornado.ioloop
 import tornado.web
-import asyncio
 from gapsule import settings
 import gapsule.models
 from gapsule.urls import routes
