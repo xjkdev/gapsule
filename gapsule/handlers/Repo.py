@@ -36,8 +36,8 @@ class FolderListHandler(BaseHandler):
 class FileContentHandler(BaseHandler):
     @ajaxquery
     def get(self, username, projectname, branch, restpath):
-        file_dict = {
-            # goto 参数username, projectname,branch, restpath
-            "file": get_file_content(restpath)
-        }
-        self.write(file_dict)
+        try:
+            data = get_file_content(username, projectname, branch, restpath)
+            self.write(dict(status="ok", file=data))
+        except OSError:
+            self.write(dict(status="error", file=None))
