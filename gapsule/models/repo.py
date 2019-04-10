@@ -403,3 +403,7 @@ def path_exists(owner, reponame, branch, path) -> bool:
 def get_history(owner, reponame, branch) -> List[Dict[str, str]]:
     """ 查询 历史提交的版本与时间 """
     return git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)
+
+
+def get_contributors_info():
+    return 0
