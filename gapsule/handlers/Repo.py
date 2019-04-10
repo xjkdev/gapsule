@@ -4,7 +4,7 @@ import tornado.web
 import sys
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import ajaxquery
-from gapsule.models.repo import (get_commits_num, get_branches_name, get_releases_num,
+from gapsule.models.repo import (get_commits_num, get_branches_num, get_releases_num,
                                  get_contributors_info, get_specified_path,
                                  get_file_content)
 
@@ -13,16 +13,14 @@ class CodeListHandler(BaseHandler):
     @ajaxquery
     def get(self, username, projectname):
         state_dict = {
-            "commits": get_commits_num(),
-            "branch": get_branches_name(),
+            "status": "ok",
+            "commits": get_commits_num(username, projectname, 'master'),
+            "branch": get_branches_num(username, projectname),
             "releases": get_releases_num(),
             "contributors": get_contributors_info(),
+            "folder":  get_specified_path(username, projectname, 'master')
         }
-        code_dict = {
-            # goto 参数username, projectname,分支为默认master,文件路径为/
-            "foider": get_specified_path()
-        }
-        self.write(json.dumps([state_dict, code_dict]))
+        self.write(state_dict)
 
 
 class FolderListHandler(BaseHandler):
@@ -30,7 +28,7 @@ class FolderListHandler(BaseHandler):
     def get(self, username, projectname, branch, restpath):
         folder_dict = {
             # goto 参数username, projectname,branch, restpath
-            "foider": get_specified_path()
+            "foider": get_specified_path(username, projectname, branch, restpath)
         }
         self.write(folder_dict)
 
