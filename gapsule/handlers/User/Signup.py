@@ -52,7 +52,7 @@ class SignUpHandler(BaseHandler):
             try:
                 data = SignUpInputStep1(json_decode(self.request.body))
                 token = add_user_pending_verifying(
-                    data.username, data.email, data.password)
+                    data.username, data.email)
                 self.write(SignUpResult(state='ok', token=token))
             except Exception as e:  # TODO: check exceptions.
                 self.write(SignUpResult(state='error',

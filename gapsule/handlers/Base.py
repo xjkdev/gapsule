@@ -14,7 +14,7 @@ class AuthState():
 
 class BaseHandler(web.RequestHandler):
 
-    def get_current_user(self):
+    async def get_current_user(self):
         data = self.get_secure_cookie('session')
         if data is None:
             return None
@@ -23,7 +23,7 @@ class BaseHandler(web.RequestHandler):
             user = dataobj.get('user', None)
             session = dataobj.get('session', None)
             logged_time = dataobj.get('logged_time', None)
-            if check_session_status(user, session):
+            if await check_session_status(user, session):
                 return AuthState(user, True)
             elif user is not None:
                 return AuthState(user, False)

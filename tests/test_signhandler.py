@@ -25,3 +25,5 @@ class SignUpHandlerTestCase(AsyncHTTPTestCase):
                               body=json.dumps(dict(username='a', email="a@ab.com", password="feafa")))
         self.assertEqual(response.body, b'{"state": "ok", "token": "Token"}')
         self.assertEqual(response.code, 200)
+
+
