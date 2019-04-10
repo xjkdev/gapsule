@@ -4,9 +4,9 @@ import time
 import secrets
 import asyncpg
 import asyncio
-from datetime import datetime
 import functools
 from gapsule import models
+from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
 from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity
 
@@ -235,7 +235,7 @@ async def user_login(username, password):
         await models.connection.execute(
             '''
                 INSERT INTO log_info(username,session,login_time) VALUES($1,$2,$3)
-            ''', username, session, datetime.now()
+            ''', username, session, datetime_now()
         )
         return session
     else:

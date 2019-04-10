@@ -45,12 +45,14 @@ async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = No
     if path is not None:
         cmd.append(path)
     proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=PIPE)
-    out, err = await asyncio.wait_for(proc.communicate(), 2)
-    proc.kill
-    if len(err) > 0:
+                                                stdout=PIPE, stderr=DEVNULL)
+    out, _err = await asyncio.wait_for(proc.communicate(), 2)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
         raise RuntimeError("git ls-tree error")
-    filelines = map(lambda line: line.split(), out.decode().split('\n'))
+    filelines = map(lambda line: line.split(
+        maxsplit=3), out.decode().split('\n'))
     if not show_tree:
         result = [(info[3], info[2]) for info in filelines if len(info) != 0]
     else:
@@ -60,10 +62,10 @@ async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = No
 
 ONELINE = 0
 MEDIUM = 1
-DATE_AND_MESSAGE = 2
+HASH_DATE_AND_MESSAGE = 2
 
 PRETTY_OPTION = {ONELINE: "--pretty=oneline", MEDIUM: "--pretty=medium",
-                 DATE_AND_MESSAGE: "--pretty=format:%cI %s"}
+                 HASH_DATE_AND_MESSAGE: "--pretty=format:%H\t%cI\t%s"}
 
 
 def _read_medium_log(log: str) -> List[Dict[str, str]]:
@@ -103,7 +105,7 @@ def _read_medium_log(log: str) -> List[Dict[str, str]]:
 
 async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE,
                           path=None, maxsize: int = None) \
-        -> Union[List[Tuple[str, str]], List[Dict[str, str]]]:
+        -> Union[List[Tuple[str, str]], List[Dict[str, str]], List[Tuple[str, str, str]]]:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
     cmd = ['git', 'log', '--date=iso8601-strict']
@@ -113,9 +115,11 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
     if path is not None:
         cmd += ['--', path]
     proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=PIPE)
-    out, err = await asyncio.wait_for(proc.communicate(), 2)
-    if len(err) > 0:
+                                                stdout=PIPE, stderr=DEVNULL)
+    out, _err = await asyncio.wait_for(proc.communicate(), 2)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
         raise RuntimeError("git log error")
     out = out.decode()
     if pretty == ONELINE:
@@ -123,10 +127,31 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
                   for line in out.split('\n')[:-1]]
     elif pretty == MEDIUM:
         result = _read_medium_log(out)
-    elif pretty == DATE_AND_MESSAGE:
-        result = [line.split(' ', 1)
+    elif pretty == HASH_DATE_AND_MESSAGE:
+        result = [line.split('\t', 2)
                   for line in out.split('\n')]
     return result
+
+
+async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
+    root = get_repo_dirpath(owner, reponame)
+    _check_exists(root)
+    cmd = ['git', 'branch']
+    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
+                                                stdout=PIPE, stderr=DEVNULL)
+    out, _err = await asyncio.wait_for(proc.communicate(), 2)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
+        raise RuntimeError("git branch error")
+    out = out.decode().split('\n')
+    current = None
+    branches = []
+    for line in out[:-1]:
+        if line.startswith('* '):
+            current = line[2:]
+        branches.append(line[2:])
+    return (current, branches)
 
 
 async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
@@ -136,9 +161,9 @@ async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
 
     async def _task(f):
         r = await git_commit_logs(owner, reponame, branch, path=f,
-                                  pretty=DATE_AND_MESSAGE, maxsize=1)
+                                  pretty=HASH_DATE_AND_MESSAGE, maxsize=1)
         return r[0]
-    done, pending = asyncio.wait((_task(f) for f in files), timeout=5)
+    done, pending = asyncio.gather((_task(f) for f in files), 5)
     if len(pending) > 0:
         print("get_all_files_lastest_commit, not all tasks done.")
     return [f.result() for f in done]

@@ -1,24 +1,15 @@
 from unittest.mock import Mock, NonCallableMock, patch
 import unittest
-import base64
-import json
-import datetime
+from datetime import timedelta
 import asyncio
 
 from gapsule import models
 from gapsule.handlers.Base import BaseHandler, AuthState
+from gapsule.utils.cookie_session import format_log_time, session_encode, datetime_now
+from gapsule.utils import async_test
 import gapsule.handlers.Base
 
-test_time = datetime.datetime.now().strftime("%Y/%m/%d% %H:%M:%S")
-
-
-def async_test(f):
-    def wrapper(*args, **kwargs):
-        coro = asyncio.coroutine(f)
-        future = coro(*args, **kwargs)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(future)
-    return wrapper
+test_time = format_log_time(datetime_now() - timedelta(seconds=1))
 
 
 class BaseHandlerTestCase(unittest.TestCase):
@@ -27,8 +18,8 @@ class BaseHandlerTestCase(unittest.TestCase):
         gapsule.handlers.Base.check_session_status = asyncio.coroutine(
             check_session_status)
         if session_cookie is not None:
-            get_secure_cookie = Mock(return_value=base64.encodebytes(
-                json.dumps(session_cookie).encode()))
+            get_secure_cookie = Mock(
+                return_value=session_encode(session_cookie))
         else:
             get_secure_cookie = Mock(return_value=None)
         base_handler = NonCallableMock(
@@ -44,9 +35,9 @@ class BaseHandlerTestCase(unittest.TestCase):
         b, g, c = self.create_query(True, cookie)
         await BaseHandler.prepare(b)
         res = b.current_user
+        self.assertEqual((res.user, res.active), ('test-user', True))
         g.assert_called_with('session')
         c.assert_called_with('test-user', 'test-session')
-        self.assertEqual((res.user, res.active), ('test-user', True))
 
     @async_test
     async def test_get_current_user2(self):
@@ -55,9 +46,9 @@ class BaseHandlerTestCase(unittest.TestCase):
         b, g, c = self.create_query(False, cookie)
         await BaseHandler.prepare(b)
         res = b.current_user
+        self.assertEqual((res.user, res.active), ('test-user', False))
         g.assert_called_with('session')
         c.assert_called_with('test-user', 'test-session')
-        self.assertEqual((res.user, res.active), ('test-user', False))
 
     @async_test
     async def test_get_current_user3(self):
@@ -65,6 +56,6 @@ class BaseHandlerTestCase(unittest.TestCase):
         b, g, c = self.create_query(False, cookie)
         await BaseHandler.prepare(b)
         res = b.current_user
+        self.assertEqual(res, None)
         g.assert_called_with('session')
         c.assert_not_called()
-        self.assertEqual(res, None)
