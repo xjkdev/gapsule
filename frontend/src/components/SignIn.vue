@@ -32,7 +32,7 @@
         </li>
 
         <li class="operation">
-          <b-button type="submit" variant="primary" class="submit">Submit</b-button>
+          <b-button block type="submit" variant="primary" class="submit">Submit</b-button>
         </li>
       </ul>
     </b-form>

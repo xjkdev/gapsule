@@ -22,23 +22,20 @@
       </b-navbar-nav>
       <b-navbar-nav class="ml-auto">
         <b-nav-form>
-        <b-form-input
-        size="sm"
-          class="mr-sm-2"
-          type="search"
-          placeholder="Search"
-          aria-label="Search"
-        />
-        <b-button variant="outline-success" class="my-2 my-sm-0" size="sm">Search</b-button>
-      </b-nav-form>
-      &nbsp;&nbsp;
-      <b-nav-item href="/signin" style="color: white">Sign in</b-nav-item>
-      &nbsp;&nbsp;
-      <b-nav-form>
-        <b-button href="/signup" size="sm" class="my-2 my-sm-0" >Sign Up</b-button>
-      </b-nav-form>
+          <b-form-input
+            size="sm"
+            class="mr-sm-2"
+            type="search"
+            placeholder="Search"
+            aria-label="Search"
+          />
+          <b-button variant="outline-success" class="my-2 my-sm-0" size="sm">Search</b-button>
+        </b-nav-form>&nbsp;&nbsp;
+        <b-nav-item to="/signin" style="color: white">Sign in</b-nav-item>&nbsp;&nbsp;
+        <b-nav-form>
+          <b-button to="/signup" size="sm" class="my-2 my-sm-0">Sign Up</b-button>
+        </b-nav-form>
       </b-navbar-nav>
-      
     </b-collapse>
   </b-navbar>
 </template>
