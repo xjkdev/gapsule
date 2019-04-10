@@ -11,11 +11,12 @@ from gapsule.utils.check_validity import check_mail_validity, check_password_val
 
 
 @log_call()
-def add_user_pending_verifying(username, mail_address):
+def add_user_pending_verifying(username, mail_address, password):
     if(check_username_validity(username) == True and check_mail_validity(mail_address) == True):
         pending_info = {}
         pending_info['username'] = username
         pending_info['mail_address'] = mail_address
+        pending_info['password'] = password
         pending_info['token'] = secrets.token_urlsafe(16)
         models.signup_token.append_token(pending_info)
         return pending_info['token']
