@@ -3,6 +3,7 @@ from asyncio.subprocess import PIPE
 import os
 import re
 import base64
+import logging
 
 from tornado.web import RequestHandler, HTTPError
 
@@ -99,31 +100,30 @@ class GitHTTPHandler(RequestHandler):
             content_type = None
         proc = await spawn_git_http_backend(
             method, query_string, root, path_info, content_type)
-        # print(self.request.body)
         out, err = await asyncio.wait_for(proc.communicate(self.request.body), 10)
         await asyncio.wait_for(proc.wait(), 1)
-        # print(out, err)
         if len(err) > 0:
+            logging.error(err.decode())
             raise HTTPError(500)
         header, body = parse_cgi_stdout(out)
         for k, v in header.items():
             self.set_header(k, v)
         self.write(body)
 
-    def check_read(self, owner, reponame):
-        per = repo.check_read_permission(
+    async def check_read(self, owner, reponame):
+        per = await repo.check_read_permission(
             owner, reponame, self.current_user)
         if per is False:
             if self.current_user is None:
-                self.request("Private Git Access")
+                self.request_auth("Private Git Access")
                 return False
-            if not repo.check_read_permission(owner, reponame, self.current_user):
+            if not await repo.check_read_permission(owner, reponame, self.current_user):
                 raise HTTPError(403)
         return True
 
     async def get(self, owner, reponame, path_info):
         try:
-            if self.check_read(owner, reponame):
+            if await self.check_read(owner, reponame):
                 await self.handle_git_request('GET', owner, reponame, path_info)
         except repo.RepoNotFoundException:
             raise HTTPError(404)
@@ -136,9 +136,9 @@ class GitHTTPHandler(RequestHandler):
                 if self.current_user is None:
                     self.request_auth()
                     return
-                if not repo.check_write_permission(owner, reponame, self.current_user):
+                if not await repo.check_write_permission(owner, reponame, self.current_user):
                     raise HTTPError(403)
-            elif not self.check_read(owner, reponame):
+            elif not await self.check_read(owner, reponame):
                 return
             await self.handle_git_request('POST', owner, reponame, path_info)
         except repo.RepoNotFoundException:

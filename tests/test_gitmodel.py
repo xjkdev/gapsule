@@ -1,6 +1,5 @@
 from unittest import TestCase
 import tempfile
-import asyncio
 import os
 from subprocess import Popen, PIPE, DEVNULL
 import re
@@ -15,13 +14,11 @@ def ishash(s):
 
 
 repopath = tempfile.TemporaryDirectory()
-settings['repository_path'] = repopath.name
-print('repository_path:', repopath.name)
 root = None
 
 
-def clone(testCase, tmpdir):
-    p1 = Popen(['git', 'clone', root], cwd=tmpdir,
+def clone(testCase, tmpdir, path):
+    p1 = Popen(['git', 'clone', path], cwd=tmpdir,
                stdout=DEVNULL, stderr=DEVNULL)
     testCase.assertEqual(p1.wait(), 0)
 
@@ -58,19 +55,22 @@ class GitModelTestCase(TestCase):
     @async_test
     async def setUp(self):
         global root
+        git.get_repo_dirpath.cache_clear()
+        settings['repository_path'] = repopath.name
+        print('repository_path:', repopath.name)
         if root is not None:
             return
         await git.init_git_repo('abcd', 'efgh')
         root = git.get_repo_dirpath('abcd', 'efgh')
         self.assertTrue(os.path.exists(root))
-        print('testing repo', root)
+        print('testing recpo', root)
         git._check_exists(root)
         with tempfile.TemporaryDirectory() as tmpdir:
-            clone(self, tmpdir)
+            clone(self, tmpdir, root)
             commit_file(self, tmpdir, 'test1.txt', 'testing file1',
                         'init message')
         with tempfile.TemporaryDirectory() as tmpdir:
-            clone(self, tmpdir)
+            clone(self, tmpdir, root)
             commit_file(self, tmpdir, 'test2.txt', 'testing file2',
                         'test commit')
 
@@ -113,7 +113,7 @@ class GitModelTestCase(TestCase):
     @async_test
     async def test_branch(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            clone(self, tmpdir)
+            clone(self, tmpdir, root)
             create_branch(self, tmpdir)
             commit_file(self, tmpdir, 'test3.txt', 'testing branch',
                         'test commit', set_branch=True)

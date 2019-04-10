@@ -32,6 +32,10 @@ async def init_git_repo(owner: str, reponame: str) -> None:
                                                 cwd=root, stdout=DEVNULL, stderr=DEVNULL)
     if await asyncio.wait_for(proc.wait(), 2) != 0:
         raise RuntimeError("Repo Init failed")
+    p2 = await asyncio.create_subprocess_exec('git', 'config', '--add', 'http.receivepack', 'true',
+                                              cwd=root, stdout=DEVNULL, stderr=DEVNULL)
+    if await asyncio.wait_for(p2.wait(), 2) != 0:
+        raise RuntimeError("Repo Init failed")
 
 
 async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = None, show_tree=False) \
