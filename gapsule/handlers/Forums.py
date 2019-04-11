@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import ajaxquery
-from gapsule.models import repo, post, comment
+from gapsule.models import repo, post
 from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 
 
@@ -26,9 +26,9 @@ class ForumPostInput(ViewModelDict):
 
 class ForumHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, postid):
+    async def get(self, owner, reponame, postid):
         repoid = await repo.get_repo_id(owner, reponame)
-        poster, title, comments = asyncio.gather([
+        poster, title, comments = await asyncio.gather([
             post.get_postername(repoid, postid),
             post.get_title(repoid, postid),
             post.get_all_comments(repoid, postid)
@@ -37,9 +37,9 @@ class ForumHandler(BaseHandler):
                                   comments=comments))
 
     @ajaxquery
-    def post(self, owner, reponame, postid):
+    async def post(self, owner, reponame, postid):
         repoid = await repo.get_repo_id(owner, reponame)
         data = ForumPostInput(**parse_qs(self.request.body))
-        await comment.create_new_comment(
+        await post.create_new_comment(
             repoid, postid, 'rich', data['content'], self.current_user.user)
         self.write(dict(state='ok'))
