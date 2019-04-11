@@ -11,8 +11,9 @@ def log_call(log_func=None):
             nonlocal log_func
             name = f.__name__ if hasattr(
                 f, '__name__') else '<Anonymous Function>'
-            sarg = ', '.join(str(a) for a in args)
-            skarg = ', '.join('%s=%s' % (k, v) for k, v in kwargs.items())
+            sarg = ', '.join(repr(a) for a in args)
+            skarg = ', '.join('%s=%s' % (k, repr(v))
+                              for k, v in kwargs.items())
             if len(skarg) > 0:
                 tmp = ', '.join((sarg, skarg))
             else:
