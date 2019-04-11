@@ -90,7 +90,7 @@
 <script>
 import RepoNav from "@/components/RepoNav.vue";
 import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+// import MockAdapter from "axios-mock-adapter";
 export default {
   name: "Profile",
   data() {
@@ -120,22 +120,22 @@ export default {
       this.$router.replace(this.fullRepoName() + "/compare");
     },
     getData() {
-      let mock = new MockAdapter(axios);
-      mock.onGet(this.fullRepoName()).reply(200, {
-        state: "ok",
-        error: "error",
-        commitNumber: 1,
-        branchNumber: 2,
-        releaseNumber: 3,
-        contributorNumber: 4,
-        readme: "readme",
-        files: {
-          folder: ["folder1", "folder2"],
-          file: ["file1", "file2"]
-        },
-        currentBranch: "master",
-        branches: ["master"]
-      });
+      // let mock = new MockAdapter(axios);
+      // mock.onGet(this.fullRepoName()).reply(200, {
+      //   state: "ok",
+      //   error: "error",
+      //   commitNumber: 1,
+      //   branchNumber: 2,
+      //   releaseNumber: 3,
+      //   contributorNumber: 4,
+      //   readme: "readme",
+      //   files: {
+      //     folder: ["folder1", "folder2"],
+      //     file: ["file1", "file2"]
+      //   },
+      //   currentBranch: "master",
+      //   branches: ["master"]
+      // });
       axios({
         method: "GET",
         url: this.fullRepoName(),
