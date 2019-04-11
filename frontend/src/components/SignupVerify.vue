@@ -1,27 +1,16 @@
 <template>
   <div id="login">
-    <div class="logo">
-      <img src="../images/logo.jpg" alt="Logo">
-    </div>
+    <h3 style="text-align: center">Vertify your password</h3>
 
-    <h2 style="text-align: center">Sign in to Gapsule</h2>
-
-    <b-form @submit="onSubmit">
+    <b-form @submit.prevent="onSubmit">
       <ul class="main">
         <li class="username">
           <label for="username">Username</label>
-          <b-form-input
-            id="username"
-            type="text"
-            v-model="username"
-            required
-            placeholder="Enter Username"
-          />
+          <b-form-input id="username" type="text" disabled :placeholder="username"/>
         </li>
 
         <li class="password">
           <label for="password">Password</label>
-          <a href="#" style="float: right">Forget Password?</a>
           <b-form-input
             id="password"
             type="password"
@@ -32,41 +21,57 @@
         </li>
 
         <li class="operation">
-          <b-button block type="submit" variant="primary" class="submit">Submit</b-button>
+          <b-button type="submit" variant="primary" class="submit">Submit</b-button>
         </li>
       </ul>
     </b-form>
-
-    <div class="create-account">
-      <span>New to Gapsule?</span>
-      <router-link to="/signup">Create an account</router-link>
-    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 export default {
-  name: "SignIn",
+  name: "SignupVerify",
   data() {
     return {
       username: "",
       password: ""
     };
   },
+  created() {
+    this.fetchUsername();
+  },
+  watch: {
+    $route: "fetchUsername"
+  },
   methods: {
     onSubmit() {
       axios({
         method: "POST",
-        url: "/signin",
+        url: "/signup/verify",
         data: {
           ajax: 1,
-          username: this.username,
           password: this.password
         }
       }).then(response => {
-        if (response.status == 200) {
-          this.$router.replace("/index");
+        if (response.data.state == "ok") {
+          this.$router.replace("/signup/finishing");
+        }
+      });
+    },
+    fetchUsername() {
+      axios({
+        method: "POST",
+        url: "/signup/verify",
+        data: {
+          ajax: 1
+        }
+      }).then(response => {
+        if (response.data.state == "ok") {
+          console.log(response.data.username);
+          this.username = response.data.username;
+        } else {
+          console.log(response.data.error);
         }
       });
     }
@@ -79,24 +84,6 @@ export default {
   width: 320px;
   height: 100%;
   margin: 0 auto;
-}
-.logo {
-  width: 100%;
-  height: 16%;
-  position: relative;
-}
-.logo img {
-  width: 60px;
-  height: 60px;
-  background-size: 100%;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  margin-left: -30px;
-  margin-top: -30px;
-}
-#password {
-  display: inline-block;
 }
 ul {
   list-style: none;
