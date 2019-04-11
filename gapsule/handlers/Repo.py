@@ -1,7 +1,6 @@
-import os
 import json
 import tornado.web
-import sys
+
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import ajaxquery
 from gapsule.models.repo import (get_commits_num, get_branches_num, get_releases_num,
