@@ -7,6 +7,7 @@ from gapsule.urls import routes
 
 def make_app():
     app = tornado.web.Application(routes, **settings.settings)
+
     return app
 
 
