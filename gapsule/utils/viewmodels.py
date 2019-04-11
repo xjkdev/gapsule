@@ -6,18 +6,13 @@ ViewModelDict extends normal dict, together with ViewModelField to support some 
 
 example:
 class view_model_example(ViewModelDict):
-    datalist = ViewModelField('datalist', required=True)
-    errormsg = ViewModelField('errormsg', nullable=True)
+    datalist = ViewModelField(required=True, default_factory=list)
+    errormsg = ViewModelField(nullable=True)
     count = ViewModelField(dafault=0)
 
-    @datalist.default
-    def datalist(self):
-        return []
-
 In previous example, we create an view_model_example class that has one required field datalist. 
-We also create nullable filed  errormsg, and count filed with default value 0.
-And we added an method to generate default value for datalist, because list is mutable object. 
-The  name  argument in ViewModelField is optional.
+We also create nullable filed errormsg, and count filed with default value 0.
+And we added an default_factory to generate default value for datalist, because list is mutable object. 
 
 You can use attribute syntax like  model.count  to access value, which provide validation.
 Yet you can also use dict syntax to access value like d['name'] = 'value', which ignore validation for flexibility.
@@ -27,21 +22,25 @@ ViewModelList is an alias to normal list, for readabiliy.
 
 __all__ = ['ViewModelDict', 'ViewModelField', 'ViewModelList']
 
-from typing import Callable, Any, Union, List, TypeVar, Dict, Generic
+from typing import Callable, Any, Union, List, TypeVar, Dict, Generic, Type
 
 T = TypeVar('T')
 
 
 class ViewModelField(Generic[T]):
-    def __init__(self, name: str = None, *, required: bool = False, nullable: bool = True,
-                 readonly: bool = False, default: Union[None, T, Callable[[], T]] = None,
-                 validation: Callable[[T], bool] = None):
-        self._name = name
+    __slots__ = ['_default', '_default_factory', '_name', '_nullable', '_required',
+                 '_readonly', '_type', '_validator']
+
+    def __init__(self, type: Type = None,  *, required: bool = False, nullable: bool = True,
+                 readonly: bool = False, default: T = None, default_factory: Callable[[], T] = None,
+                 validator: Callable[[T], bool] = None):
         self._required = required
         self._nullable = nullable
         self._default = default
+        self._default_factory = default_factory
         self._readonly = readonly
-        self._validation = validation
+        self._validator = validator
+        self._type = type
 
     def __get__(self, obj: 'ViewModelBase', objType=None) -> T:
         if obj is None:
@@ -51,14 +50,12 @@ class ViewModelField(Generic[T]):
     def __set__(self, obj: 'ViewModelBase', value: T):
         if self._readonly:
             raise AttributeError("can't set readonly attribute")
-        if not self._nullable and value is None:
+        if not self._nullable and (value is None or
+                                   hasattr(value, '__len__') and
+                                   len(value) == 0):
             raise AttributeError("can't set non-nullable attribute to None")
-        if self._validation is not None:
-            if isinstance(self._validation, classmethod):
-                assert self._validation.__get__(obj)(
-                    value), 'attribute validation failed'
-            else:
-                assert self._validation(value), 'attribute validation failed'
+        if self._validator is not None:
+            assert self._validator(value), 'attribute validation failed'
         obj[self._name] = value
 
     def __delete__(self, obj):
@@ -66,30 +63,26 @@ class ViewModelField(Generic[T]):
             raise AttributeError("can't delete required attribute")
         del obj[self._name]
 
+    def __set_name__(self, owner, name):
+        self._name = name
+        func = getattr(type(self._default), '__set_name__', None)
+        if func:
+            # There is a __set_name__ method on the descriptor, call
+            # it.
+            func(self._default, owner, name)
+
     def get_default(self, obj=None):
-        if isinstance(self._default, classmethod):
-            return self._default.__get__(obj)()
-        if callable(self._default):
-            return self._default()
+        if self._default_factory is not None:
+            return self._default_factory()
         else:
             return self._default
-
-    def default(self, f):
-        return type(self)(self._name, required=self._required, nullable=self._nullable, readonly=self._readonly,
-                          default=classmethod(f), validation=self._validation)
-
-    def validation(self, f):
-        return type(self)(self._name, required=self._required, nullable=self._nullable, readonly=self._readonly,
-                          default=self._default, validation=classmethod(f))
 
 
 class ViewModelDict(dict, Dict[str, Any]):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name, val in self.__class__.__dict__.items():
+        for val in self.__class__.__dict__.values():
             if isinstance(val, ViewModelField):
-                if val._name is None:
-                    val._name = name
                 if val._required and not val._name in self:
                     default = val.get_default(self)
                     if not val._nullable and default is None:
