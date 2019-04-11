@@ -1,7 +1,7 @@
 import re
 
 
-def check_reponame_validty(reponame):
+def check_reponame_validity(reponame):
     if len(reponame) < 4 or len(reponame) > 20:
         return False
     if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]+$', reponame):

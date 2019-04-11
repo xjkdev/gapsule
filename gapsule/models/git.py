@@ -5,7 +5,7 @@ from asyncio.subprocess import PIPE, DEVNULL
 from typing import Union, Tuple, List, Dict
 
 from gapsule.settings import settings
-from gapsule.utils.check_validity import check_username_validity, check_reponame_validty
+from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 
 
 @functools.lru_cache(maxsize=32)
@@ -16,7 +16,7 @@ def _check_exists(root: str):
 
 @functools.lru_cache(maxsize=32)
 def get_repo_dirpath(owner: str, reponame: str) -> str:
-    if not check_reponame_validty(reponame) or not check_username_validity(owner):
+    if not check_reponame_validity(reponame) or not check_username_validity(owner):
         raise ValueError('invalid reponame or username')
     dirpath = os.path.join(
         settings['repository_path'], '{}/{}'.format(owner, reponame))

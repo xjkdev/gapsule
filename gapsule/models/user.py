@@ -7,18 +7,47 @@ import functools
 from gapsule import models
 from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
-from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity
+from gapsule.models.connection import _connection, fetchrow, execute, fetch
+from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity, check_reponame_validity
 
 
 @log_call()
-def create_token(username, mail_address):
+def add_user_pending_verifying(username, mail_address, password):
     if(check_username_validity(username) == True and check_mail_validity(mail_address) == True):
         pending_info = {}
         pending_info['username'] = username
         pending_info['mail_address'] = mail_address
+        pending_info['password'] = password
         pending_info['token'] = secrets.token_urlsafe(16)
         models.signup_token.append_token(pending_info)
         return pending_info['token']
+
+
+@log_call()
+async def check_user_existing(username):
+    temp = await fetchrow(
+        '''
+        SELECT username FROM users_info
+        WHERE username = $1
+        ''', username
+    )
+    if(temp != None):
+        return True
+    else:
+        return False
+
+
+@log_call()
+async def check_profile_existing(username):
+    temp = await fetchrow(
+        '''
+        SELECT username FROM profiles
+        WHERE username =$1''', username
+    )
+    if(temp != None):
+        return True
+    else:
+        return False
 
 
 @log_call()
@@ -28,17 +57,13 @@ async def create_new_user(username, mail_address, password):
     if (check_mail_validity(mail_address) == False):
         return False
     if(check_password_validity(password) != False):
-        temp = await models.connection.fetchrow(
-            '''
-        SELECT username FROM users_info
-        WHERE username =$1''', username
-        )
-        if(temp != None):
-            raise NameError()
+        flag = await check_user_existing(username)
+        if(flag == True):
+            raise NameError('Username already existing')
         else:
             salt = crypt.mksalt()
             encrypted_password = crypt.crypt(password, salt)
-            await models.connection.execute(
+            await execute(
                 '''
             INSERT INTO users_info(username, mail_address, password, salt) VALUES($1, $2, $3, $4)''', username, mail_address, encrypted_password, salt
             )
@@ -52,17 +77,11 @@ async def verify_user(username, password):
     if (check_username_validity(username) == False):
         return False
     if(check_password_validity(password) != False):
-        temp_name = await models.connection.fetchrow(
-            '''
-            SELECT username FROM users_info
-            WHERE username =$1
-            ''',
-            username
-        )
-        if(temp_name == None):
-            raise NameError()
+        flag = check_user_existing(username)
+        if(flag == False):
+            raise NameError('User does not exist')
         else:
-            temp_salt = await models.connection.fetchrow(
+            temp_salt = await fetchrow(
                 '''
                 SELECT salt FROM users_info
                 WHERE username =$1
@@ -70,7 +89,7 @@ async def verify_user(username, password):
                 username
             )
             temp_encrypted_pw = crypt.crypt(password, salt=temp_salt['salt'])
-            temp_password = await models.connection.fetchrow(
+            temp_password = await fetchrow(
                 '''
                 SELECT password FROM users_info
                 WHERE username =$1
@@ -84,47 +103,50 @@ async def verify_user(username, password):
 
 
 @log_call()
-async def set_profile(username, icon_url, introduction):
+async def set_profile(username, icon_url=None, introduction=None, company=None, location=None, website=None):
     if (check_username_validity(username) == False):
         return False
     else:
-        temp_name = await models.connection.fetchrow(
-            '''
-        SELECT username FROM users_info
-        WHERE username =$1
-            ''',
-            username
-        )
-        if(temp_name == None):
-            raise NameError()
+        flag = check_user_existing(username)
+        if(flag == False):
+            raise NameError('User does not exist')
         else:
-            temp_name = await models.connection.fetchrow(
-                '''
-            SELECT username FROM profiles
-            WHERE username =$1
-            ''',
-                username
-            )
-            if(temp_name == None):
-                await models.connection.execute(
+            flag = check_profile_existing(username)
+            if(flag == False):
+                await execute(
                     '''
-                    INSERT INTO profiles(username, icon_url, introduction) VALUES($1, $2, $3)
-                    ''', username, icon_url, introduction
+                    INSERT INTO profiles(username, icon_url, introduction, company, location, website) VALUES($1, $2, $3, $4, $5, $6)
+                    ''', username, icon_url, introduction, company, location, website
                 )
             else:
-                await models.connection.execute(
+                await execute(
                     '''
                     UPDATE profiles
                     SET icon_url = $1, introduction = $2
                     WHERE username = $3
                     ''', icon_url, introduction, username
-                )  # update
+                )
             return True
 
 
 @log_call()
+async def get_uid(username):
+    uid = await fetchrow(
+        '''
+                SELECT uid FROM users_info
+                WHERE username =$1
+                ''',
+        username
+    )
+    if (uid == None):
+        raise NameError()
+    else:
+        return uid['uid']
+
+
+@log_call()
 async def get_icon_url(username):
-    url = await models.connection.fetchrow(
+    url = await fetchrow(
         '''
                 SELECT icon_url FROM profiles
                 WHERE username =$1
@@ -139,7 +161,7 @@ async def get_icon_url(username):
 
 @log_call()
 async def get_introduction(username):
-    url = await models.connection.fetchrow(
+    url = await fetchrow(
         '''
                 SELECT introduction FROM profiles
                 WHERE username =$1
@@ -152,35 +174,38 @@ async def get_introduction(username):
         return url['introduction']
 
 
-@log_call()
-def add_user_pending_verifying(username, email, password):
-    return 'Token'
-
-
 async def alter_username(old_username, new_username):
     if(check_username_validity(new_username) == False or check_username_validity(old_username) == False):
         raise NameError()
     else:
-        temp_name = await models.connection.fetchrow(
-            '''
-        SELECT username FROM users_info
-        WHERE username =$1
-            ''',
-            old_username
-        )
-        if(temp_name == None):
-            raise NameError()
+        flag = check_user_existing(old_username)
+        if(flag == False):
+            raise NameError('User not existing')
         else:
-            await models.connection.execute(
+            await execute(
                 '''
                     UPDATE users_info
                     SET username = $1
                     WHERE username = $2
                 ''', new_username, old_username
             )
-            await models.connection.execute(
+            await execute(
                 '''
                     UPDATE profiles
+                    SET username = $1
+                    WHERE username = $2
+                ''', new_username, old_username
+            )
+            await execute(
+                '''
+                    UPDATE log_info
+                    SET username = $1
+                    WHERE username = $2
+                ''', new_username, old_username
+            )
+            await execute(
+                '''
+                    UPDATE repos
                     SET username = $1
                     WHERE username = $2
                 ''', new_username, old_username
@@ -190,7 +215,7 @@ async def alter_username(old_username, new_username):
 
 @log_call()
 async def alter_icon(username, new_url):
-    await models.connection.execute(
+    await execute(
         '''
             UPDATE  profiles
             SET icon_url = $1
@@ -202,18 +227,13 @@ async def alter_icon(username, new_url):
 
 @log_call()
 async def alter_introduction(username, new_intro):
-    await models.connection.execute(
+    await execute(
         '''
             UPDATE  profiles
             SET introduction = $1
             WHERE username = $2
         ''', new_intro, username
     )
-    return True
-
-
-@log_call()
-def creat_new_repo(reponame, description, visibility):
     return True
 
 
@@ -242,10 +262,25 @@ async def user_login(username, password):
 
 
 @log_call()
-async def check_session_status(username, session):
-    return True
+async def user_logout(username):
+    await models.connection.execute(
+        '''
+            DELETE FROM log_info WHERE username=$1
+            ''', username)
 
 
 @log_call()
-def sign_out():
-    return True
+async def check_session_status(username, session):
+    temp = await models.connection.fetchrow(
+        '''
+        SELECT username, session FROM log_info
+        WHERE username =$1
+        ''', username
+    )
+    if(temp == None):
+        return False
+    else:
+        if(temp['username'] == username and temp['session'] == session):
+            return True
+        else:
+            return False
