@@ -11,6 +11,7 @@
         </b-list-group-item>
       </b-list-group>
     </b-card>
+
     <b-card no-body>
       <b-card-header>Topics</b-card-header>
       <b-list-group flush>
@@ -28,6 +29,7 @@
         </b-list-group-item>
       </b-list-group>
     </b-card>
+
     <b-card no-body>
       <b-card-header>People</b-card-header>
       <b-list-group flush>
@@ -39,7 +41,10 @@
     </b-card>
   </div>
 </template>
+
 <script>
+import axios from "axios";
+// import MockAdapter from "axios-mock-adapter";
 function repoName(s) {
   let r = s.match(/[^/]+\/(.*)/);
   return r ? r[1] : "";
@@ -48,37 +53,16 @@ export default {
   name: "SideBar",
   data() {
     return {
-      projects: [
-        {
-          owner: "Cooperation",
-          repo: "Cooperation/A"
-        },
-        { owner: "Alice", repo: "Alice/B" },
-        { owner: "Bob", repo: "Bob/C" }
-      ],
-      topics: [
-        {
-          type: "issues",
-          id: 11,
-          repo: "Cooperation/A",
-          title: "something broken.",
-          pinned: true
-        },
-        {
-          type: "topics",
-          id: 9,
-          title: "Some open topics",
-          repo: ""
-        },
-        {
-          type: "pull",
-          id: 343,
-          title: "Fix #87",
-          repo: "Bob/C"
-        }
-      ],
-      people: [{ name: "Alice" }, { name: "Bob" }]
+      projects: [],
+      topics: [],
+      people: []
     };
+  },
+  created() {
+    this.getData();
+  },
+  watch: {
+    $route: "getData"
   },
   methods: {
     repoName: repoName,
@@ -97,10 +81,63 @@ export default {
       let name = topic.repo;
       let idsign = topic.type == "pull" ? "PR" : "#";
       return "[" + name + " " + idsign + topic.id + "]";
+    },
+    getData() {
+      // let mock = new MockAdapter(axios);
+      // mock.onGet("/sidebar?ajax=1").reply(200, {
+      //   state: "ok",
+      //   error: "error",
+      //   projects: [
+      //     {
+      //       owner: "Cooperation",
+      //       repo: "Cooperation/A"
+      //     },
+      //     { owner: "Alice", repo: "Alice/B" },
+      //     { owner: "Bob", repo: "Bob/C" }
+      //   ],
+      //   topics: [
+      //     {
+      //       type: "issues",
+      //       id: 11,
+      //       repo: "Cooperation/A",
+      //       title: "something broken.",
+      //       pinned: true
+      //     },
+      //     {
+      //       type: "topics",
+      //       id: 9,
+      //       title: "Some open topics",
+      //       repo: ""
+      //     },
+      //     {
+      //       type: "pull",
+      //       id: 343,
+      //       title: "Fix #87",
+      //       repo: "Bob/C"
+      //     }
+      //   ],
+      //   people: [{ name: "Alice" }, { name: "Bob" }]
+      // });
+      axios({
+        method: "GET",
+        url: "/sidebar?ajax=1",
+        params: {
+          ajax: 1
+        }
+      }).then(response => {
+        if (response.data.state == "ok") {
+          this.projects = response.data.projects;
+          this.topics = response.data.topics;
+          this.people = response.data.people;
+        } else {
+          console.log(response.data.error);
+        }
+      });
     }
   }
 };
 </script>
+
 <style scoped>
 .sidebar > .card:first-child {
   margin-top: 1rem;
