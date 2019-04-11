@@ -4,7 +4,7 @@ import secrets
 import asyncpg
 import asyncio
 import functools
-from gapsule import models
+from gapsule import models, settings
 from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
 from gapsule.models.connection import _connection, fetchrow, execute, fetch
@@ -20,7 +20,10 @@ def add_user_pending_verifying(username, mail_address, password):
         pending_info['password'] = password
         pending_info['token'] = secrets.token_urlsafe(16)
         models.signup_token.append_token(pending_info)
-        return pending_info['token']
+        if not settings.settings['enable_email']:
+            return pending_info['token']
+        else:
+            return None
 
 
 @log_call()

@@ -13,13 +13,15 @@ class SignUpInputStep1(ViewModelDict):
 
 
 class SignUpInputStep2(ViewModelDict):
-    token = ViewModelField(required=True, nullable=False)
+    username = ViewModelField(required=True, nullable=False)
     password = ViewModelField(required=True, nullable=False)
+    token = ViewModelField(required=True, nullable=False)
 
 
 class SignUpInputStep3(ViewModelDict):
-    token = ViewModelField(required=True)
+    username = ViewModelField(required=True, nullable=False)
     password = ViewModelField(required=True)
+    token = ViewModelField(required=True)
     icon = ViewModelField(required=False)
     firstname = ViewModelField(required=True, nullable=False)
     secondname = ViewModelField(required=True, nullable=False)
@@ -32,19 +34,13 @@ class SignUpInputStep3(ViewModelDict):
 class SignUpResult(ViewModelDict):
     state = ViewModelField(required=True, nullable=False)
     error = ViewModelField(required=False)
-    token = ViewModelField(required=False)
+    token = ViewModelField(required=False, nullable=True)
 
 
 class SignUpHandler(BaseHandler):
     @unauthenticated('/')
-    @ajaxquery
     def get(self, action=None):
-        if action == '/verify':
-            token = self.get_query_argument('token')
-            pending_data = 'pending'
-            self.write(dict(username="pending_data's username"))
-        else:
-            raise HTTPError(403)
+        self.render('index.html')
 
     @unauthenticated('/')
     def post(self, action=None):

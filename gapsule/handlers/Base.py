@@ -19,7 +19,7 @@ class BaseHandler(web.RequestHandler):
 
     async def prepare(self):
         data = self.get_secure_cookie('session')
-        if data is None:
+        if data is None or len(data) == 0:
             self.current_user = None
             return
         try:
