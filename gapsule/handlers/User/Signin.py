@@ -8,13 +8,13 @@ from gapsule.models.user import verify_user
 
 
 class SignInInput(ViewModelDict):
-    username = ViewModelField(required=True)
-    password = ViewModelField(required=True)
+    username: str = ViewModelField(required=True)
+    password: str = ViewModelField(required=True)
 
 
 class SignInResult(ViewModelDict):
-    state = ViewModelField(required=True)
-    error = ViewModelField(required=False)
+    state: str = ViewModelField(required=True)
+    error: str = ViewModelField(required=False)
 
 
 class SignInHandler(BaseHandler):
