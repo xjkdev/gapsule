@@ -27,7 +27,7 @@ class FolderListHandler(BaseHandler):
     def get(self, username, projectname, branch, restpath):
         folder_dict = {
             # goto 参数username, projectname,branch, restpath
-            "foider": get_specified_path(username, projectname, branch, restpath)
+            "folder": get_specified_path(username, projectname, branch, restpath)
         }
         self.write(folder_dict)
 
