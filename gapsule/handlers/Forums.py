@@ -1,5 +1,9 @@
+import asyncio
+from urllib.parse import parse_qs
+
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import ajaxquery
+from gapsule.models import repo, post, comment
 from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 
 
@@ -11,17 +15,31 @@ class ReplyStruct(ViewModelDict):
 
 class ForumGetResult(ViewModelDict):
     title = ViewModelField(required=True, nullable=False)
-    initiator = ViewModelField(required=True, nullable=False)
-    replys = ViewModelField(required=True)
+    poster = ViewModelField(required=True, nullable=False)
+    comments = ViewModelField(required=True)
 
 
 class ForumPostInput(ViewModelDict):
-    action = ViewModelField(required=True, nullable=False)
+    type = ViewModelField()
     text = ViewModelField()
-    refs = ViewModelField()
 
 
 class ForumHandler(BaseHandler):
     @ajaxquery
-    def get(self, host, id):
-        pass
+    def get(self, owner, reponame, postid):
+        repoid = await repo.get_repo_id(owner, reponame)
+        poster, title, comments = asyncio.gather([
+            post.get_postername(repoid, postid),
+            post.get_title(repoid, postid),
+            post.get_all_comments(repoid, postid)
+        ])
+        self.write(ForumGetResult(title=title, poster=poster,
+                                  comments=comments))
+
+    @ajaxquery
+    def post(self, owner, reponame, postid):
+        repoid = await repo.get_repo_id(owner, reponame)
+        data = ForumPostInput(**parse_qs(self.request.body))
+        await comment.create_new_comment(
+            repoid, postid, 'rich', data['content'], self.current_user.user)
+        self.write(dict(state='ok'))

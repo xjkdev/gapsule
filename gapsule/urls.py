@@ -13,7 +13,7 @@ routes = [
     (r"/", MainHandler),
     (r"/signin/?", Signin.SignInHandler),
     (r"/signup(/verify|/finishing)?/?", Signup.SignUpHandler),
-    (r"/(?P<owner>\w+/\w+)/issues/(?P<id>\d+)", ForumHandler),
+    (r"/(?P<owner>\w+)/(?P<reponame>\w+)/issues/(?P<postid>\d+)", ForumHandler),
     (r"/static/(.*)", tornado.web.StaticFileHandler, {
         'path': settings['static_path']
     }),

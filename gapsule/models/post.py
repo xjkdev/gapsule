@@ -9,7 +9,7 @@ class PostNotFoundException(FileNotFoundError):
 
 
 @log_call()
-async def creat_new_attached_post(repo_id, postername, title, status, visibility):
+async def create_new_attached_post(repo_id, postername, title, status, visibility):
     current_id = await fetchrow(
         '''
         SELECT max(post_id) FROM posts
@@ -30,8 +30,8 @@ async def creat_new_attached_post(repo_id, postername, title, status, visibility
 
 
 @log_call()
-async def creat_new_nonattached_post(postername, title, status, visibility):
-    this_id = await creat_new_attached_post(0, postername, title, status, visibility)
+async def create_new_nonattached_post(postername, title, status, visibility):
+    this_id = await create_new_attached_post(0, postername, title, status, visibility)
     return this_id
 
 
@@ -124,3 +124,8 @@ async def get_visibility(repo_id, post_id):
         ''', repo_id, post_id
     )
     return result['visibility']
+
+
+@log_call()
+async def get_all_comments(repo_id, post_id):
+    return []
