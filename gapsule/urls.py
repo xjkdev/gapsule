@@ -20,6 +20,6 @@ routes = [
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/tree/(?P<branch>\w+)/(?P<restpath>.*)/?", FolderListHandler),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/blob/(?P<branch>\w+)/(?P<restpath>.*)/?",
      FileContentHandler),
-    (r"/(?P<username>\w+)/(?P<projectname>\w+)/compare/(?P<branch>\w+)/(?P<restpath>.*)/?", CreatePullRequest),
+    (r"/(?P<username>\w+)/(?P<projectname>\w+)/compare/(?P<restpath>.*)/?", CreatePullRequest),
     (r"/.*", MainHandler),
 ]
