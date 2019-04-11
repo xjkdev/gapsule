@@ -1,19 +1,18 @@
 <template>
   <div id="userinfo">
-
     <h4 style="text-align: center; padding: 10px 0">Fill in your information</h4>
 
-    <b-form @submit="onSubmit">
+    <b-form @submit.prevent="onSubmit">
       <ul class="main">
         <li class="icon">
           <label for="icon">Choose an image as your icon</label>
           <img :src="icon" alt="User Icon" id="icon">
           <input
-            id="choose" 
-            type="file" 
-            name="icon" 
-            accept="image/*" 
-            @change="changeImg($event)" 
+            id="choose"
+            type="file"
+            name="icon"
+            accept="image/*"
+            @change="changeImg($event)"
             ref="icon"
           >
         </li>
@@ -21,63 +20,46 @@
         <li class="name">
           <b-form-group class="fullname" label="Name" label-for="firstname" horizontal>
             <b-row>
-            <b-col cols="6">
-              <b-form-input
-                id="firstname"
-                type="text"
-                v-model="firstname"
-                placeholder="firstname"
-                required
-              />
-              
-            </b-col>
-            <b-col cols="6">
-              <b-form-input
-                id="secondname"
-                type="text"
-                v-model="secondname"
-                placeholder="secondname"
-                required
-              />
-            </b-col>
+              <b-col cols="6">
+                <b-form-input
+                  id="firstname"
+                  type="text"
+                  v-model="firstname"
+                  placeholder="firstname"
+                  required
+                />
+              </b-col>
+              <b-col cols="6">
+                <b-form-input
+                  id="secondname"
+                  type="text"
+                  v-model="secondname"
+                  placeholder="secondname"
+                  required
+                />
+              </b-col>
             </b-row>
           </b-form-group>
         </li>
 
         <li class="biography">
           <label for="biography">Biography</label>
-          <b-form-input 
-            id="biography"
-            type="text"
-            v-model="biography"
-          />
+          <b-form-input id="biography" type="text" v-model="biography"/>
         </li>
 
         <li class="company">
           <label for="company">Company</label>
-          <b-form-input
-            id="company"
-            type="text"
-            v-model="company"
-          />
+          <b-form-input id="company" type="text" v-model="company"/>
         </li>
 
         <li class="location">
           <label for="location">Location</label>
-          <b-form-input
-            id="location"
-            type="text"
-            v-model="location"
-          />
+          <b-form-input id="location" type="text" v-model="location"/>
         </li>
 
         <li class="website">
           <label for="website">Website</label>
-          <b-form-input
-            id="website"
-            type="text"
-            v-model="website"
-          />
+          <b-form-input id="website" type="text" v-model="website"/>
         </li>
 
         <li class="operation">
@@ -96,19 +78,19 @@
 //     input.click();
 //   }
 // }
-import axios from 'axios';
+import axios from "axios";
 export default {
-  name: 'SignupFinishing',
+  name: "SignupFinishing",
   data() {
     return {
-      icon: require('../images/choose_icon.jpg'),
-      firstname: '',
-      secondname: '',
-      biography: '',
-      company: '',
-      location: '',
-      website: ''
-    }
+      icon: require("../images/choose_icon.jpg"),
+      firstname: "",
+      secondname: "",
+      biography: "",
+      company: "",
+      location: "",
+      website: ""
+    };
   },
   methods: {
     changeImg(e) {
@@ -119,13 +101,13 @@ export default {
       reader.onload = function() {
         that.icon = this.result;
         // console.log(that.icon);
-      } 
+      };
     },
     onSubmit(e) {
       e.preventDefault();
       axios({
-        method: 'POST',
-        url: '/signup/verify/finishing',
+        method: "POST",
+        url: "/signup/finishing",
         data: {
           ajax: 1,
           icon: this.icon,
@@ -136,18 +118,20 @@ export default {
           location: this.location,
           website: this.website
         }
-      }).then(response => {
-        if(response.data.state == 'ok') {
-          this.$router.replace('/index');
-        }else {
-          console.log(response.data.error);
-        }
-      }).catch(error => {
-        console.log(error);
       })
+        .then(response => {
+          if (response.data.state == "ok") {
+            this.$router.replace("/index");
+          } else {
+            console.log(response.data.error);
+          }
+        })
+        .catch(error => {
+          console.log(error);
+        });
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -159,7 +143,7 @@ export default {
 ul {
   list-style: none;
   margin-top: 1rem;
-  border: 1px solid #D7DEE2;
+  border: 1px solid #d7dee2;
 }
 ul li {
   list-style: none;
@@ -179,8 +163,8 @@ ul li {
 </style>
 
 <style>
-#userinfo .name .fullname label:after{
+#userinfo .name .fullname label:after {
   content: " *";
-  color:red;
+  color: red;
 }
 </style>

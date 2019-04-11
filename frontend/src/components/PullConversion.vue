@@ -6,14 +6,24 @@
       <span style="font-weight: 400; font-size: 32px;">{{ topic }}</span> &nbsp;
       <span
         style="font-weight: 300; font-size: 32px; color: #a3aab1"
-      >#{{ $route.params.issueid }}</span>
-      <p>
-        <b-badge v-if="isOpen" variant="success" disabled size="sm">Opened</b-badge>
-        <b-badge v-else variant="danger" disabled size="sm">Closed</b-badge>
-        &nbsp;
-        {{ issueCreator }} opened this issue {{ date }} · {{ commetsNumber }} comments
-      </p>
+      >#{{ $route.params.pullid }}</span>
+
+      <div>
+        <p v-if="pullState=='open'">
+          <b-badge variant="success">Open</b-badge>
+          {{ pullUser }} wants to merge {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}
+        </p>
+        <p v-else>
+          <b-badge variant="info">Merged</b-badge>
+          {{ pullUser }} merged asdfaadsfa {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}
+        </p>
+      </div>
     </div>
+
+    <b-nav tabs>
+      <b-nav-item :active="$route.name=='PullConversion'" :to="fullPullName()">Conversion</b-nav-item>
+      <b-nav-item :active="$route.name=='PullCommits'" :to="fullPullName()+'/commits'">Commits</b-nav-item>
+    </b-nav>
 
     <b-card
       no-body
@@ -43,16 +53,7 @@
           style="margin-bottom: 10px"
         ></b-form-textarea>
         <div style="float: right">
-          <template v-if="show">
-            <b-button v-if="isOpen" type="submit" @click.prevent="closeIssue">Close Issue</b-button>
-            <b-button v-else type="submit" @click.prevent="reopenIssue">Reopen Issue</b-button>
-          </template>
-          <b-button
-            variant="success"
-            type="submit"
-            style="margin-left: 5px"
-            @click.prevent="comment"
-          >Comment</b-button>
+          <b-button variant="success" type="submit" @click.prevent="comment">Comment</b-button>
         </div>
       </b-form>
     </b-card>
@@ -67,15 +68,23 @@ export default {
   data() {
     return {
       topic: "",
-      issueCreator: "",
-      date: "",
-      commetsNumber: "",
+      pullState: "",
+      pullUser: "",
+      commitsNumber: "",
+      pullTo: "",
+      pullFrom: "",
       replys: [],
-      comments: "",
-      show: true,
-      isOpen: true
+      comments: ""
     };
   },
+  // beforeRouteEnter(to, from, next) {
+  //   console.log("x");
+  //   next(vm => vm.getData());
+  // },
+  // beforeRouteUpdate(to, from, next) {
+  //   this.getData();
+  //   next();
+  // },
   created() {
     this.getData();
   },
@@ -83,65 +92,25 @@ export default {
     $route: "getData"
   },
   methods: {
-    fullIssueName() {
+    fullPullName() {
       let param = this.$route.params;
-      return "/" + param.owner + "/" + param.repo + "/issues/" + param.issueid;
-    },
-    closeIssue() {
-      this.isOpen = false;
-      axios({
-        method: "GET",
-        url: this.fullIssueName(),
-        params: {
-          ajax: 1,
-          owner: this.$route.params.owner,
-          repo: this.$route.params.repo,
-          id: this.$route.params.issueid,
-          action: "closeIssue"
-        }
-      }).then(response => {
-        if (response.data.state == "ok") {
-          console.log("this issue is closed");
-        } else {
-          console.log(response.data.error);
-        }
-      });
-    },
-    reopenIssue() {
-      this.isOpen = true;
-      axios({
-        method: "GET",
-        url: this.fullIssueName(),
-        params: {
-          ajax: 1,
-          owner: this.$route.params.owner,
-          repo: this.$route.params.repo,
-          id: this.$route.params.issueid,
-          action: "reopenIssue"
-        }
-      }).then(response => {
-        if (response.data.state == "ok") {
-          console.log("this issue is opend");
-        } else {
-          console.log(response.data.error);
-        }
-      });
+      return "/" + param.owner + "/" + param.repo + "/pull/" + param.pullid;
     },
     comment() {
       // let mock = new MockAdapter(axios);
-      // mock.onGet(this.fullIssueName()).reply(200, {
+      // mock.onGet(this.fullPullName()).reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   user: "C"
+      //   user: "Mike"
       // });
       axios({
         method: "GET",
-        url: this.fullIssueName(),
+        url: this.fullPullName(),
         params: {
           ajax: 1,
           owner: this.$route.params.owner,
           repo: this.$route.params.repo,
-          id: this.$route.params.issueid,
+          id: this.$route.params.pullid,
           comments: this.comments
         }
       }).then(response => {
@@ -159,13 +128,15 @@ export default {
     },
     getData() {
       // let mock = new MockAdapter(axios);
-      // mock.onGet(this.fullIssueName()).reply(200, {
+      // mock.onGet(this.fullPullName()).reply(200, {
       //   state: "ok",
       //   error: "error",
       //   topic: "a topic",
-      //   issueCreator: "Alice",
-      //   date: "2 days ago",
-      //   commetsNumber: 2,
+      //   pullState: "Merged",
+      //   pullUser: "Alice",
+      //   commitsNumber: 2,
+      //   pullTo: "Alice:master",
+      //   pullFrom: "Bob:abc",
       //   replys: {
       //     reply1: {
       //       user: "Alice",
@@ -177,27 +148,25 @@ export default {
       //       date: "2 days ago",
       //       text: "another reply text"
       //     }
-      //   },
-      //   show: true,
-      //   isOpen: true
+      //   }
       // });
       axios({
         method: "GET",
-        url: this.fullIssueName(),
+        url: this.fullPullName(),
         params: {
           ajax: 1,
           owner: this.$route.params.owner,
           repo: this.$route.params.repo,
-          id: this.$route.params.issueid
+          id: this.$route.params.pullid
         }
       }).then(response => {
         if (response.data.state == "ok") {
           this.topic = response.data.topic;
-          this.issueCreator = response.data.issueCreator;
-          this.date = response.data.date;
-          this.commetsNumber = response.data.commetsNumber;
-          this.show = response.data.show;
-          this.isOpen = response.data.isOpen;
+          this.pullState = response.data.pullState;
+          this.pullUser = response.data.pullUser;
+          this.commitsNumber = response.data.commitsNumber;
+          this.pullTo = response.data.pullTo;
+          this.pullFrom = response.data.pullFrom;
           let replyData;
           for (replyData in response.data.replys) {
             this.replys.push(response.data.replys[replyData]);
