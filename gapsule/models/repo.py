@@ -4,10 +4,10 @@ from logging import warning
 import chardet
 from gapsule.utils.log_call import log_call
 from gapsule.models import git
-from datetime import datetime
-from gapsule.utils.log_call import log_call
+from gapsule.utils.cookie_session import datetime_now
 from gapsule.models.connection import _connection, fetchrow, execute, fetch
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
+from gapsule.models.user import get_uid
 
 
 class RepoNotFoundException(FileNotFoundError):
@@ -15,7 +15,7 @@ class RepoNotFoundException(FileNotFoundError):
 
 
 @log_call()
-async def creat_new_repo(owner, reponame, introduction='', star_num=0, fork_num=0, visibility=False):
+async def creat_new_repo(owner, reponame, introduction='', star_num=0, fork_num=0, visibility=False, forked_from='', default_branch=''):
     # 创建一个新repo，必须提供owner名和repo名
     if(check_reponame_validity(reponame) == False):
         raise NameError('Invalid reponame')
@@ -23,9 +23,9 @@ async def creat_new_repo(owner, reponame, introduction='', star_num=0, fork_num=
     if(flag == False):
         await execute(
             '''
-                INSERT INTO repos(username,reponame,introduction,create_time,star_num,fork_num,visibility)
-                VALUES($1,$2,$3,$4,$5,$6,$7)
-            ''', owner, reponame, introduction, datetime.now(), star_num, fork_num, visibility
+                INSERT INTO repos(username,reponame,introduction,create_time,star_num,fork_num,visibility,default_branch)
+                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            ''', owner, reponame, introduction, datetime_now(), star_num, fork_num, visibility, forked_from, default_branch
         )
     else:
         raise NameError('Repo already exists')
@@ -269,6 +269,53 @@ async def get_repo_id(owner, reponame):
         )
         print(result['repo_id'])
         return result['repo_id']
+    else:
+        raise RepoNotFoundException()
+
+
+async def get_owner_id(repo_id):
+    temp = await fetchrow(
+        '''
+            SELECT username FROM repos
+            WHERE repo_id=$1
+        ''', repo_id
+    )
+    result = get_uid(temp['username'])
+    return result
+
+
+async def set_default_branch(owner, reponame, new_default_branch):
+    if(await check_repo_existing(owner, reponame) == True):
+        await execute(
+            '''
+                UPDATE repos
+                SET    default_branch=$1
+            ''', new_default_branch
+        )
+    else:
+        raise RepoNotFoundException()
+
+
+async def get_default_branch(owner, reponame):
+    if(await check_repo_existing(owner, reponame) == True):
+        await fetchrow(
+            '''
+                SELECT default_branch FROM repos
+                 WHERE  username=$1 and reponame=$2
+            ''', owner, reponame
+        )
+    else:
+        raise RepoNotFoundException()
+
+
+async def get_forked_from(owner, reponame):
+    if(await check_repo_existing(owner, reponame) == True):
+        await fetchrow(
+            '''
+                SELECT forked_from FROM repos
+                 WHERE  username=$1 and reponame=$2
+            ''', owner, reponame
+        )
     else:
         raise RepoNotFoundException()
 

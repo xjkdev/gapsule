@@ -31,17 +31,19 @@ async def _make_connect(config_info):
             CREATE TABLE log_info(
             username   varchar(20) references users_info(username),
             session     varchar,
-            login_time  TIMESTAMP
+            login_time  timestamptz
             );
             CREATE TABLE repos(
             repo_id     SERIAL,
             username    varchar(20) references users_info(username),
             reponame    varchar,
             introduction    varchar,
-            create_time     TIMESTAMP,
+            create_time     timestamptz,
             star_num    integer,
             fork_num    integer,
             visibility  boolean,
+            forked_from     varchar,
+            default_branch   varchar,
             primary key(username,reponame)
             );
             CREATE TABLE collaborate(
@@ -63,23 +65,29 @@ async def _make_connect(config_info):
             title       varchar,
             status      varchar,
             visibility  boolean,
-            post_time   timestamp,
+            post_time   timestamptz,
             primary key(repo_id,post_id)
             );
-
             CREATE TABLE comments(
             post_id     integer,
             repo_id     integer,
             comment_id  integer,
             is_reply    boolean,
-            reply_to    varchar(20)  references users_info(username),
-            address_time  timestamp,
+            reply_to_id   integer,
+            address_time  timestamptz,
             type        varchar,
             content   varchar,
             conmmenter varchar    references users_info(username),
             primary key(repo_id,post_id,comment_id),
             foreign key (post_id, repo_id) references posts(post_id, repo_id)
-            )
+            );
+            CREATE TABLE notifications(
+            user_id     integer,
+            notification_id     integer,
+            created_time    timestamptz,
+            content         varchar,
+            primary key(user_id,notification_id)
+            );
             '''
         )
     return con

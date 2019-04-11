@@ -2,34 +2,53 @@ import os
 import json
 import tornado.web
 import sys
+from typing import List, Tuple, Optional
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import ajaxquery
+from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.models.repo import (get_commits_num, get_branches_num, get_releases_num,
                                  get_contributors_info, get_specified_path,
                                  get_file_content)
 
 
+class CodeListResult(ViewModelDict):
+    status: str = ViewModelField(required=True, nullable=False)
+    commits: int = ViewModelField(required=True)
+    branch: int = ViewModelField(required=True)
+    releases: int = ViewModelField(required=True)
+    contributors: int = ViewModelField(required=True)
+    files: List[Tuple[str, str]] = ViewModelField(required=True)
+
+
+class FolderListResult(ViewModelDict):
+    files: List[Tuple[str, str]] = ViewModelField(required=True)
+
+
+class FileContentResult(ViewModelDict):
+    status: str = ViewModelField(required=True, nullable=False)
+    content: Optional[str] = ViewModelField(required=False)
+    error: str = ViewModelField(required=False)
+
+
 class CodeListHandler(BaseHandler):
     @ajaxquery
     def get(self, username, projectname):
-        state_dict = {
+        state_dict = CodeListResult({
             "status": "ok",
             "commits": get_commits_num(username, projectname, 'master'),
             "branch": get_branches_num(username, projectname),
             "releases": get_releases_num(),
             "contributors": get_contributors_info(),
-            "folder":  get_specified_path(username, projectname, 'master')
-        }
+            "files":  get_specified_path(username, projectname, 'master')
+        })
         self.write(state_dict)
 
 
 class FolderListHandler(BaseHandler):
     @ajaxquery
     def get(self, username, projectname, branch, restpath):
-        folder_dict = {
-            # goto 参数username, projectname,branch, restpath
-            "foider": get_specified_path(username, projectname, branch, restpath)
-        }
+        folder_dict = FolderListResult(files=get_specified_path(username,
+                                                                projectname, branch, restpath))
         self.write(folder_dict)
 
 
@@ -38,6 +57,7 @@ class FileContentHandler(BaseHandler):
     def get(self, username, projectname, branch, restpath):
         try:
             data = get_file_content(username, projectname, branch, restpath)
-            self.write(dict(status="ok", file=data))
-        except OSError:
-            self.write(dict(status="error", file=None))
+            self.write(dict(status="ok", content=data))
+        except OSError as e:
+            self.write(dict(status="error", content=None,
+                            error='os error occurs.'))
