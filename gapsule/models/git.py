@@ -171,3 +171,15 @@ async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
     if len(pending) > 0:
         print("get_all_files_lastest_commit, not all tasks done.")
     return [f.result() for f in done]
+
+
+async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str):
+    cmd = ['git', 'fetch', 'file://'+srcroot]
+    cmd += ['{}:{}'.format(dstrefs, srcrefs)]
+    proc = await asyncio.create_subprocess_exec(*cmd, cwd=dstroot,
+                                                stdout=DEVNULL, stderr=DEVNULL)
+    _out, _err = await asyncio.wait_for(proc.communicate(), 2)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
+        raise RuntimeError("git fetch error")
