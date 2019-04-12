@@ -175,7 +175,7 @@ async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
 
 async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str):
     cmd = ['git', 'fetch', 'file://'+srcroot]
-    cmd += ['{}:{}'.format(dstrefs, srcrefs)]
+    cmd += ['{}:{}'.format(srcrefs, dstrefs)]
     proc = await asyncio.create_subprocess_exec(*cmd, cwd=dstroot,
                                                 stdout=DEVNULL, stderr=DEVNULL)
     _out, _err = await asyncio.wait_for(proc.communicate(), 2)
@@ -183,3 +183,50 @@ async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str):
         proc.kill()
     if proc.returncode != 0:
         raise RuntimeError("git fetch error")
+
+
+async def git_create_branch(owner: str, reponame: str, newbranch: str, frombranch: str):
+    root = get_repo_dirpath(owner, reponame)
+    cmd = ['git', 'branch', newbranch, frombranch]
+    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
+                                                stdout=DEVNULL, stderr=DEVNULL)
+    _out, _err = await asyncio.wait_for(proc.communicate(), 2)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
+        raise RuntimeError("git branch error")
+
+
+async def git_clone(workingdir: str, owner: str, reponame: str, branch: str):
+    root = get_repo_dirpath(owner, reponame)
+    cmd = ['git', 'clone', '-b', branch, 'file://' + root]
+    proc = await asyncio.create_subprocess_exec(*cmd, cwd=workingdir,
+                                                stdout=DEVNULL, stderr=DEVNULL)
+    _out, _err = await asyncio.wait_for(proc.communicate(), 5)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
+        raise RuntimeError("git branch error")
+
+
+async def git_checkout(workingdir: str, branch: str):
+    cmd = ['git', 'checkout', branch]
+    proc = await asyncio.create_subprocess_exec(*cmd, cwd=workingdir,
+                                                stdout=DEVNULL, stderr=DEVNULL)
+    _out, _err = await asyncio.wait_for(proc.communicate(), 2)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
+        raise RuntimeError("git checkout error")
+
+
+async def git_merge(workingdir: str, dstbranch: str, srcbranch: str):
+    await git_checkout(workingdir, dstbranch)
+    cmd = ['git', 'merge', '--no-ff', srcbranch]
+    proc = await asyncio.create_subprocess_exec(*cmd, cwd=workingdir,
+                                                stdout=DEVNULL, stderr=DEVNULL)
+    _out, _err = await asyncio.wait_for(proc.communicate(), 5)
+    if proc.returncode is None:
+        proc.kill()
+    if proc.returncode != 0:
+        raise RuntimeError("git merge error")
