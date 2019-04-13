@@ -2,29 +2,80 @@ import tempfile
 from dataclasses import dataclass
 from typing import Optional, Dict, Tuple, List
 from gapsule.models import git, repo
+from gapsule.models.git import git_branches
+from gapsule.models.repo import get_repo_id
+from gapsule.models.connection import execute, fetchrow
+from gapsule.utils.cookie_session import datetime_now
 
 
-async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str, pullid: int,
+class BranchNotFoundException(FileNotFoundError):
+    pass
+
+
+async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                               srcowner: str, srcrepo: str, srcbranch: str):
-    flag_auto_merged = await create_pull_request_git(dstowner, dstrepo, dstbranch, pullid,
-                                                     srcowner, srcrepo, srcbranch)
-    # TODO: add to database dstowner,dstrepo,dstbranch,pullid,status, auto_merge_status
-    #       ,srcowner,strrepo,srcbranch
-    # status: open, close, merged
-    # auto_merge_status: true/false, failing to auto merge implys having conflicts.
+
+    dst_repo_id = await get_repo_id(dstowner, dstrepo)
+    src_repo_id = await get_repo_id(srcowner, srcrepo)
+
+    branches = await git_branches(dstowner, dstrepo)
+    if not dstbranch in branches:
+        raise BranchNotFoundException()
+    branches2 = await git_branches(srcowner, srcrepo)
+    if not srcbranch in branches2:
+        raise BranchNotFoundException()
+    current_id = await fetchrow(
+        '''
+        SELECT max(pull_id) FROM pull_requests
+        WHERE dest_repo_id=$1
+        ''', dst_repo_id)
+    this_id = 1
+    if current_id['max'] != None:
+        this_id = current_id['max'] + 1
+
+    flag_auto_merged = await create_pull_request_git(dstowner, dstrepo,
+                                                     dstbranch, this_id,
+                                                     srcowner, srcrepo,
+                                                     srcbranch)
+
+    await execute(
+        '''
+        INSERT INTO pull_requests(dest_repo_id,dest_branch,pull_id,src_repo_id,src_branch,created_time,status,automerge_status)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+        ''', dst_repo_id, dstbranch, this_id, src_repo_id, srcbranch,
+        datetime_now(), flag_auto_merged)
 
 
-async def merge_pull_request(dstowner: str, dstrepo: str, pullid: int):
-    # TODO: get desbranch to call merge_pull_request_git
-    # TODO: call merge_pull_request_git
-    # TODO: change state to merged if merged.
-    pass
+async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
+                             pullid: int):
+    try:
+        merge_pull_request_git(dstowner, dstrepo, dstbranch, pullid)
+    except:
+        await execute(
+            '''
+            UPDATE pull_requests
+            SET auto_merge_status=$1
+            ''', False)
+    else:
+        await execute(
+            '''
+            UPDATE pull_requests
+            SET auto_merge_status=$1
+            ''', True)
 
 
-async def close_pull_request(dstowner: str, dstrepo: str, pullid: int):
-    # TODO: call merge_pull_request_git
-    # TODO: change state to closed.
-    pass
+async def close_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
+                             pullid: int):
+    try:
+        merge_pull_request_git(dstowner, dstrepo, dstbranch, pullid)
+    except:
+        pass
+    else:
+        await execute(
+            '''
+            UPDATE pull_requests
+            SET status=$1
+            ''', 'Closed')
 
 
 _working_dirs = {}
@@ -45,14 +96,14 @@ async def finish_working_dir(owner, reponame, pullid):
     del _working_dirs[(owner, reponame, pullid)]
 
 
-async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, pullid: int,
-                                  srcowner: str, srcrepo: str, srcbranch: str):
+async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,
+                                  pullid: int, srcowner: str, srcrepo: str,
+                                  srcbranch: str):
     dstroot = git.get_repo_dirpath(dstowner, dstrepo)
     srcroot = git.get_repo_dirpath(srcowner, srcrepo)
     pr_head_branch = 'pull/{}/head'.format(pullid)
     pr_merge_branch = 'pull/{}/merge'.format(pullid)
-    await git.git_fetch(dstroot, pr_head_branch,
-                        srcroot, srcbranch)
+    await git.git_fetch(dstroot, pr_head_branch, srcroot, srcbranch)
     workingdir = get_working_dir(dstowner, dstrepo, pullid)
     await git.git_create_branch(workingdir, pr_merge_branch, dstbranch)
     await git.git_checkout(workingdir, pr_merge_branch)
@@ -68,7 +119,8 @@ async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, p
     return flag_auto_merged
 
 
-async def merge_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, pullid: int):
+async def merge_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,
+                                 pullid: int):
     if (dstowner, dstrepo, pullid) not in _working_dirs:
         raise RuntimeError('merge pull request before create')
     workingdir = get_working_dir(dstowner, dstrepo, pullid)
