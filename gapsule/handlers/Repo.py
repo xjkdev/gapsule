@@ -1,7 +1,6 @@
-import os
 import json
 import tornado.web
-import sys
+
 from typing import List, Tuple, Optional
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import ajaxquery
