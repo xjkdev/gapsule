@@ -78,6 +78,7 @@
 //     input.click();
 //   }
 // }
+import globals from "@/globals";
 import axios from "axios";
 export default {
   name: "SignupFinishing",
@@ -89,19 +90,28 @@ export default {
       biography: "",
       company: "",
       location: "",
-      website: ""
+      website: "",
+      password: ""
     };
+  },
+  created() {
+    this.password = globals.cache.password;
   },
   methods: {
     changeImg(e) {
       let file = e.target.files[0];
       let reader = new FileReader();
       let that = this;
-      reader.readAsDataURL(file);
-      reader.onload = function() {
-        that.icon = this.result;
-        // console.log(that.icon);
-      };
+      if (file.size < 200 * 1024) {
+        reader.readAsDataURL(file);
+        reader.onload = function() {
+          that.icon = this.result;
+          console.log(that.icon);
+        };
+      } else {
+        e.target.value = "";
+        alert("file size exceed limit, the max size 200KB");
+      }
     },
     onSubmit(e) {
       e.preventDefault();
@@ -110,7 +120,7 @@ export default {
         url: "/signup/finishing",
         data: {
           ajax: 1,
-          icon: this.icon,
+          icon: this.icon.match(/data:image\/jpeg;base64,(.*)/)[1],
           firstname: this.firstname,
           secondname: this.secondname,
           biography: this.biography,
@@ -121,6 +131,7 @@ export default {
       })
         .then(response => {
           if (response.data.state == "ok") {
+            globals.cache.password = null;
             this.$router.replace("/index");
           } else {
             console.log(response.data.error);
