@@ -4,11 +4,11 @@
       <h4 style="padding:0.5rem 2%;">
         <router-link :to="'/'+$route.params.owner">{{$route.params.owner}}</router-link>
         <strong>/</strong>
-        <router-link :to="'/'+fullRepoName()">{{$route.params.repo}}</router-link>
+        <router-link :to="'/'+fullRepoName()">{{ repoName() }}</router-link>
       </h4>
       <b-nav tabs>
         <b-nav-item
-          :active="$route.name=='Repo'||$route.name=='PullCompare'"
+          :active="$route.name=='Repo'||$route.name=='PullCompare'||$route.name=='FileContent'"
           :to="'/'+fullRepoName()"
         >Code</b-nav-item>
         <b-nav-item :active="$route.name=='Issues'" :to="'/'+fullRepoName()+'/issues'">Issues</b-nav-item>
@@ -31,7 +31,10 @@ export default {
   },
   methods: {
     fullRepoName() {
-      return this.$route.params.owner + "/" + this.$route.params.repo;
+      return this.$route.params.owner + "/" + this.repoName();
+    },
+    repoName() {
+      return this.$route.params.repo.split("/")[0];
     }
   }
 };
