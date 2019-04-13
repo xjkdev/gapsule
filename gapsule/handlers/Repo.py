@@ -8,7 +8,7 @@ from gapsule.utils import ajaxquery
 from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.models.repo import (get_commits_num, get_branches_num, get_releases_num,
                                  get_contributors_info, get_specified_path,
-                                 get_file_content)
+                                 get_file_content, create_new_repo)
 
 
 class CodeListResult(ViewModelDict):
@@ -55,3 +55,12 @@ class FileContentHandler(BaseHandler):
     def get(self, username, projectname, branch, restpath):
         file_dict = FileContentResult(content=get_file_content(restpath))
         self.write(file_dict)
+
+
+class NewRepoHandler(BaseHandler):
+    def get(self):
+        self.render('index.html')
+
+    async def post(self):
+        await create_new_repo('abcd', 'efgh', 'testing repo', True)
+        self.write(dict(state='ok'))

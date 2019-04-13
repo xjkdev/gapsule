@@ -4,22 +4,25 @@ import secrets
 import asyncpg
 import asyncio
 import functools
-from gapsule import models, settings
+from gapsule import settings
+from gapsule.models import signup_token
 from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
-from gapsule.models.connection import _connection, fetchrow, execute, fetch
-from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity, check_reponame_validity
+from gapsule.models.connection import fetchrow, execute, fetch
+from gapsule.utils.check_validity import (check_mail_validity, check_password_validity,
+                                          check_username_validity, check_reponame_validity)
 
 
 @log_call()
 def add_user_pending_verifying(username, mail_address, password):
-    if(check_username_validity(username) == True and check_mail_validity(mail_address) == True):
+    if (check_username_validity(username) and check_mail_validity(mail_address)
+            and check_password_validity(password)):
         pending_info = {}
         pending_info['username'] = username
         pending_info['mail_address'] = mail_address
         pending_info['password'] = password
         pending_info['token'] = secrets.token_urlsafe(16)
-        models.signup_token.append_token(pending_info)
+        signup_token.append_token(pending_info)
         if not settings.settings['enable_email']:
             return pending_info['token']
         else:
@@ -243,18 +246,18 @@ async def alter_introduction(username, new_intro):
 async def user_login(username, password):
     flag = await verify_user(username, password)
     if(flag == True):
-        temp = await models.connection.fetchrow(
+        temp = await fetchrow(
             '''
         SELECT username FROM log_info
         WHERE username =$1''', username
         )
         if(temp != None):
-            await models.connection.execute(
+            await execute(
                 '''
             DELETE FROM log_info WHERE username=$1
             ''', username)
         session = secrets.token_urlsafe()
-        await models.connection.execute(
+        await execute(
             '''
                 INSERT INTO log_info(username,session,login_time) VALUES($1,$2,$3)
             ''', username, session, datetime_now()
@@ -266,7 +269,7 @@ async def user_login(username, password):
 
 @log_call()
 async def user_logout(username):
-    await models.connection.execute(
+    await execute(
         '''
             DELETE FROM log_info WHERE username=$1
             ''', username)
@@ -274,7 +277,7 @@ async def user_logout(username):
 
 @log_call()
 async def check_session_status(username, session):
-    temp = await models.connection.fetchrow(
+    temp = await fetchrow(
         '''
         SELECT username, session FROM log_info
         WHERE username =$1
