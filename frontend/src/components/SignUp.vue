@@ -73,7 +73,16 @@ export default {
       })
         .then(response => {
           if (response.data.state == "ok") {
-            this.$router.replace("/signup/verify");
+            if (response.data.token == null) {
+              alert("确认邮件已发送到你的邮箱");
+            } else {
+              this.$router.replace(
+                "/signup/verify?username=" +
+                  this.username +
+                  "&token=" +
+                  response.data.token
+              );
+            }
           } else {
             this.errormessage = response.data.error;
           }

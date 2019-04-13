@@ -6,7 +6,7 @@
       <ul class="main">
         <li class="username">
           <label for="username">Username</label>
-          <b-form-input id="username" type="text" disabled :placeholder="username"/>
+          <b-form-input id="username" type="text" disabled v-model="username"/>
         </li>
 
         <li class="password">
@@ -29,6 +29,7 @@
 </template>
 
 <script>
+import globals from "@/globals";
 import axios from "axios";
 export default {
   name: "SignupVerify",
@@ -39,10 +40,7 @@ export default {
     };
   },
   created() {
-    this.fetchUsername();
-  },
-  watch: {
-    $route: "fetchUsername"
+    this.username = this.$route.query.username;
   },
   methods: {
     onSubmit() {
@@ -55,23 +53,8 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
+          globals.cache.password = this.password;
           this.$router.replace("/signup/finishing");
-        }
-      });
-    },
-    fetchUsername() {
-      axios({
-        method: "POST",
-        url: "/signup/verify",
-        data: {
-          ajax: 1
-        }
-      }).then(response => {
-        if (response.data.state == "ok") {
-          console.log(response.data.username);
-          this.username = response.data.username;
-        } else {
-          console.log(response.data.error);
         }
       });
     }
