@@ -15,7 +15,8 @@ class CreatePullRequest(BaseHandler):
                 key_state == "base_repository") or(key_state == "head_repository")
             if not key_judge:
                 self.set_status(400, "Unknown")
-        # 参数compare_information,得到对比的数据,需要数据库提供接口
+        # goto 需要数据库提供接口
+        # 参数compare_information,得到对比的数据
         request_end = 1
         if request_end == None:
             self.set_status(404, "Unknown")
@@ -26,7 +27,6 @@ class CreatePullRequest(BaseHandler):
         separate_sign = 0
         str_path = ''
         for state in statepath:
-            str_path += state
             if state == ':' and separate_sign == 0:
                 compare_dict["base_repository"] = str_path
                 str_path = ''
@@ -40,15 +40,88 @@ class CreatePullRequest(BaseHandler):
                 compare_dict["base_branch"] = str_path
                 str_path = ''
                 separate_sign = 2
-            if state == '.' and separate_sign == 2:
-                continue
-            if state == ':' and separate_sign == 2:
-                compare_dict["head_repository"] = str_path
+            if str_path == '...' and separate_sign == 2:
                 str_path = ''
                 separate_sign == 3
-        if separate_sign == 3:
+            if state == ':' and separate_sign == 3:
+                compare_dict["head_repository"] = str_path
+                str_path = ''
+                separate_sign == 4
+            str_path += state
+        if separate_sign == 4:
             compare_dict["compare_branch"] = str_path
         else:
             compare_dict["head_repository"] = username
             compare_dict["base_branch"] = str_path
         return compare_dict
+
+class NewPullRequest(BaseHandler):
+    @ajaxquery
+    def get(self, username, projectname, libnumber):
+        name = self.get_query_argument("name")
+        new_pull_dict = {
+            "status": "ok",
+            #goto 需要数据库提供接口
+            # 参数 username, projectname, libnumber（关键码数字）,name
+            "conversation" : {
+                "username" : "name",
+                "content" : "content",
+            }
+        }
+        self.write(new_pull_dict)
+
+class NewPullCommits(BaseHandler):
+    @ajaxquery
+    def get(self, username, projectname, libnumber):
+        name = self.get_query_argument("name")
+        pull_commits_dict = {
+            "status": "ok",
+            #goto 需要数据库提供接口
+            # 参数 username, projectname, libnumber（关键码数字）,name
+            "ccommits" : {
+                "name" : "name",
+                "content" : "content",
+            }
+        }
+        self.write(pull_commits_dict)     
+
+class NewPullChecks(BaseHandler):
+    @ajaxquery
+    def get(self, username, projectname, libnumber):
+        name = self.get_query_argument("name")
+        pull_checks_dict = {
+            "status": "ok",
+            #goto 需要数据库提供接口
+            # 参数 username, projectname, libnumber（关键码数字）,name
+            "checks" : {
+                "number" : "number",
+                "content" : "content",
+            }
+        }
+        self.write(pull_checks_dict)
+
+class NewPullFiles(BaseHandler):
+    @ajaxquery
+    def get(self, username, projectname, libnumber):
+        name = self.get_query_argument("name")
+        pull_files_dict = {
+            "status": "ok",
+            #goto 需要数据库提供接口
+            # 参数 username, projectname, libnumber（关键码数字）,name
+            "files" : {
+                "file1" : "file1",
+                "file2" : "file2",
+            }
+        }
+        self.write(pull_files_dict)
+
+class NewPullFileDiff(BaseHandler):
+    @ajaxquery
+    def get(self, username, projectname, libnumber, storage_address):
+        name = self.get_query_argument("name")
+        diff_dict = {
+            #goto 数据库接口
+            # 参数username, projectname,libnumber, storage_address
+            "diff_file": "1"
+        }
+        self.write(diff_dict)
