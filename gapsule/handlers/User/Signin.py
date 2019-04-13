@@ -32,6 +32,7 @@ class SignInHandler(BaseHandler):
                            logged_time=logged_time)
             self.set_secure_cookie(
                 'session', session_encode(dataobj))
+            self.set_cookie('username', data.username)
             self.write(SignInResult(state='ok'))
         else:
             self.write(SignInResult(state='error', error='validation failed.'))
