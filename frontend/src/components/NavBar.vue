@@ -1,24 +1,24 @@
 <template>
   <b-navbar toggleable="lg" type="dark" class="bg-dark">
-    <b-navbar-brand href="/">Gapsule</b-navbar-brand>
+    <b-navbar-brand to="/">Gapsule</b-navbar-brand>
     <b-navbar-toggle id="navbar-toggler" target="navbarSupportedContent">
       <span class="navbar-toggler-icon"></span>
     </b-navbar-toggle>
 
     <b-collapse id="navbarSupportedContent" is-nav>
       <b-navbar-nav class="mr-auto">
-        <b-nav-item active href="#">
+        <b-nav-item active to="#">
           Home
           <span class="sr-only">(current)</span>
         </b-nav-item>
-        <b-nav-item href="#">Link</b-nav-item>
+        <b-nav-item to="#">Link</b-nav-item>
         <b-nav-item-dropdown text="Dropdown">
-          <b-dropdown-item href="#">Action</b-dropdown-item>
-          <b-dropdown-item href="#">Another action</b-dropdown-item>
+          <b-dropdown-item to="#">Action</b-dropdown-item>
+          <b-dropdown-item to="#">Another action</b-dropdown-item>
           <b-dropdown-divider/>
-          <b-dropdown-item href="#">Something else here</b-dropdown-item>
+          <b-dropdown-item to="#">Something else here</b-dropdown-item>
         </b-nav-item-dropdown>
-        <b-nav-item href="#">Disabled</b-nav-item>
+        <b-nav-item to="#">Disabled</b-nav-item>
       </b-navbar-nav>
       <b-navbar-nav class="ml-auto">
         <b-nav-form>

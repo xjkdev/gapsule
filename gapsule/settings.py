@@ -23,6 +23,8 @@ def read_config():
     settings['repository_path'] = os.path.abspath(repository_path)
     if settings['cookie_secret'] == 'secret_string':
         warnings.warn("WARNING: it's dangerous")  # TODO
+    settings['enable_email'] = config.get(
+        'app', 'enable_email', fallback='false') == 'true'
 
 
 read_config()
