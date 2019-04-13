@@ -1,10 +1,10 @@
 import os
 import functools
 import asyncio
-from asyncio.subprocess import PIPE, DEVNULL
 from typing import Union, Tuple, List, Dict
 
 from gapsule.settings import settings
+from gapsule.utils.subprocess import run, PIPE, DEVNULL
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 
 
@@ -28,13 +28,13 @@ async def init_git_repo(owner: str, reponame: str) -> None:
     if os.path.exists(root):
         raise FileExistsError("Repo Already Existed")
     os.makedirs(root)
-    proc = await asyncio.create_subprocess_exec('git', 'init', '--bare',
-                                                cwd=root, stdout=DEVNULL, stderr=DEVNULL)
-    if await asyncio.wait_for(proc.wait(), 2) != 0:
+    code1, _out, _err = await run(['git', 'init', '--bare'], cwd=root,
+                                  stdout=DEVNULL, stderr=DEVNULL, timeout=2)
+    if code1 != 0:
         raise RuntimeError("Repo Init failed")
-    p2 = await asyncio.create_subprocess_exec('git', 'config', '--add', 'http.receivepack', 'true',
-                                              cwd=root, stdout=DEVNULL, stderr=DEVNULL)
-    if await asyncio.wait_for(p2.wait(), 2) != 0:
+    code2, _out, _err = await run(['git', 'config', '--add', 'http.receivepack', 'true'], cwd=root,
+                                  stdout=DEVNULL, stderr=DEVNULL, timeout=2)
+    if code2 != 0:
         raise RuntimeError("Repo Init failed")
 
 
@@ -48,12 +48,8 @@ async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = No
         cmd = ['git', 'ls-tree', '-r', branch]
     if path is not None:
         cmd.append(path)
-    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=DEVNULL)
-    out, _err = await asyncio.wait_for(proc.communicate(), 2)
-    if proc.returncode is None:
-        proc.kill()
-    if proc.returncode != 0:
+    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    if returncode != 0:
         raise RuntimeError("git ls-tree error")
     filelines = map(lambda line: line.split(
         maxsplit=3), out.decode().split('\n'))
@@ -118,12 +114,8 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
     cmd += [PRETTY_OPTION[pretty], branch]
     if path is not None:
         cmd += ['--', path]
-    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=DEVNULL)
-    out, _err = await asyncio.wait_for(proc.communicate(), 2)
-    if proc.returncode is None:
-        proc.kill()
-    if proc.returncode != 0:
+    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    if returncode != 0:
         raise RuntimeError("git log error")
     out = out.decode()
     if pretty == ONELINE:
@@ -141,12 +133,8 @@ async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
     cmd = ['git', 'branch']
-    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=DEVNULL)
-    out, _err = await asyncio.wait_for(proc.communicate(), 2)
-    if proc.returncode is None:
-        proc.kill()
-    if proc.returncode != 0:
+    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    if returncode != 0:
         raise RuntimeError("git branch error")
     out = out.decode().split('\n')
     current = None
