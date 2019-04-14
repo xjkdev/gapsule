@@ -15,7 +15,7 @@ class CreatePullRequest(BaseHandler):
                 key_state == "base_repository") or(key_state == "head_repository")
             if not key_judge:
                 self.set_status(400, "Unknown")
-        # goto 需要数据库提供接口
+        # todo 需要数据库提供接口
         # 参数compare_information,得到对比的数据
         request_end = 1
         if request_end == None:
@@ -61,7 +61,7 @@ class NewPullRequest(BaseHandler):
         name = self.get_query_argument("name")
         new_pull_dict = {
             "status": "ok",
-            #goto 需要数据库提供接口
+            #todo 需要数据库提供接口
             # 参数 username, projectname, libnumber（关键码数字）,name
             "conversation" : {
                 "username" : "name",
@@ -76,7 +76,7 @@ class NewPullCommits(BaseHandler):
         name = self.get_query_argument("name")
         pull_commits_dict = {
             "status": "ok",
-            #goto 需要数据库提供接口
+            #todo 需要数据库提供接口
             # 参数 username, projectname, libnumber（关键码数字）,name
             "ccommits" : {
                 "name" : "name",
@@ -91,7 +91,7 @@ class NewPullChecks(BaseHandler):
         name = self.get_query_argument("name")
         pull_checks_dict = {
             "status": "ok",
-            #goto 需要数据库提供接口
+            #todo 需要数据库提供接口
             # 参数 username, projectname, libnumber（关键码数字）,name
             "checks" : {
                 "number" : "number",
@@ -106,7 +106,7 @@ class NewPullFiles(BaseHandler):
         name = self.get_query_argument("name")
         pull_files_dict = {
             "status": "ok",
-            #goto 需要数据库提供接口
+            #todo 需要数据库提供接口
             # 参数 username, projectname, libnumber（关键码数字）,name
             "files" : {
                 "file1" : "file1",
@@ -114,14 +114,3 @@ class NewPullFiles(BaseHandler):
             }
         }
         self.write(pull_files_dict)
-
-class NewPullFileDiff(BaseHandler):
-    @ajaxquery
-    def get(self, username, projectname, libnumber, storage_address):
-        name = self.get_query_argument("name")
-        diff_dict = {
-            #goto 数据库接口
-            # 参数username, projectname,libnumber, storage_address
-            "diff_file": "1"
-        }
-        self.write(diff_dict)

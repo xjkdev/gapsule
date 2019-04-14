@@ -7,8 +7,7 @@ from gapsule.handlers.GitHTTP import GitHTTPHandler, GIT_URL_PATTERNS_REGEX
 from gapsule.handlers import Repo, Notification
 from gapsule.settings import settings
 from gapsule.handlers.PullRequest import (CreatePullRequest, NewPullRequest,
-                                          NewPullCommits, NewPullFiles, NewPullChecks,
-                                          NewPullFileDiff,)
+                                          NewPullCommits, NewPullFiles, NewPullChecks,)
 
 routes = [
     (r"/", MainHandler),
@@ -30,7 +29,6 @@ routes = [
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/pull/(?P<libnumber>\d+)/commits/?", NewPullCommits),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/pull/(?P<libnumber>\d+)/checks/?", NewPullChecks),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/pull/(?P<libnumber>\d+)/files/?", NewPullFiles),
-    (r"/(?P<username>\w+)/(?P<projectname>\w+)/pull/(?P<libnumber>\d+)/files#diff-(?P<path>\w+)/?", NewPullFileDiff),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/compare/(?P<restpath>.*)/?", CreatePullRequest),
     (r"/.*", MainHandler),
 ]
