@@ -44,9 +44,9 @@ export default {
       //   issueid: 1
       // });
       axios({
-        method: "GET",
+        method: "POST",
         url: this.fullIssuesName() + "/new",
-        params: {
+        data: {
           ajax: 1,
           owner: this.$route.params.owner,
           repo: this.$route.params.repo,

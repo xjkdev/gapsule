@@ -74,7 +74,7 @@ export default {
         .then(response => {
           if (response.data.state == "ok") {
             if (response.data.token == null) {
-              alert("确认邮件已发送到你的邮箱");
+              alert("the email has been sent to your mailbox");
             } else {
               this.$router.replace(
                 "/signup/verify?username=" +

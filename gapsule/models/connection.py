@@ -6,14 +6,16 @@ from gapsule import settings
 
 async def _make_connect(config_info):
     try:
-        con = await asyncpg.connect(user=config_info['dbuser'], database=config_info['dbname'])
+        con = await asyncpg.connect(user=config_info['dbuser'],
+                                    database=config_info['dbname'])
     except asyncpg.InvalidCatalogNameError:
-        con1 = await asyncpg.connect(user=config_info['dbuser'], database='postgres')
-        await con1.execute('''CREATE DATABASE '''+config_info['dbname'])
+        con1 = await asyncpg.connect(user=config_info['dbuser'],
+                                     database='postgres')
+        await con1.execute('''CREATE DATABASE ''' + config_info['dbname'])
         await con1.close()
-        con = await asyncpg.connect(user=config_info['dbuser'], database=config_info['dbname'])
-        await con.execute(
-            '''CREATE TABLE users_info(
+        con = await asyncpg.connect(user=config_info['dbuser'],
+                                    database=config_info['dbname'])
+        await con.execute('''CREATE TABLE users_info(
             uid SERIAL,
             username  varchar(20) primary key,
             mail_address varchar(40),
@@ -23,9 +25,12 @@ async def _make_connect(config_info):
             CREATE TABLE profiles(
             username   varchar(20) references users_info(username),
             icon_url   varchar(40),
+            firstname   varchar not null,
+            lastname    varchar not null,
             introduction    varchar,
             company     varchar,
             location    varchar,
+            public_email    varchar,
             website     varchar
             );
             CREATE TABLE log_info(
@@ -88,8 +93,18 @@ async def _make_connect(config_info):
             content         varchar,
             primary key(user_id,notification_id)
             );
-            '''
-        )
+            CREATE TABLE pull_requests(
+            dest_repo_id     integer,
+            dest_branch     varchar,
+            pull_id          integer,
+            src_repo_id     integer,
+            src_branch      varchar,
+            created_time    timestamptz,
+            status          varchar,
+            auto_merge_status   varchar,
+            primary key(dest_repo_id,pull_id)
+            );
+            ''')
     return con
 
 
