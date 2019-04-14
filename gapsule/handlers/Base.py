@@ -34,10 +34,13 @@ class BaseHandler(web.RequestHandler):
                 self.current_user = None
             elif now > logged_time and now - logged_time > timedelta(minutes=15):
                 self.current_user = AuthState(user, False)
+                self.set_cookie('username', user)
             elif await check_session_status(user, session):
                 self.current_user = AuthState(user, True)
+                self.set_cookie('username', user)
             else:
                 self.current_user = AuthState(user, False)
+                self.set_cookie('username', user)
         except Exception as e:
             logging.error(str(e))
             self.current_user = None

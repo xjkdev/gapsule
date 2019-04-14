@@ -48,8 +48,11 @@ async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = No
         cmd = ['git', 'ls-tree', '-r', branch]
     if path is not None:
         cmd.append(path)
-    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
     if returncode != 0:
+        err = err.decode()
+        if 'fatal: Not a valid object name master' in err:
+            return []
         raise RuntimeError("git ls-tree error")
     filelines = map(lambda line: line.split(
         maxsplit=3), out.decode().split('\n'))
@@ -114,9 +117,13 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
     cmd += [PRETTY_OPTION[pretty], branch]
     if path is not None:
         cmd += ['--', path]
-    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
     if returncode != 0:
-        raise RuntimeError("git log error")
+        err = err.decode()
+        if ('does not have any commits yet' in err or
+                "fatal: ambiguous argument 'master': unknown revision" in err):
+            return []
+        raise RuntimeError("git log error " + str(returncode))
     out = out.decode()
     if pretty == ONELINE:
         result = [line.split(' ', 1)

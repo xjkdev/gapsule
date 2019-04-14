@@ -90,12 +90,17 @@ export default {
       biography: "",
       company: "",
       location: "",
-      website: "",
-      password: ""
+      website: ""
     };
   },
   created() {
-    this.password = globals.cache.password;
+    if (
+      globals.cache.password == undefined ||
+      globals.cache.username == undefined ||
+      globals.cache.token == undefined
+    ) {
+      window.location.replace("/");
+    }
   },
   methods: {
     changeImg(e) {
@@ -115,12 +120,24 @@ export default {
     },
     onSubmit(e) {
       e.preventDefault();
+      let password = globals.cache.password;
+      let username = globals.cache.username;
+      let token = globals.cache.token;
+      let icon;
+      let tmp = this.icon.match(/data:image\/jpeg;base64,(.*)/);
+      if (tmp == null) {
+        icon = null;
+      } else {
+        icon = tmp[1];
+      }
       axios({
         method: "POST",
         url: "/signup/finishing",
         data: {
-          ajax: 1,
-          icon: this.icon.match(/data:image\/jpeg;base64,(.*)/)[1],
+          username: username,
+          password: password,
+          token: token,
+          icon: icon,
           firstname: this.firstname,
           secondname: this.secondname,
           biography: this.biography,
@@ -132,7 +149,7 @@ export default {
         .then(response => {
           if (response.data.state == "ok") {
             globals.cache.password = null;
-            this.$router.replace("/index");
+            this.$router.replace("/signin");
           } else {
             console.log(response.data.error);
           }

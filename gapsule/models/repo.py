@@ -14,25 +14,26 @@ class RepoNotFoundException(FileNotFoundError):
 
 
 @log_call()
-async def creat_new_repo(owner,
-                         reponame,
-                         introduction='',
-                         star_num=0,
-                         fork_num=0,
-                         visibility=False,
-                         forked_from='',
-                         default_branch=''):
+async def create_new_repo(owner,
+                          reponame,
+                          introduction='',
+                          star_num=0,
+                          fork_num=0,
+                          visibility=False,
+                          forked_from='',
+                          default_branch=''):
     # 创建一个新repo，必须提供owner名和repo名
-    if (check_reponame_validity(reponame) == False):
+    if not check_reponame_validity(reponame):
         raise NameError('Invalid reponame')
     flag = await check_repo_existing(owner, reponame)
-    if (flag == False):
+    if not flag:
         await execute(
             '''
                 INSERT INTO repos(username,reponame,introduction,create_time,star_num,fork_num,visibility,forked_from,default_branch)
                 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
             ''', owner, reponame, introduction, datetime_now(), star_num,
             fork_num, visibility, forked_from, default_branch)
+        await git.init_git_repo(owner, reponame)
     else:
         raise NameError('Repo already exists')
 
@@ -42,9 +43,10 @@ async def check_repo_existing(owner, reponame):
     # 检查一个repo是否存在，返回bool
     temp = await fetchrow(
         '''
-        SELECT * FROM repos
-        WHERE username = $1 AND reponame = $2''', owner, reponame)
-    if (temp != None):
+        SELECT username FROM repos
+        WHERE username = $1 AND reponame = $2''', owner, reponame
+    )
+    if temp is not None:
         return True
     else:
         return False
@@ -52,7 +54,7 @@ async def check_repo_existing(owner, reponame):
 
 @log_call()
 async def endow_read_permission(owner, reponame, username_permitted):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 INSERT INTO read_permission(repo_id,username)
@@ -64,7 +66,7 @@ async def endow_read_permission(owner, reponame, username_permitted):
 
 @log_call()
 async def remove_read_permission(owner, reponame, username_to_remove):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 delete from read_permission
@@ -76,7 +78,7 @@ async def remove_read_permission(owner, reponame, username_to_remove):
 
 @log_call()
 async def endow_admin_permission(owner, reponame, username_permitted):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 INSERT INTO admin_permission(repo_id,username)
@@ -88,7 +90,7 @@ async def endow_admin_permission(owner, reponame, username_permitted):
 
 @log_call()
 async def remove_admin_permission(owner, reponame, username_to_remove):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 delete from admin_permission
@@ -100,16 +102,19 @@ async def remove_admin_permission(owner, reponame, username_to_remove):
 
 @log_call()
 async def check_read_permission(owner, reponame, username=None):
-    if (await check_repo_existing(owner, reponame) == True):
-        if await get_repo_visibility(owner, reponame) == True:
+    if await check_repo_existing(owner, reponame):
+        if await get_repo_visibility(owner, reponame):
+            return True
+        elif username == owner:
             return True
         else:
             temp = await fetchrow(
                 '''
                     SELECT username FROM read_permission
                     WHERE repo_id=$1 and username=$2
-                ''', await get_repo_id(owner, reponame), username)
-            if temp != None:
+                ''', await get_repo_id(owner, reponame), username
+            )
+            if temp is not None:
                 return True
             else:
                 return False
@@ -117,40 +122,43 @@ async def check_read_permission(owner, reponame, username=None):
         raise RepoNotFoundException()
 
 
-def get_commits_num(owner, repo, branch):
+async def get_commits_num(owner, repo, branch):
     """ 查询 repo的提交次数commits """
-    return len(git.git_commit_logs(owner, repo, branch, pretty=git.ONELINE))
+    return len(await git.git_commit_logs(owner, repo, branch, pretty=git.ONELINE))
 
 
 # 修改 repo的提交次数commits
 @log_call(warning)
-def set_commits_num(new_num):
+async def set_commits_num(new_num):
     print('commits_num set as' + str(new_num) + ' successfully')
     return True
 
 
-def get_branches_num(owner, repo):
+async def get_branches_num(owner, repo):
     """ 查询  repo的分支数branch """
-    return len(git.git_branches(owner, repo)[1])
+    return len((await git.git_branches(owner, repo))[1])
 
 
 @log_call()
 async def check_write_permission(owner, reponame, username):
-    if (await check_repo_existing(owner, reponame) == True):
-        temp = await fetchrow(
-            '''
+    if await check_repo_existing(owner, reponame):
+        if username == owner:
+            return True
+        temp = await fetchrow('''
         SELECT username FROM admin_permission
         WHERE repo_id=$1 and username=$2
-        ''', await get_repo_id(owner, reponame), username)
-        if temp != None:
+        ''', await get_repo_id(owner, reponame), username
+                              )
+        if temp is not None:
             return True
         else:
             temp2 = await fetchrow(
                 '''
                 SELECT collaborator FROM collaborate
                 WHERE repo_id=$1 and username=$2
-                ''', await get_repo_id(owner, reponame), username)
-            if temp2 != None:
+                ''', await get_repo_id(owner, reponame), username
+            )
+            if temp2 is not None:
                 return True
             else:
                 return False
@@ -160,13 +168,16 @@ async def check_write_permission(owner, reponame, username):
 
 @log_call()
 async def check_admin_permission(owner, reponame, username):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
+        if username == owner:
+            return True
         temp = await fetchrow(
             '''
                     SELECT username FROM admin_permission
                     WHERE repo_id=$1 and username=$2
-            ''', await get_repo_id(owner, reponame), username)
-        if temp != None:
+            ''', await get_repo_id(owner, reponame), username
+        )
+        if temp is not None:
             return True
         else:
             return False
@@ -177,7 +188,7 @@ async def check_admin_permission(owner, reponame, username):
 @log_call()
 async def delete_repo(owner, reponame):
     # 删除一个repo
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 DELETE FROM repos
@@ -190,10 +201,10 @@ async def delete_repo(owner, reponame):
 @log_call()
 async def add_collaborator(owner, reponame, collaborator_name):
     # 为一个repo加入一位collaborator
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
-                INSERT INTO collaborate(repo_id,collaborator)
+                INSERT INTO collaborate(repo_id, collaborator)
                 VALUES($1,$2)
             ''', await get_repo_id(owner, reponame), collaborator_name)
     else:
@@ -203,7 +214,7 @@ async def add_collaborator(owner, reponame, collaborator_name):
 @log_call()
 async def remove_collaborator(owner, reponame, collaborator_name):
     # 从一个repo里删除一个collaborator
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                     delete from collaborate
@@ -213,7 +224,7 @@ async def remove_collaborator(owner, reponame, collaborator_name):
         raise RepoNotFoundException()
 
 
-def get_releases_num():
+async def get_releases_num():
     return 0
 
 
@@ -235,8 +246,8 @@ async def get_repo_names(owner):
 @log_call()
 async def alter_repo_name(owner, old_reponame, new_reponame):
     # 改repo名
-    if (await check_repo_existing(owner, old_reponame) == True):
-        if (check_reponame_validity(new_reponame) == True):
+    if await check_repo_existing(owner, old_reponame):
+        if check_reponame_validity(new_reponame):
             await execute(
                 '''
                 UPDATE repos
@@ -253,7 +264,7 @@ async def alter_repo_name(owner, old_reponame, new_reponame):
 @log_call()
 async def get_repo_id(owner, reponame):
     # 根据owner名和repo名查该repo的id
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         result = await fetchrow(
             '''
                 SELECT repo_id FROM repos
@@ -276,7 +287,7 @@ async def get_owner_id(repo_id):
 
 
 async def set_default_branch(owner, reponame, new_default_branch):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 UPDATE repos
@@ -287,18 +298,20 @@ async def set_default_branch(owner, reponame, new_default_branch):
 
 
 async def get_default_branch(owner, reponame):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
+        # FIXME
         await fetchrow(
             '''
                 SELECT default_branch FROM repos
                  WHERE  username=$1 and reponame=$2
             ''', owner, reponame)
+        return 'master'
     else:
         raise RepoNotFoundException()
 
 
 async def get_forked_from(owner, reponame):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await fetchrow(
             '''
                 SELECT forked_from FROM repos
@@ -311,7 +324,7 @@ async def get_forked_from(owner, reponame):
 @log_call()
 async def get_repo_introduction(owner, reponame):
     # 根据owner名和repo名查该repo的introduction
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         result = await fetchrow(
             '''
                 SELECT introduction FROM repos
@@ -324,7 +337,7 @@ async def get_repo_introduction(owner, reponame):
 
 @log_call()
 async def set_repo_introduction(owner, reponame, new_introduction):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 UPDATE  repos
@@ -335,18 +348,18 @@ async def set_repo_introduction(owner, reponame, new_introduction):
         raise RepoNotFoundException()
 
 
-def get_specified_path(owner, reponame, branch,
-                       path=None) -> List[Tuple[str, str, bool]]:
+async def get_specified_path(owner, reponame, branch,
+                             path=None) -> List[Tuple[str, str, bool]]:
     """ 查询  对应版本对应路径下的某个文件夹包含的文件夹（名称）和文件（名称）
         返回三元组，分别为name, hash, is_dir
     """
-    return git.git_ls_files(owner, reponame, branch, path=path, show_tree=True)
+    return await git.git_ls_files(owner, reponame, branch, path=path)
 
 
 @log_call()
 async def get_repo_star_num(owner, reponame):
     # 根据owner名和repo名查该repo的star数
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         result = await fetchrow(
             '''
                 SELECT star_num FROM repos
@@ -359,7 +372,7 @@ async def get_repo_star_num(owner, reponame):
 
 @log_call()
 async def inc_repo_star_num(owner, reponame):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         new_num = await get_repo_star_num(owner, reponame) + 1
         await execute(
             '''
@@ -374,7 +387,7 @@ async def inc_repo_star_num(owner, reponame):
 @log_call()
 async def get_repo_fork_num(owner, reponame):
     # 根据owner名和repo名查该repo的fork数
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         result = await fetchrow(
             '''
                 SELECT fork_num FROM repos
@@ -387,7 +400,7 @@ async def get_repo_fork_num(owner, reponame):
 
 @log_call()
 async def inc_repo_fork_num(owner, reponame):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         new_num = await get_repo_fork_num(owner, reponame) + 1
         await execute(
             '''
@@ -402,38 +415,39 @@ async def inc_repo_fork_num(owner, reponame):
 @log_call()
 async def get_repo_visibility(owner, reponame):
     # 根据owner名和repo名查该repo是public(True)的还是private(False)的
-    if (await check_repo_existing(owner, reponame)):
+    if await check_repo_existing(owner, reponame):
         result = await fetchrow(
             '''
                 SELECT visibility FROM repos
                 WHERE username=$1 and reponame=$2
             ''', owner, reponame)
+        print('res', result)
         return result['visibility']
     else:
         raise RepoNotFoundException()
 
 
-def get_file_content(path, branch=None):
+async def get_file_content(path, branch=None):
     return 'content:...'
 
 
-def get_all_files(owner, reponame, branch) -> List[Tuple[str, str]]:
+async def get_all_files(owner, reponame, branch) -> List[Tuple[str, str]]:
     """ 查询  所有仓库文件 """
-    return git.git_ls_files(owner, reponame, branch)
+    return await git.git_ls_files(owner, reponame, branch)
 
 
-def path_exists(owner, reponame, branch, path) -> bool:
+async def path_exists(owner, reponame, branch, path) -> bool:
     """ 查询  对应路径的文件（夹）是否存在 """
-    files = git.git_ls_files(owner, reponame, branch, show_tree=True)
+    files = await git.git_ls_files(owner, reponame, branch, show_tree=True)
     files = [info[0] for info in files]
     path = path.rstrip('/')
     return path in files
 
 
-def get_history(owner, reponame, branch) -> List[Dict[str, str]]:
+async def get_history(owner, reponame, branch) -> List[Dict[str, str]]:
     """ 查询 历史提交的版本与时间 """
-    return git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)
+    return await git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)
 
 
-def get_contributors_info():
+async def get_contributors_info():
     return 0

@@ -3,7 +3,8 @@ from tornado.web import HTTPError
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import unauthenticated, ajaxquery
 from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
-from gapsule.models.user import add_user_pending_verifying, create_new_user
+from gapsule.models.user import add_user_pending_verifying, create_new_user, set_profile, check_user_existing
+from gapsule.models.signup_token import check_token, get_pending_email, remove_token
 
 
 class SignUpInputStep1(ViewModelDict):
@@ -20,8 +21,8 @@ class SignUpInputStep2(ViewModelDict):
 
 class SignUpInputStep3(ViewModelDict):
     username = ViewModelField(required=True, nullable=False)
-    password = ViewModelField(required=True)
-    token = ViewModelField(required=True)
+    password = ViewModelField(required=True, nullable=False)
+    token = ViewModelField(required=True, nullable=False)
     icon = ViewModelField(required=False)
     firstname = ViewModelField(required=True, nullable=False)
     secondname = ViewModelField(required=True, nullable=False)
@@ -43,12 +44,16 @@ class SignUpHandler(BaseHandler):
         self.render('index.html')
 
     @unauthenticated('/')
-    def post(self, action=None):
+    async def post(self, action=None):
         if action is None:  # Step 1
             try:
                 data = SignUpInputStep1(json_decode(self.request.body))
+                if await check_user_existing(data.username):
+                    self.write(SignUpResult(
+                        state='error', error='username existed'))
                 token = add_user_pending_verifying(
                     data.username, data.email, data.password)
+
                 self.write(SignUpResult(state='ok', token=token))
             except Exception as e:  # TODO: check exceptions.
                 self.write(SignUpResult(state='error',
@@ -56,25 +61,28 @@ class SignUpHandler(BaseHandler):
         elif action == '/verify':
             try:
                 data = SignUpInputStep2(json_decode(self.request.body))
-                # check pending list
-                pending_data = 'pending'
-                if data.password == pending_data and data.token == pending_data:
+                if check_token(data.username, data.password, data.token):
                     self.write(SignUpResult(state='ok'))
                 else:
                     self.write(SignUpResult(
                         state='error', error='token or password error'))
-            except:  # TODO: check exceptions.
-                self.write(SignUpResult(state='error', error='invalid token.'))
+            except Exception as e:  # TODO: check exceptions.
+                print(e)
+                self.write(SignUpResult(state='error',
+                                        error='invalid token, username or password.'))
         elif action == '/finishing':
             try:
-                data = SignUpInputStep2(json_decode(self.request.body))
-                # check pending list
-                pending_data = 'pending'
-                if data.password == pending_data and data.token == pending_data:
+                data = SignUpInputStep3(json_decode(self.request.body))
+                if check_token(data.username, data.password, data.token):
+                    email = get_pending_email(data.username)
+                    await create_new_user(data.username, email, data.password)
+                    # await set_profile(data.username)  # TODO: save icon
+                    remove_token(data.username)
                     # finish create user.
                     self.write(SignUpResult(state='ok'))
                 else:
                     self.write(SignUpResult(
                         state='error', error='token or password error'))
-            except:  # TODO: check exceptions.
+            except Exception as e:
+                print(e)
                 self.write(SignUpResult(state='error', error='invalid data.'))

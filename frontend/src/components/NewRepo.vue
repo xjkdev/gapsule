@@ -55,7 +55,6 @@ import axios from "axios";
 export default {
   data() {
     return {
-      username: "",
       creator: "",
       reponame: "",
       description: "",
@@ -72,15 +71,13 @@ export default {
   methods: {
     getData() {
       axios({
-        method: "POST",
+        method: "GET",
         url: "/new",
-        data: {
-          ajax: 1
-        }
+        params: { ajax: 1 }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.username = response.data.username;
           this.options = response.data.options;
+          this.creator = this.options[0];
         } else {
           console.log(response.data.error);
         }
@@ -91,15 +88,14 @@ export default {
         method: "POST",
         url: "/new",
         data: {
-          ajax: 1,
           creator: this.creator,
           reponame: this.reponame,
           description: this.description,
-          repoPropertySelect: this.repoPropertySelect
+          repoVisibility: this.repoPropertySelect == "Public"
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.$router.replace("/index");
+          this.$router.push("/" + this.creator + "/" + this.reponame);
         } else {
           console.log(response.data.error);
         }

@@ -96,10 +96,10 @@ export default {
     },
     newIssue() {
       if (this.isIssuePage) {
-        this.$router.replace(this.fullIssuesName() + "/new");
+        this.$router.push(this.fullIssuesName() + "/new");
       } else {
         let param = this.$route.params;
-        this.$router.replace("/" + param.owner + "/" + param.repo + "/compare");
+        this.$router.push("/" + param.owner + "/" + param.repo + "/compare");
       }
     }
   },

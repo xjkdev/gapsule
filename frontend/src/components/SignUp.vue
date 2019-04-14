@@ -65,7 +65,6 @@ export default {
         method: "POST",
         url: "/signup",
         data: {
-          ajax: 1,
           username: this.username,
           email: this.email,
           password: this.password

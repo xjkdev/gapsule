@@ -32,9 +32,9 @@
           />
           <b-button variant="outline-success" class="my-2 my-sm-0" size="sm">Search</b-button>
         </b-nav-form>&nbsp;&nbsp;
-        <b-nav-item to="/signin" style="color: white" v-if="!username">Sign in</b-nav-item>&nbsp;&nbsp;
+        <b-nav-item href="/signin" style="color: white" v-if="!username">Sign in</b-nav-item>&nbsp;&nbsp;
         <b-nav-form>
-          <b-button to="/signup" size="sm" class="my-2 my-sm-0" v-if="!username">Sign Up</b-button>
+          <b-button href="/signup" size="sm" class="my-2 my-sm-0" v-if="!username">Sign Up</b-button>
         </b-nav-form>
         <img v-if="icon" :src="icon" alt="UserIcon">
         <span v-if="username">{{ username }}</span>
