@@ -135,7 +135,7 @@ export default {
       return tmp[0] + "/" + tmp[1] + "/" + tmp[2];
     },
     newPull() {
-      this.$router.replace(this.repoName() + "/compare");
+      this.$router.push(this.repoName() + "/compare");
     },
     firstClick() {
       return this.$route.path.indexOf("tree") == -1;
@@ -215,6 +215,7 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
+          console.log(response.data);
           this.commitNumber = response.data.commitNumber;
           this.branchNumber = response.data.branchNumber;
           this.releaseNumber = response.data.releaseNumber;

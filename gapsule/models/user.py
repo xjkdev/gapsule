@@ -19,7 +19,7 @@ def add_user_pending_verifying(username, mail_address, password):
             and check_password_validity(password)):
         pending_info = {}
         pending_info['username'] = username
-        pending_info['mail_address'] = mail_address
+        pending_info['email'] = mail_address
         pending_info['password'] = password
         pending_info['token'] = secrets.token_urlsafe(16)
         signup_token.append_token(pending_info)
@@ -36,7 +36,7 @@ async def check_user_existing(username):
         SELECT username FROM users_info
         WHERE username = $1
         ''', username)
-    if (temp != None):
+    if temp is not None:
         return True
     else:
         return False
@@ -81,7 +81,7 @@ async def verify_user(username, password):
     if (check_username_validity(username) == False):
         return False
     if (check_password_validity(password) != False):
-        flag = check_user_existing(username)
+        flag = await check_user_existing(username)
         if (flag == False):
             raise NameError('User does not exist')
         else:

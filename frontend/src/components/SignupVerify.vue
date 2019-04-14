@@ -36,11 +36,16 @@ export default {
   data() {
     return {
       username: "",
-      password: ""
+      password: "",
+      token: ""
     };
   },
   created() {
     this.username = this.$route.query.username;
+    this.token = this.$route.query.token;
+    if (this.username == undefined || this.token == undefined) {
+      window.location.replace("/");
+    }
   },
   methods: {
     onSubmit() {
@@ -48,12 +53,15 @@ export default {
         method: "POST",
         url: "/signup/verify",
         data: {
-          ajax: 1,
-          password: this.password
+          username: this.username,
+          password: this.password,
+          token: this.token
         }
       }).then(response => {
         if (response.data.state == "ok") {
           globals.cache.password = this.password;
+          globals.cache.username = this.username;
+          globals.cache.token = this.token;
           this.$router.replace("/signup/finishing");
         }
       });

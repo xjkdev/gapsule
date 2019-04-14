@@ -33,6 +33,7 @@ async def create_new_repo(owner,
                 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
             ''', owner, reponame, introduction, datetime_now(), star_num,
             fork_num, visibility, forked_from, default_branch)
+        await git.init_git_repo(owner, reponame)
     else:
         raise NameError('Repo already exists')
 
@@ -121,21 +122,21 @@ async def check_read_permission(owner, reponame, username=None):
         raise RepoNotFoundException()
 
 
-def get_commits_num(owner, repo, branch):
+async def get_commits_num(owner, repo, branch):
     """ 查询 repo的提交次数commits """
-    return len(git.git_commit_logs(owner, repo, branch, pretty=git.ONELINE))
+    return len(await git.git_commit_logs(owner, repo, branch, pretty=git.ONELINE))
 
 
 # 修改 repo的提交次数commits
 @log_call(warning)
-def set_commits_num(new_num):
+async def set_commits_num(new_num):
     print('commits_num set as' + str(new_num) + ' successfully')
     return True
 
 
-def get_branches_num(owner, repo):
+async def get_branches_num(owner, repo):
     """ 查询  repo的分支数branch """
-    return len(git.git_branches(owner, repo)[1])
+    return len((await git.git_branches(owner, repo))[1])
 
 
 @log_call()
@@ -223,7 +224,7 @@ async def remove_collaborator(owner, reponame, collaborator_name):
         raise RepoNotFoundException()
 
 
-def get_releases_num():
+async def get_releases_num():
     return 0
 
 
@@ -298,11 +299,13 @@ async def set_default_branch(owner, reponame, new_default_branch):
 
 async def get_default_branch(owner, reponame):
     if await check_repo_existing(owner, reponame):
+        # FIXME
         await fetchrow(
             '''
                 SELECT default_branch FROM repos
                  WHERE  username=$1 and reponame=$2
             ''', owner, reponame)
+        return 'master'
     else:
         raise RepoNotFoundException()
 
@@ -345,12 +348,12 @@ async def set_repo_introduction(owner, reponame, new_introduction):
         raise RepoNotFoundException()
 
 
-def get_specified_path(owner, reponame, branch,
-                       path=None) -> List[Tuple[str, str, bool]]:
+async def get_specified_path(owner, reponame, branch,
+                             path=None) -> List[Tuple[str, str, bool]]:
     """ 查询  对应版本对应路径下的某个文件夹包含的文件夹（名称）和文件（名称）
         返回三元组，分别为name, hash, is_dir
     """
-    return git.git_ls_files(owner, reponame, branch, path=path, show_tree=True)
+    return await git.git_ls_files(owner, reponame, branch, path=path)
 
 
 @log_call()
@@ -418,32 +421,33 @@ async def get_repo_visibility(owner, reponame):
                 SELECT visibility FROM repos
                 WHERE username=$1 and reponame=$2
             ''', owner, reponame)
+        print('res', result)
         return result['visibility']
     else:
         raise RepoNotFoundException()
 
 
-def get_file_content(path, branch=None):
+async def get_file_content(path, branch=None):
     return 'content:...'
 
 
-def get_all_files(owner, reponame, branch) -> List[Tuple[str, str]]:
+async def get_all_files(owner, reponame, branch) -> List[Tuple[str, str]]:
     """ 查询  所有仓库文件 """
-    return git.git_ls_files(owner, reponame, branch)
+    return await git.git_ls_files(owner, reponame, branch)
 
 
-def path_exists(owner, reponame, branch, path) -> bool:
+async def path_exists(owner, reponame, branch, path) -> bool:
     """ 查询  对应路径的文件（夹）是否存在 """
-    files = git.git_ls_files(owner, reponame, branch, show_tree=True)
+    files = await git.git_ls_files(owner, reponame, branch, show_tree=True)
     files = [info[0] for info in files]
     path = path.rstrip('/')
     return path in files
 
 
-def get_history(owner, reponame, branch) -> List[Dict[str, str]]:
+async def get_history(owner, reponame, branch) -> List[Dict[str, str]]:
     """ 查询 历史提交的版本与时间 """
-    return git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)
+    return await git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)
 
 
-def get_contributors_info():
+async def get_contributors_info():
     return 0

@@ -21,8 +21,7 @@ routes = [
     }),
     (r"/notification", Notification.NotificationHandler),
     (r"/(\w+)/(\w+)(?:.git)?(" + GIT_URL_PATTERNS_REGEX + ")", GitHTTPHandler),
-
-    (r"/(?P<username>\w+)/(?P<projectname>\w+)/?", Repo. CodeListHandler),
+    (r"/(?P<username>\w+)/(?P<projectname>\w+)/?", Repo.CodeListHandler),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/tree/(?P<branch>\w+)/(?P<restpath>.*)/?",
      Repo.FolderListHandler),
     (r"/(?P<username>\w+)/(?P<projectname>\w+)/blob/(?P<branch>\w+)/(?P<restpath>.*)/?",
