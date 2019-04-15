@@ -13,8 +13,10 @@ async def _make_connect(config_info):
                                      database='postgres')
         await con1.execute('''CREATE DATABASE ''' + config_info['dbname'])
         await con1.close()
+
         con = await asyncpg.connect(user=config_info['dbuser'],
                                     database=config_info['dbname'])
+
         await con.execute('''CREATE TABLE users_info(
             uid SERIAL,
             username  varchar(20) primary key,
@@ -105,14 +107,17 @@ async def _make_connect(config_info):
             primary key(dest_repo_id,pull_id)
             );
             ''')
-    return con
+        pool = await asyncpg.create_pool(user=config_info['dbuser'],
+                                         database=config_info['dbname'])
+
+    return pool
 
 
 def _create_instance():
     try:
         tmp_loop = asyncio.get_event_loop()
-        conn = tmp_loop.run_until_complete(_make_connect(settings.settings))
-        return conn
+        pool = tmp_loop.run_until_complete(_make_connect(settings.settings))
+        return pool
     except Exception as e:
         raise RuntimeError("Database connection initiation failed.") from e
 

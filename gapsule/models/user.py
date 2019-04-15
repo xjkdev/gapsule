@@ -129,7 +129,8 @@ async def set_profile(username,
                     '''
                     UPDATE profiles
                     SET lastname=$1, firstname=$2
-                    ''', lastname, firstname)
+                    WHERE usernmae=$3
+                    ''', lastname, firstname, username)
                 if icon_path != None:
                     await execute(
                         '''
