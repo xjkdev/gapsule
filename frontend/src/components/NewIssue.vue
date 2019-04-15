@@ -44,10 +44,9 @@ export default {
       //   issueid: 1
       // });
       axios({
-        method: "GET",
+        method: "POST",
         url: this.fullIssuesName() + "/new",
-        params: {
-          ajax: 1,
+        data: {
           owner: this.$route.params.owner,
           repo: this.$route.params.repo,
           title: this.title,
@@ -55,7 +54,7 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.$router.replace(
+          this.$router.push(
             this.fullIssuesName() + "/" + response.data.issueid
           );
         } else {

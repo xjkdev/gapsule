@@ -1,12 +1,10 @@
-import asyncio
-from asyncio.subprocess import PIPE
 import os
 import re
 import base64
 import logging
 
 from tornado.web import RequestHandler, HTTPError
-
+from gapsule.utils.subprocess import run, PIPE
 from gapsule.models import repo, user, git
 from gapsule.settings import settings
 
@@ -26,8 +24,8 @@ GIT_URL_PATTERNS = [
 GIT_URL_PATTERNS_REGEX = '|'.join(p[1] for p in GIT_URL_PATTERNS)
 
 
-def spawn_git_http_backend(method, query_string, root, path_info, content_type=None,
-                           remote_user=None, remote_addr=None):
+def get_git_http_backend_env(method, query_string, root, path_info, content_type=None,
+                             remote_user=None, remote_addr=None):
     env = dict(
         REQUEST_METHOD=method,
         GIT_PROJECT_ROOT=root,
@@ -37,9 +35,7 @@ def spawn_git_http_backend(method, query_string, root, path_info, content_type=N
     )
     if content_type is not None:
         env['CONTENT_TYPE'] = content_type
-    proc = asyncio.create_subprocess_exec('git', 'http-backend', env=env,
-                                          stdin=PIPE, stdout=PIPE, stderr=PIPE)
-    return proc
+    return env
 
 
 def parse_cgi_stdout(data):
@@ -98,11 +94,12 @@ class GitHTTPHandler(RequestHandler):
                 'Accept', '').replace('result', 'request')
         else:
             content_type = None
-        proc = await spawn_git_http_backend(
+        env = get_git_http_backend_env(
             method, query_string, root, path_info, content_type)
-        out, err = await asyncio.wait_for(proc.communicate(self.request.body), 10)
-        await asyncio.wait_for(proc.wait(), 1)
-        if len(err) > 0:
+        returncode, out, err = await run(['git', 'http-backend'], cwd=root, env=env,
+                                         input=self.request.body, stdout=PIPE, stderr=PIPE,
+                                         timeout=10)
+        if len(err) > 0 or returncode != 0:
             logging.error(err.decode())
             raise HTTPError(500)
         header, body = parse_cgi_stdout(out)
@@ -132,7 +129,7 @@ class GitHTTPHandler(RequestHandler):
 
     async def post(self, owner, reponame, path_info):
         try:
-            if re.match('/git-upload-pack$', path_info) is not None:
+            if re.match('/git-receive-pack$', path_info) is not None:
                 if self.current_user is None:
                     self.request_auth()
                     return

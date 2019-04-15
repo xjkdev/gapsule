@@ -7,17 +7,20 @@ import SignIn from "@/components/SignIn"
 import SignUp from "@/components/SignUp"
 import SignUpVerify from "@/components/SignupVerify"
 import SignupFinishing from "@/components/SignupFinishing"
-import IssuesPulls from "@/components/IssuesPulls";
+import IssuesPulls from "@/components/IssuesPulls"
 import NewIssue from "@/components/NewIssue"
 import PullCompare from "@/components/PullCompare"
 import PullConversion from "@/components/PullConversion"
 import PullCommits from "@/components/PullCommits"
+import FileContent from "@/components/FileContent"
+import NewRepo from "@/components/NewRepo"
 
 Vue.use(Router)
 
 export default new Router({
   mode: 'history',
   routes: [
+    { path: '/new', name: 'NewRepo', component: NewRepo, meta: { title: 'Create a New Repository' } },
     { path: '/signin', name: 'SignIn', component: SignIn, meta: { title: 'SignIn' } },
     { path: '/signup', name: 'SignUp', component: SignUp, meta: { title: 'Join Gapsule' } },
     {
@@ -33,12 +36,6 @@ export default new Router({
       meta: { title: 'Signup Finishing' }
     },
     { path: '/', name: 'DashBoard', component: DashBoard },
-    {
-      path: '/:owner/:repo',
-      name: 'Repo',
-      component: Repo,
-      meta() { return this.params.owner + '/' + this.params.repo }
-    },
     {
       path: '/topics/:title',
       name: 'Topic',
@@ -94,5 +91,17 @@ export default new Router({
       name: 'PullCommits',
       component: PullCommits,
       meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo + '/' + this.params.pullid + '/commits' }
+    },
+    {
+      path: '/:owner/:repo/blob/(.*)',
+      name: 'FileContent',
+      component: FileContent,
+      meta() { return this.params.owner + '/' + this.params.repo }
+    },
+    {
+      path: '/:owner/:repo(.*)',
+      name: 'Repo',
+      component: Repo,
+      meta() { return this.params.owner + '/' + this.params.repo }
     }]
 })

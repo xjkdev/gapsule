@@ -15,29 +15,30 @@ class CommentNotFoundException(FileNotFoundError):
 
 
 @log_call()
-async def create_new_attached_post(repo_id, postername, title, status, visibility):
+async def create_new_attached_post(repo_id, postername, title, status,
+                                   visibility):
     current_id = await fetchrow(
         '''
         SELECT max(post_id) FROM posts
         WHERE repo_id=$1
-        ''', repo_id
-    )
+        ''', repo_id)
     this_id = 1
-    if current_id['max'] != None:
-        this_id = current_id['max']+1
+    if current_id['max'] is not None:
+        this_id = current_id['max'] + 1
 
     await execute(
         '''
         INSERT INTO posts(post_id,repo_id,postername,title,status,visibility,post_time)
         VALUES($1,$2,$3,$4,$5,$6,$7)
-        ''', this_id, repo_id, postername, title, status, visibility, datetime_now()
-    )
+        ''', this_id, repo_id, postername, title, status, visibility,
+        datetime_now())
     return this_id
 
 
 @log_call()
 async def create_new_nonattached_post(postername, title, status, visibility):
-    this_id = await create_new_attached_post(0, postername, title, status, visibility)
+    this_id = await create_new_attached_post(0, postername, title, status,
+                                             visibility)
     return this_id
 
 
@@ -47,8 +48,7 @@ async def check_post_existing(repo_id, post_id):
         '''
         SELECT * FROM posts
         WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id
-    )
+        ''', repo_id, post_id)
     if temp:
         return True
     else:
@@ -62,17 +62,9 @@ async def get_all_posts(postername):
         '''
         SELECT * FROM posts
         WHERE postername=$1
-        ''', postername
-    )
+        ''', postername)
     for temp in temps:
-        result = {}
-        result['repo_id'] = temp['repo_id']
-        result['post_id'] = temp['post_id']
-        result['postername'] = temp['postername']
-        result['title'] = temp['title']
-        result['status'] = temp['status']
-        result['visibility'] = temp['visibility']
-        result['post_time'] = temp['post_time']
+        result = dict(temp)
         results.append(result)
     print(results)
 
@@ -83,8 +75,7 @@ async def get_postername(repo_id, post_id):
         '''
         SELECT postername FROM posts
         WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id
-    )
+        ''', repo_id, post_id)
     return result['postername']
 
 
@@ -94,8 +85,7 @@ async def get_title(repo_id, post_id):
         '''
         SELECT title FROM posts
         WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id
-    )
+        ''', repo_id, post_id)
     return result['title']
 
 
@@ -105,8 +95,7 @@ async def get_status(repo_id, post_id):
         '''
         SELECT status FROM posts
         WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id
-    )
+        ''', repo_id, post_id)
     return result['status']
 
 
@@ -117,8 +106,7 @@ async def alter_status(repo_id, post_id, new_status):
         UPDATE posts
         SET status=$1
         WHERE repo_id=$2 and post_id=$3
-        ''', new_status, repo_id, post_id
-    )
+        ''', new_status, repo_id, post_id)
 
 
 @log_call()
@@ -127,8 +115,7 @@ async def get_visibility(repo_id, post_id):
         '''
         SELECT visibility FROM posts
         WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id
-    )
+        ''', repo_id, post_id)
     return result['visibility']
 
 
@@ -139,17 +126,16 @@ async def create_new_comment(repo_id, post_id, type, content, commenter_name):
             '''
         SELECT max(comment_id) FROM comments
         WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id
-        )
+        ''', repo_id, post_id)
         this_id = 1
         if current_id['max'] != None:
-            this_id = current_id['max']+1
+            this_id = current_id['max'] + 1
         await execute(
             '''
                 INSERT INTO comments(post_id,repo_id,comment_id,is_reply,reply_to_id,address_time,type,content,conmmenter)
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-                ''', post_id, repo_id, this_id, False, None, datetime_now(), type, content, commenter_name
-        )
+                ''', post_id, repo_id, this_id, False, None, datetime_now(),
+            type, content, commenter_name)
 
         notification = commenter_name+' commented your post (id: ' + \
             str(repo_id)+'_'+str(post_id)+')'
@@ -163,25 +149,25 @@ async def create_new_comment(repo_id, post_id, type, content, commenter_name):
 
 
 @log_call()
-async def create_new_reply(repo_id, post_id, reply_to_id, type, content, replier_name):
+async def create_new_reply(repo_id, post_id, reply_to_id, type, content,
+                           replier_name):
     if await check_post_existing(repo_id, post_id):
         current_id = await fetchrow(
             '''
         SELECT max(comment_id) FROM comments
         WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id
-        )
+        ''', repo_id, post_id)
         this_id = 1
         if current_id['max'] != None:
-            this_id = current_id['max']+1
+            this_id = current_id['max'] + 1
         await execute(
             '''
             INSERT INTO comments(post_id,repo_id,comment_id, is_reply,reply_to_id,address_time,type,content,conmmenter)
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-            ''', post_id, repo_id, this_id, True, reply_to_id, datetime_now(), type, content, replier_name
-        )
+            ''', post_id, repo_id, this_id, True, reply_to_id, datetime_now(),
+            type, content, replier_name)
 
-        notification = replier_name+' replied to you'
+        notification = replier_name + ' replied to you'
         await create_new_notification(reply_to_id, notification)
 
         return this_id
@@ -195,8 +181,7 @@ async def check_comment_existing(repo_id, post_id, comment_id):
         '''
         SELECT FROM comments
         WHERE repo_id=$1, post_id=$2, comment_id=$3
-        ''', repo_id, post_id, comment_id
-    )
+        ''', repo_id, post_id, comment_id)
     if temp:
         return True
     else:
@@ -210,8 +195,7 @@ async def delete_comment(repo_id, post_id, comment_id):
             '''
             DELETE FROM comments
             WHERE repo_id=$1, post_id=$2, comment_id=$3
-            ''', repo_id, post_id, comment_id
-        )
+            ''', repo_id, post_id, comment_id)
     else:
         raise CommentNotFoundException()
 
@@ -222,18 +206,10 @@ async def get_all_attached_posts(repo_id):
         '''
             SELECT * FROM posts
             WHERE repo_id=$1
-        ''', repo_id
-    )
+        ''', repo_id)
     results = []
     for temp in temps:
-        result = {}
-        result['post_id'] = temp['post_id']
-        result['repo_id'] = temp['repo_id']
-        result['postername'] = temp['postername']
-        result['title'] = temp['title']
-        result['status'] = temp['status']
-        result['visibility'] = temp['visibility']
-        result['post_time'] = temp['post_time']
+        result = dict(temp)
         results.append(result)
     return results
 
@@ -248,19 +224,9 @@ async def get_all_comments(repo_id, post_id):
         '''
             SELECT * FROM comments
             WHERE repo_id=$1, post_id=$2
-            ''', repo_id, post_id
-    )
+            ''', repo_id, post_id)
     results = []
     for temp in temps:
-        result = {}
-        result['post_id'] = temp['post_id']
-        result['repo_id'] = temp['repo_id']
-        result['comment_id'] = temp['comment_id']
-        result['is_reply'] = temp['is_reply']
-        result['reply_to_id'] = temp['reply_to_id']
-        result['address_time'] = temp['address_time']
-        result['type'] = temp['type']
-        result['content'] = temp['content']
-        result['conmmenter'] = temp['conmmenter']
+        result = dict(temp)
         results.append(result)
     return results

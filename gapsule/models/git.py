@@ -1,10 +1,10 @@
 import os
 import functools
 import asyncio
-from asyncio.subprocess import PIPE, DEVNULL
 from typing import Union, Tuple, List, Dict
 
 from gapsule.settings import settings
+from gapsule.utils.subprocess import run, PIPE, DEVNULL
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 
 
@@ -28,13 +28,13 @@ async def init_git_repo(owner: str, reponame: str) -> None:
     if os.path.exists(root):
         raise FileExistsError("Repo Already Existed")
     os.makedirs(root)
-    proc = await asyncio.create_subprocess_exec('git', 'init', '--bare',
-                                                cwd=root, stdout=DEVNULL, stderr=DEVNULL)
-    if await asyncio.wait_for(proc.wait(), 2) != 0:
+    code1, _out, _err = await run(['git', 'init', '--bare'], cwd=root,
+                                  stdout=DEVNULL, stderr=DEVNULL, timeout=2)
+    if code1 != 0:
         raise RuntimeError("Repo Init failed")
-    p2 = await asyncio.create_subprocess_exec('git', 'config', '--add', 'http.receivepack', 'true',
-                                              cwd=root, stdout=DEVNULL, stderr=DEVNULL)
-    if await asyncio.wait_for(p2.wait(), 2) != 0:
+    code2, _out, _err = await run(['git', 'config', '--add', 'http.receivepack', 'true'], cwd=root,
+                                  stdout=DEVNULL, stderr=DEVNULL, timeout=2)
+    if code2 != 0:
         raise RuntimeError("Repo Init failed")
 
 
@@ -50,12 +50,11 @@ async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = No
     cmd += [branch]
     if path is not None:
         cmd.append(path)
-    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=DEVNULL)
-    out, _err = await asyncio.wait_for(proc.communicate(), 2)
-    if proc.returncode is None:
-        proc.kill()
-    if proc.returncode != 0:
+    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
+    if returncode != 0:
+        err = err.decode()
+        if 'fatal: Not a valid object name master' in err:
+            return []
         raise RuntimeError("git ls-tree error")
     filelines = map(lambda line: line.split(
         maxsplit=3), out.decode().split('\n'))
@@ -120,13 +119,13 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
     cmd += [PRETTY_OPTION[pretty], branch]
     if path is not None:
         cmd += ['--', path]
-    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=DEVNULL)
-    out, _err = await asyncio.wait_for(proc.communicate(), 2)
-    if proc.returncode is None:
-        proc.kill()
-    if proc.returncode != 0:
-        raise RuntimeError("git log error")
+    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
+    if returncode != 0:
+        err = err.decode()
+        if ('does not have any commits yet' in err or
+                "fatal: ambiguous argument 'master': unknown revision" in err):
+            return []
+        raise RuntimeError("git log error " + str(returncode))
     out = out.decode()
     if pretty == ONELINE:
         result = [line.split(' ', 1)
@@ -143,12 +142,8 @@ async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
     cmd = ['git', 'branch']
-    proc = await asyncio.create_subprocess_exec(*cmd, cwd=root,
-                                                stdout=PIPE, stderr=DEVNULL)
-    out, _err = await asyncio.wait_for(proc.communicate(), 2)
-    if proc.returncode is None:
-        proc.kill()
-    if proc.returncode != 0:
+    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    if returncode != 0:
         raise RuntimeError("git branch error")
     out = out.decode().split('\n')
     current = None
@@ -195,3 +190,85 @@ async def git_cat_file(owner: str, reponame: str, branch: str, path: str) -> byt
         print(err.decode())
         raise OSError("git cat file error")
     return out
+
+
+async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str):
+    cmd = ['git', 'fetch', 'file://'+srcroot]
+    cmd += ['{}:{}'.format(srcrefs, dstrefs)]
+    returncode, _out, _err = await run(cmd, cwd=dstroot, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=10)
+    if returncode != 0:
+        raise RuntimeError("git fetch error")
+
+
+async def git_create_branch(root: str, newbranch: str, frombranch: str):
+    cmd = ['git', 'branch', newbranch, frombranch]
+    returncode, _out, _err = await run(cmd, cwd=root, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=2)
+    if returncode != 0:
+        raise RuntimeError("git branch error")
+
+
+async def git_clone(workingdir: str, owner: str, reponame: str, branch: str = None):
+    root = get_repo_dirpath(owner, reponame)
+    cmd = ['git', 'clone']
+    if branch is None:
+        cmd += ['-b', branch]
+    cmd += ['file://' + root]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=10)
+    if returncode != 0:
+        raise RuntimeError("git branch error")
+
+
+async def git_checkout(workingdir: str, branch: str):
+    cmd = ['git', 'checkout', branch]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git checkout error")
+
+
+async def git_merge_action(workingdir: str, action: str):
+    if action not in ('abort', 'continue'):
+        raise ValueError('action must be abort or continue')
+    cmd = ['git', 'merge', '--'+action]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git merge error")
+
+
+class CanNotAutoMerge(RuntimeError):
+    pass
+
+
+async def git_merge(workingdir: str, dstbranch: str, srcbranch: str):
+    await git_checkout(workingdir, dstbranch)
+    cmd = ['git', 'merge', '--no-ff', srcbranch]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode == 1:
+        raise CanNotAutoMerge('can not auto merge')
+    elif returncode != 0:
+        raise RuntimeError("git merge error")
+
+
+async def git_push(workingdir: str, dstbranch: str, remote: str = None):
+    if dstremote is None:
+        dstremote = 'origin'
+    cmd = ['git', 'push', remote, dstbranch]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git push error")
+
+
+async def git_pull(workingdir: str, remote: str = None):
+    if dstremote is None:
+        dstremote = 'origin'
+    cmd = ['git', 'pull', remote]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git pull error")

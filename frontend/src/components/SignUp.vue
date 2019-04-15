@@ -65,7 +65,6 @@ export default {
         method: "POST",
         url: "/signup",
         data: {
-          ajax: 1,
           username: this.username,
           email: this.email,
           password: this.password
@@ -73,7 +72,16 @@ export default {
       })
         .then(response => {
           if (response.data.state == "ok") {
-            this.$router.replace("/signup/verify");
+            if (response.data.token == null) {
+              alert("the email has been sent to your mailbox");
+            } else {
+              this.$router.replace(
+                "/signup/verify?username=" +
+                  this.username +
+                  "&token=" +
+                  response.data.token
+              );
+            }
           } else {
             this.errormessage = response.data.error;
           }

@@ -69,13 +69,22 @@
     <b-card no-body class="filelist">
       <b-card-header>file list</b-card-header>
       <b-list-group flush>
-        <b-list-group-item v-for="folderData in files['folder']" :key="folderData">
+        <b-list-group-item v-for="folderData in folders" :key="folderData">
           <img src="../images/folder.png">
-          <router-link :to="fullRepoName()+'/tree/'+currentBranch+'/'+folderData">{{ folderData }}</router-link>
+          <router-link
+            v-if="firstClick()"
+            :to="repoName()+'/tree/'+currentBranch+'/'+folderData"
+            @click.native="handleFileList()"
+          >{{ folderData }}</router-link>
+          <router-link
+            v-else
+            :to="$route.path+'/'+folderData"
+            @click.native="handleFileList()"
+          >{{ folderData }}</router-link>
         </b-list-group-item>
-        <b-list-group-item v-for="fileData in files['file']" :key="fileData">
+        <b-list-group-item v-for="fileData in files" :key="fileData">
           <img src="../images/file.png">
-          <router-link :to="fullRepoName()+'/blob/'+currentBranch+'/'+fileData">{{ fileData }}</router-link>
+          <router-link :to="nextURL(fileData)">{{ fileData }}</router-link>
         </b-list-group-item>
       </b-list-group>
     </b-card>
@@ -101,7 +110,9 @@ export default {
       contributorNumber: "",
       currentBranch: "",
       branches: {},
-      files: {},
+      folders: [],
+      files: [],
+      allFiles: [],
       readme: "",
       msg: "Welcome to Your Vue.js App"
     };
@@ -109,19 +120,74 @@ export default {
   created() {
     this.getData();
   },
-  watch: {
-    $route: "getData"
+  mounted() {
+    if (window.history && window.history.pushState) {
+      history.pushState(null, null, document.URL);
+      window.addEventListener("popstate", this.handleFileList, false);
+    }
+  },
+  destroyed() {
+    window.removeEventListener("popstate", this.goBack, false);
   },
   methods: {
-    fullRepoName() {
-      return "/" + this.$route.params.owner + "/" + this.$route.params.repo;
+    repoName() {
+      let tmp = this.$route.path.split("/");
+      return tmp[0] + "/" + tmp[1] + "/" + tmp[2];
     },
     newPull() {
-      this.$router.replace(this.fullRepoName() + "/compare");
+      this.$router.push(this.repoName() + "/compare");
+    },
+    firstClick() {
+      return this.$route.path.indexOf("tree") == -1;
+    },
+    nextURL(fileData) {
+      if (this.$route.path.indexOf("tree") == -1) {
+        return this.repoName() + "/blob/" + this.currentBranch + "/" + fileData;
+      } else {
+        return this.$route.path.replace("tree", "blob") + "/" + fileData;
+      }
+    },
+    handleFileList() {
+      let tmpFileList = [];
+      let i;
+      if (this.$route.path.indexOf("tree") != -1) {
+        let currentFileLocation = this.$route.path.replace(
+          this.repoName() + "/tree/" + this.currentBranch + "/",
+          ""
+        );
+        for (i = 0; i < this.allFiles.length; i++) {
+          if (this.allFiles[i].indexOf(currentFileLocation + "/") == 0) {
+            let tmpStr = this.allFiles[i].replace(
+              currentFileLocation + "/",
+              ""
+            );
+            tmpFileList.push(tmpStr);
+          }
+        }
+      } else {
+        tmpFileList = this.allFiles;
+      }
+      this.changeFileList(tmpFileList);
+    },
+    changeFileList(files) {
+      this.folders = [];
+      this.files = [];
+      let i;
+      for (i in files) {
+        let file = files[i];
+        if (
+          file.indexOf("/") != -1 &&
+          this.folders.indexOf(file.split("/")[0]) == -1
+        ) {
+          this.folders.push(file.split("/")[0]);
+        } else if (file.indexOf("/") == -1) {
+          this.files.push(file);
+        }
+      }
     },
     getData() {
       // let mock = new MockAdapter(axios);
-      // mock.onGet(this.fullRepoName()).reply(200, {
+      // mock.onGet(this.$route.path).reply(200, {
       //   state: "ok",
       //   error: "error",
       //   commitNumber: 1,
@@ -129,16 +195,19 @@ export default {
       //   releaseNumber: 3,
       //   contributorNumber: 4,
       //   readme: "readme",
-      //   files: {
-      //     folder: ["folder1", "folder2"],
-      //     file: ["file1", "file2"]
-      //   },
+      //   files: [
+      //     "folder1/folder2/folder3/a.py",
+      //     "folder4/folder5/b.vue",
+      //     "folder1/folder2/xx",
+      //     "folder1/c.txt",
+      //     "d.js"
+      //   ],
       //   currentBranch: "master",
       //   branches: ["master"]
       // });
       axios({
         method: "GET",
-        url: this.fullRepoName(),
+        url: this.$route.path,
         params: {
           ajax: 1,
           owner: this.$route.params.owner,
@@ -146,14 +215,16 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
+          console.log(response.data);
           this.commitNumber = response.data.commitNumber;
           this.branchNumber = response.data.branchNumber;
           this.releaseNumber = response.data.releaseNumber;
           this.contributorNumber = response.data.contributorNumber;
           this.readme = response.data.readme;
-          this.files = response.data.files;
           this.currentBranch = response.data.currentBranch;
           this.branches = response.data.branches;
+          this.allFiles = response.data.files;
+          this.changeFileList(this.allFiles);
         } else {
           console.log(response.data.error);
         }

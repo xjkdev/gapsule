@@ -78,6 +78,7 @@
 //     input.click();
 //   }
 // }
+import globals from "@/globals";
 import axios from "axios";
 export default {
   name: "SignupFinishing",
@@ -92,25 +93,51 @@ export default {
       website: ""
     };
   },
+  created() {
+    if (
+      globals.cache.password == undefined ||
+      globals.cache.username == undefined ||
+      globals.cache.token == undefined
+    ) {
+      window.location.replace("/");
+    }
+  },
   methods: {
     changeImg(e) {
       let file = e.target.files[0];
       let reader = new FileReader();
       let that = this;
-      reader.readAsDataURL(file);
-      reader.onload = function() {
-        that.icon = this.result;
-        // console.log(that.icon);
-      };
+      if (file.size < 200 * 1024) {
+        reader.readAsDataURL(file);
+        reader.onload = function() {
+          that.icon = this.result;
+          console.log(that.icon);
+        };
+      } else {
+        e.target.value = "";
+        alert("file size exceed limit, the max size 200KB");
+      }
     },
     onSubmit(e) {
       e.preventDefault();
+      let password = globals.cache.password;
+      let username = globals.cache.username;
+      let token = globals.cache.token;
+      let icon;
+      let tmp = this.icon.match(/data:image\/jpeg;base64,(.*)/);
+      if (tmp == null) {
+        icon = null;
+      } else {
+        icon = tmp[1];
+      }
       axios({
         method: "POST",
         url: "/signup/finishing",
         data: {
-          ajax: 1,
-          icon: this.icon,
+          username: username,
+          password: password,
+          token: token,
+          icon: icon,
           firstname: this.firstname,
           secondname: this.secondname,
           biography: this.biography,
@@ -121,7 +148,8 @@ export default {
       })
         .then(response => {
           if (response.data.state == "ok") {
-            this.$router.replace("/index");
+            globals.cache.password = null;
+            this.$router.replace("/signin");
           } else {
             console.log(response.data.error);
           }
