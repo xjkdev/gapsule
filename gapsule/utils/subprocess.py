@@ -10,6 +10,9 @@ __all__ = ['run', 'PIPE', 'DEVNULL']
 async def _run_windows(cmd: Sequence, cwd=None, env=None, input=None, stdout=None, stderr=None,
                        timeout=None) -> Tuple[int, Optional[bytes], Optional[bytes]]:
     stdin = PIPE if input is not None else None
+    if env is None:
+        env = {}
+    env['LANG'] = 'en_GB'
 
     def _task():
         proc = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=stdin,
@@ -27,6 +30,9 @@ async def _run_windows(cmd: Sequence, cwd=None, env=None, input=None, stdout=Non
 async def _run(cmd: Sequence, cwd=None, env=None, input=None, stdout=None, stderr=None,
                timeout=None) -> Tuple[int, Optional[bytes], Optional[bytes]]:
     stdin = PIPE if input is not None else None
+    if env is None:
+            env = {}
+    env['LANG'] = 'en_GB'
     proc = await asyncio.create_subprocess_exec(*cmd, cwd=cwd, env=env, stdin=stdin,
                                                 stdout=stdout, stderr=stderr)
     if timeout is not None:

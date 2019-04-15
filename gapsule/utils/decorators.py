@@ -47,14 +47,6 @@ def unauthenticated(url='/'):
             nonlocal url
             if self.current_user:
                 if self.request.method in ("GET", "HEAD"):
-                    if "?" not in url:
-                        if urllib.parse.urlsplit(url).scheme:
-                            # if login url is absolute, make next absolute too
-                            next_url = self.request.full_url()
-                        else:
-                            assert self.request.uri is not None
-                            next_url = self.request.uri
-                        url += "?" + urlencode(dict(next=next_url))
                     self.redirect(url)
                     return None
                 raise HTTPError(403)

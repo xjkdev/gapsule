@@ -26,7 +26,7 @@ class ForumPostInput(ViewModelDict):
 
 class ForumHandler(BaseHandler):
     @ajaxquery
-    async def get(self, owner, reponame, postid):
+    async def get(self, owner, reponame, posttype, postid):
         repoid = await repo.get_repo_id(owner, reponame)
         poster, title, comments = await asyncio.gather([
             post.get_postername(repoid, postid),
@@ -43,3 +43,12 @@ class ForumHandler(BaseHandler):
         await post.create_new_comment(
             repoid, postid, 'rich', data['content'], self.current_user.user)
         self.write(dict(state='ok'))
+
+
+class NewIssueHandler(BaseHandler):
+    def get(self, owner, reponame):
+        self.render('index.html')
+
+    def post(self, owner, reponame):
+        data = {'title': '', 'content': ''}
+        # TODO: create issues

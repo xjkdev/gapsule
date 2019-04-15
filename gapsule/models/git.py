@@ -48,8 +48,11 @@ async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = No
         cmd = ['git', 'ls-tree', '-r', branch]
     if path is not None:
         cmd.append(path)
-    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
     if returncode != 0:
+        err = err.decode()
+        if 'fatal: Not a valid object name master' in err:
+            return []
         raise RuntimeError("git ls-tree error")
     filelines = map(lambda line: line.split(
         maxsplit=3), out.decode().split('\n'))
@@ -114,9 +117,13 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
     cmd += [PRETTY_OPTION[pretty], branch]
     if path is not None:
         cmd += ['--', path]
-    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
     if returncode != 0:
-        raise RuntimeError("git log error")
+        err = err.decode()
+        if ('does not have any commits yet' in err or
+                "fatal: ambiguous argument 'master': unknown revision" in err):
+            return []
+        raise RuntimeError("git log error " + str(returncode))
     out = out.decode()
     if pretty == ONELINE:
         result = [line.split(' ', 1)
@@ -159,3 +166,85 @@ async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
     if len(pending) > 0:
         print("get_all_files_lastest_commit, not all tasks done.")
     return [f.result() for f in done]
+
+
+async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str):
+    cmd = ['git', 'fetch', 'file://'+srcroot]
+    cmd += ['{}:{}'.format(srcrefs, dstrefs)]
+    returncode, _out, _err = await run(cmd, cwd=dstroot, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=10)
+    if returncode != 0:
+        raise RuntimeError("git fetch error")
+
+
+async def git_create_branch(root: str, newbranch: str, frombranch: str):
+    cmd = ['git', 'branch', newbranch, frombranch]
+    returncode, _out, _err = await run(cmd, cwd=root, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=2)
+    if returncode != 0:
+        raise RuntimeError("git branch error")
+
+
+async def git_clone(workingdir: str, owner: str, reponame: str, branch: str = None):
+    root = get_repo_dirpath(owner, reponame)
+    cmd = ['git', 'clone']
+    if branch is None:
+        cmd += ['-b', branch]
+    cmd += ['file://' + root]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=10)
+    if returncode != 0:
+        raise RuntimeError("git branch error")
+
+
+async def git_checkout(workingdir: str, branch: str):
+    cmd = ['git', 'checkout', branch]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git checkout error")
+
+
+async def git_merge_action(workingdir: str, action: str):
+    if action not in ('abort', 'continue'):
+        raise ValueError('action must be abort or continue')
+    cmd = ['git', 'merge', '--'+action]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git merge error")
+
+
+class CanNotAutoMerge(RuntimeError):
+    pass
+
+
+async def git_merge(workingdir: str, dstbranch: str, srcbranch: str):
+    await git_checkout(workingdir, dstbranch)
+    cmd = ['git', 'merge', '--no-ff', srcbranch]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode == 1:
+        raise CanNotAutoMerge('can not auto merge')
+    elif returncode != 0:
+        raise RuntimeError("git merge error")
+
+
+async def git_push(workingdir: str, dstbranch: str, remote: str = None):
+    if dstremote is None:
+        dstremote = 'origin'
+    cmd = ['git', 'push', remote, dstbranch]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git push error")
+
+
+async def git_pull(workingdir: str, remote: str = None):
+    if dstremote is None:
+        dstremote = 'origin'
+    cmd = ['git', 'pull', remote]
+    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git pull error")

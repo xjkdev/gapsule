@@ -7,18 +7,20 @@ import SignIn from "@/components/SignIn"
 import SignUp from "@/components/SignUp"
 import SignUpVerify from "@/components/SignupVerify"
 import SignupFinishing from "@/components/SignupFinishing"
-import IssuesPulls from "@/components/IssuesPulls";
+import IssuesPulls from "@/components/IssuesPulls"
 import NewIssue from "@/components/NewIssue"
 import PullCompare from "@/components/PullCompare"
 import PullConversion from "@/components/PullConversion"
 import PullCommits from "@/components/PullCommits"
 import FileContent from "@/components/FileContent"
+import NewRepo from "@/components/NewRepo"
 
 Vue.use(Router)
 
 export default new Router({
   mode: 'history',
   routes: [
+    { path: '/new', name: 'NewRepo', component: NewRepo, meta: { title: 'Create a New Repository' } },
     { path: '/signin', name: 'SignIn', component: SignIn, meta: { title: 'SignIn' } },
     { path: '/signup', name: 'SignUp', component: SignUp, meta: { title: 'Join Gapsule' } },
     {
