@@ -25,8 +25,10 @@ export default {
   },
   created() {
     this.$router.afterEach((to, _from) => {
-      this.showSidebar = !to.name.match(/^Sign/);
+      this.showSidebar = !to.name.match(/^Sign/) && to.name != "NewRepo";
     });
+    this.showSidebar =
+      !this.$route.name.match(/^Sign/) && this.$route.name != "NewRepo";
   }
 };
 </script>

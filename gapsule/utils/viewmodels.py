@@ -87,12 +87,14 @@ class ViewModelDict(dict, Dict[str, Any]):
                     default = val.get_default(self)
                     if not val._nullable and default is None:
                         raise ValueError(
-                            "attribute is required and not nullalbe, yet not setted.")
+                            "attribute {} is required and not nullalbe, yet not setted.".format(
+                                val._name
+                            ))
                     else:
                         self[val._name] = default
                 elif not val._nullable and self[val._name] is None:
                     raise ValueError(
-                        "attribute is not nullalbe, yet passed None.")
+                        "attribute {} is not nullalbe, yet passed None.".format(val._name))
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, super().__repr__())

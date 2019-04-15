@@ -31,6 +31,8 @@
         <p>{{ reply.user }} committed {{ reply.timeToNow }}</p>
       </div>
     </div>
+
+    <p v-if="replys==''">no pull commits</p>
   </b-container>
 </template>
 

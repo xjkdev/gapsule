@@ -27,7 +27,7 @@ async def create_new_attached_post(repo_id: int,
         WHERE repo_id=$1
         ''', repo_id)
     this_id = 1
-    if current_id['max'] != None:
+    if current_id['max'] is not None:
         this_id = current_id['max'] + 1
 
     await execute(

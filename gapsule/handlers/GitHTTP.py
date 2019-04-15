@@ -129,7 +129,7 @@ class GitHTTPHandler(RequestHandler):
 
     async def post(self, owner, reponame, path_info):
         try:
-            if re.match('/git-upload-pack$', path_info) is not None:
+            if re.match('/git-receive-pack$', path_info) is not None:
                 if self.current_user is None:
                     self.request_auth()
                     return

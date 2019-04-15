@@ -4,11 +4,15 @@ import secrets
 import asyncpg
 import asyncio
 import functools
-from gapsule import models, settings
+from gapsule import settings
+from gapsule.models import signup_token
 from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
-from gapsule.models.connection import _connection, fetchrow, execute, fetch
-from gapsule.utils.check_validity import check_mail_validity, check_password_validity, check_username_validity, check_reponame_validity
+from gapsule.models.connection import fetchrow, execute, fetch
+from gapsule.utils.check_validity import (check_mail_validity,
+                                          check_password_validity,
+                                          check_username_validity,
+                                          check_reponame_validity)
 
 
 @log_call()
@@ -18,10 +22,10 @@ def add_user_pending_verifying(username: str, mail_address: str,
             and check_mail_validity(mail_address) == True):
         pending_info = {}
         pending_info['username'] = username
-        pending_info['mail_address'] = mail_address
+        pending_info['email'] = mail_address
         pending_info['password'] = password
         pending_info['token'] = secrets.token_urlsafe(16)
-        models.signup_token.append_token(pending_info)
+        signup_token.append_token(pending_info)
         if not settings.settings['enable_email']:
             return pending_info['token']
         else:
@@ -35,7 +39,7 @@ async def check_user_existing(username: str):
         SELECT username FROM users_info
         WHERE username = $1
         ''', username)
-    if (temp != None):
+    if temp is not None:
         return True
     else:
         return False
@@ -80,7 +84,7 @@ async def verify_user(username: str, password: str):
     if (check_username_validity(username) == False):
         return False
     if (check_password_validity(password) != False):
-        flag = check_user_existing(username)
+        flag = await check_user_existing(username)
         if (flag == False):
             raise NameError('User does not exist')
         else:
@@ -250,18 +254,18 @@ async def alter_username(old_username: str, new_username: str):
 
 async def user_login(username: str, password: str):
     flag = await verify_user(username, password)
-    if (flag == True):
-        temp = await models.connection.fetchrow(
+    if flag:
+        temp = await fetchrow(
             '''
         SELECT username FROM log_info
         WHERE username =$1''', username)
-        if (temp != None):
-            await models.connection.execute(
+        if temp is not None:
+            await execute(
                 '''
             DELETE FROM log_info WHERE username=$1
             ''', username)
         session = secrets.token_urlsafe()
-        await models.connection.execute(
+        await execute(
             '''
                 INSERT INTO log_info(username,session,login_time) VALUES($1,$2,$3)
             ''', username, session, datetime_now())

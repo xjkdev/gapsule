@@ -7,18 +7,19 @@
 
     <b-collapse id="navbarSupportedContent" is-nav>
       <b-navbar-nav class="mr-auto">
-        <b-nav-item active to="#">
-          Home
+        <b-nav-item to="#">
+          Pull requests
           <span class="sr-only">(current)</span>
         </b-nav-item>
-        <b-nav-item to="#">Link</b-nav-item>
-        <b-nav-item-dropdown text="Dropdown">
+        <b-nav-item to="#">Issues</b-nav-item>
+        <b-nav-item to="#">Marketplace</b-nav-item>
+        <!-- <b-nav-item-dropdown text="Dropdown">
           <b-dropdown-item to="#">Action</b-dropdown-item>
           <b-dropdown-item to="#">Another action</b-dropdown-item>
           <b-dropdown-divider/>
           <b-dropdown-item to="#">Something else here</b-dropdown-item>
-        </b-nav-item-dropdown>
-        <b-nav-item to="#">Disabled</b-nav-item>
+        </b-nav-item-dropdown>-->
+        <b-nav-item to="#">Explore</b-nav-item>
       </b-navbar-nav>
       <b-navbar-nav class="ml-auto">
         <b-nav-form>
@@ -31,10 +32,28 @@
           />
           <b-button variant="outline-success" class="my-2 my-sm-0" size="sm">Search</b-button>
         </b-nav-form>&nbsp;&nbsp;
-        <b-nav-item to="/signin" style="color: white">Sign in</b-nav-item>&nbsp;&nbsp;
+        <b-nav-item href="/signin" style="color: white" v-if="!username">Sign in</b-nav-item>&nbsp;&nbsp;
         <b-nav-form>
-          <b-button to="/signup" size="sm" class="my-2 my-sm-0">Sign Up</b-button>
+          <b-button href="/signup" size="sm" class="my-2 my-sm-0" v-if="!username">Sign Up</b-button>
         </b-nav-form>
+
+        <img v-if="icon" :src="icon" alt="UserIcon">
+        <b-dropdown v-if="username" :text="username" right size="sm">
+          <b-dropdown-item>
+            Signed in as
+            <strong>{{ username }}</strong>
+          </b-dropdown-item>
+          <b-dropdown-divider></b-dropdown-divider>
+          <b-dropdown-item>Your profile</b-dropdown-item>
+          <b-dropdown-item>Your repositories</b-dropdown-item>
+          <b-dropdown-item>Your projects</b-dropdown-item>
+          <b-dropdown-item>Your stars</b-dropdown-item>
+          <b-dropdown-item>Your gists</b-dropdown-item>
+          <b-dropdown-divider></b-dropdown-divider>
+          <b-dropdown-item>Help</b-dropdown-item>
+          <b-dropdown-item>Settings</b-dropdown-item>
+          <b-dropdown-item>Sign out</b-dropdown-item>
+        </b-dropdown>
       </b-navbar-nav>
     </b-collapse>
   </b-navbar>
@@ -46,6 +65,12 @@ export default {
   mounted() {
     // let togglebtn = document.getElementById("navbar-toggler");
     // let collapseinit = new Collapse(togglebtn);
+  },
+  data() {
+    return {
+      username: document.cookie.username,
+      icon: document.cookie.icon
+    };
   }
 };
 </script>
