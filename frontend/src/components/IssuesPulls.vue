@@ -20,6 +20,11 @@
         <p class="card-text">{{'#'+issue.id+' opened on '+issue.date+' by '+issue.user}}</p>
       </b-card-body>
     </b-card>
+
+    <b-card no-body v-if="issues==''">
+      <b-card-body v-if="isIssuePage">no issues</b-card-body>
+      <b-card-body v-else>no pulls</b-card-body>
+    </b-card>
   </b-container>
 </template>
 

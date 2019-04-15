@@ -32,6 +32,8 @@
       </b-card-body>
     </b-card>
 
+    <b-card v-if="replys==''">no replys</b-card>
+
     <b-card style="width: 60%">
       <b-form>
         <b-form-textarea

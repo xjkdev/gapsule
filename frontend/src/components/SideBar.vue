@@ -10,6 +10,7 @@
           <router-link :to="'/' + project.repo">{{project.repo.replace(project.owner+'/','')}}</router-link>
         </b-list-group-item>
       </b-list-group>
+      <p v-if="projects==''">no project yet</p>
     </b-card>
 
     <b-card no-body>
@@ -28,6 +29,7 @@
           </router-link>
         </b-list-group-item>
       </b-list-group>
+      <p v-if="topics==''">no topic yet</p>
     </b-card>
 
     <b-card no-body>
@@ -38,6 +40,7 @@
           <router-link :to="'/' +person.name">{{person.name}}</router-link>
         </b-list-group-item>
       </b-list-group>
+      <p v-if="people==''">no people yet</p>
     </b-card>
   </div>
 </template>
