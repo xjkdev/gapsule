@@ -31,7 +31,11 @@
           size="sm"
           :text="'Branch: ' + currentBranch"
         >
-          <b-dropdown-item v-for="branch in branches" :key="branch">{{ branch }}</b-dropdown-item>
+          <b-dropdown-item
+            v-for="branch in branches"
+            :key="branch"
+            @click="currentBranch=branch"
+          >{{ branch }}</b-dropdown-item>
         </b-dropdown>
       </div>
       <b-col cols="2">
@@ -69,6 +73,9 @@
     <b-card no-body class="filelist">
       <b-card-header>file list</b-card-header>
       <b-list-group flush>
+        <b-list-group-item v-if="allFiles==''">
+          <p>no file</p>
+        </b-list-group-item>
         <b-list-group-item v-for="folderData in folders" :key="folderData">
           <img src="../images/folder.png">
           <router-link
@@ -91,7 +98,8 @@
 
     <b-card no-body>
       <b-card-header>readme</b-card-header>
-      <b-card-body>{{ readme }}</b-card-body>
+      <b-card-body v-if="readme">{{ readme }}</b-card-body>
+      <b-card-body v-else>no readme text</b-card-body>
     </b-card>
   </div>
 </template>
@@ -108,7 +116,7 @@ export default {
       branchNumber: "",
       releaseNumber: "",
       contributorNumber: "",
-      currentBranch: "",
+      currentBranch: "master",
       branches: {},
       folders: [],
       files: [],
@@ -202,8 +210,7 @@ export default {
       //     "folder1/c.txt",
       //     "d.js"
       //   ],
-      //   currentBranch: "master",
-      //   branches: ["master"]
+      //   branches: ["master", "develop"]
       // });
       axios({
         method: "GET",
@@ -221,7 +228,6 @@ export default {
           this.releaseNumber = response.data.releaseNumber;
           this.contributorNumber = response.data.contributorNumber;
           this.readme = response.data.readme;
-          this.currentBranch = response.data.currentBranch;
           this.branches = response.data.branches;
           this.allFiles = response.data.files;
           this.changeFileList(this.allFiles);
@@ -246,9 +252,9 @@ export default {
 .card-header {
   padding: 0.3rem 1rem;
 }
-.clone {
+/* .clone {
   position: absolute;
   right: 0;
   z-index: 90;
-}
+} */
 </style>

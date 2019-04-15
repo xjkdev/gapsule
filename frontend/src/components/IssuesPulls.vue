@@ -22,6 +22,11 @@
         >{{'#'+issue.post_id+' opened on '+issue.post_time+' by '+issue.postername}}</p>
       </b-card-body>
     </b-card>
+
+    <b-card no-body v-if="issues==''">
+      <b-card-body v-if="isIssuePage">no issues</b-card-body>
+      <b-card-body v-else>no pulls</b-card-body>
+    </b-card>
   </b-container>
 </template>
 
