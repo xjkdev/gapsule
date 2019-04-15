@@ -14,10 +14,12 @@
 
     <b-card no-body v-for="issue in issues" :key="issue">
       <b-card-body>
-        <router-link :to="fullIssuesName()+'/'+issue.id">
-          <h5 class="card-title">{{ issue.topic }}</h5>
+        <router-link :to="fullIssuesName()+'/'+issue.post_id">
+          <h5 class="card-title">{{ issue.title }}</h5>
         </router-link>
-        <p class="card-text">{{'#'+issue.id+' opened on '+issue.date+' by '+issue.user}}</p>
+        <p
+          class="card-text"
+        >{{'#'+issue.post_id+' opened on '+issue.post_time+' by '+issue.postername}}</p>
       </b-card-body>
     </b-card>
   </b-container>
@@ -60,20 +62,20 @@ export default {
       // mock.onGet(this.fullIssuesName()).reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   issues: {
-      //     issue1: {
-      //       topic: "a topic",
-      //       id: "11",
-      //       date: "1 April",
-      //       user: "Alice"
+      //   issues: [
+      //     {
+      //       title: "a topic",
+      //       post_id: "11",
+      //       post_time: "1 April",
+      //       postername: "Alice"
       //     },
-      //     issue2: {
-      //       topic: "another topic",
-      //       id: "12",
-      //       date: "2 April",
-      //       user: "Bob"
+      //     {
+      //       title: "another topic",
+      //       post_id: "12",
+      //       post_time: "2 April",
+      //       postername: "Bob"
       //     }
-      //   }
+      //   ]
       // });
       axios({
         method: "GET",

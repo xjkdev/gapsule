@@ -3,7 +3,7 @@
     <RepoNav v-if="$route.name != 'Topic'"/>
 
     <div>
-      <span style="font-weight: 400; font-size: 32px;">{{ topic }}</span> &nbsp;
+      <span style="font-weight: 400; font-size: 32px;">{{ title }}</span> &nbsp;
       <span
         style="font-weight: 300; font-size: 32px; color: #a3aab1"
       >#{{ $route.params.issueid }}</span>
@@ -11,7 +11,7 @@
         <b-badge v-if="isOpen" variant="success" disabled size="sm">Opened</b-badge>
         <b-badge v-else variant="danger" disabled size="sm">Closed</b-badge>
         &nbsp;
-        {{ issueCreator }} opened this issue {{ date }} · {{ commetsNumber }} comments
+        {{ poster }} opened this issue {{ date }} · {{ commetsNumber }} comments
       </p>
     </div>
 
@@ -23,12 +23,12 @@
       header-tag="header"
       style="width: 60%"
     >
-      <router-link :to="'/'+reply.user" slot="header" style="color: #656d74">
-        <strong>{{ reply.user }}</strong>&nbsp;
+      <router-link :to="'/'+reply.commenter" slot="header" style="color: #656d74">
+        <strong>{{ reply.commenter }}</strong>&nbsp;
       </router-link>
-      <span slot="header">commented {{reply.date}}</span>
+      <span slot="header">commented {{reply.address_time}}</span>
       <b-card-body>
-        <p class="card-text">{{ reply.text }}</p>
+        <p class="card-text">{{ reply.content }}</p>
       </b-card-body>
     </b-card>
 
@@ -66,8 +66,8 @@ import axios from "axios";
 export default {
   data() {
     return {
-      topic: "",
-      issueCreator: "",
+      title: "",
+      poster: "",
       date: "",
       commetsNumber: "",
       replys: [],
@@ -132,7 +132,7 @@ export default {
       // mock.onGet(this.fullIssueName()).reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   user: "C"
+      //   commenter: "C"
       // });
       axios({
         method: "GET",
@@ -147,9 +147,9 @@ export default {
       }).then(response => {
         if (response.data.state == "ok") {
           let tmp = {};
-          tmp["user"] = response.data.user;
-          tmp["date"] = "just now";
-          tmp["text"] = this.comments;
+          tmp["commenter"] = response.data.poster;
+          tmp["address_time"] = "just now";
+          tmp["content"] = this.comments;
           this.replys.push(tmp);
           this.comments = "";
         } else {
@@ -162,22 +162,20 @@ export default {
       // mock.onGet(this.fullIssueName()).reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   topic: "a topic",
-      //   issueCreator: "Alice",
-      //   date: "2 days ago",
-      //   commetsNumber: 2,
-      //   replys: {
-      //     reply1: {
-      //       user: "Alice",
-      //       date: "1 day ago",
-      //       text: "a reply text"
+      //   title: "a title",
+      //   poster: "Alice",
+      //   comments: [
+      //     {
+      //       commenter: "Alice",
+      //       address_time: "1 day ago",
+      //       content: "a reply text"
       //     },
-      //     reply2: {
-      //       user: "Bob",
-      //       date: "2 days ago",
-      //       text: "another reply text"
+      //     {
+      //       commenter: "Bob",
+      //       address_time: "2 days ago",
+      //       content: "another reply text"
       //     }
-      //   },
+      //   ],
       //   show: true,
       //   isOpen: true
       // });
@@ -192,15 +190,15 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.topic = response.data.topic;
-          this.issueCreator = response.data.issueCreator;
-          this.date = response.data.date;
-          this.commetsNumber = response.data.commetsNumber;
+          this.title = response.data.title;
+          this.poster = response.data.poster;
+          this.date = response.data.comments[0].address_time;
+          this.commetsNumber = response.data.comments.length;
           this.show = response.data.show;
           this.isOpen = response.data.isOpen;
           let replyData;
-          for (replyData in response.data.replys) {
-            this.replys.push(response.data.replys[replyData]);
+          for (replyData in response.data.comments) {
+            this.replys.push(response.data.comments[replyData]);
           }
         } else {
           console.log(response.data.error);

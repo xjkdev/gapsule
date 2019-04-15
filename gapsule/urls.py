@@ -13,6 +13,8 @@ routes = [
     (r"/signout", Signout.SignOutHandler),
     (r"/signin/?", Signin.SignInHandler),
     (r"/signup(/verify|/finishing)?/?", Signup.SignUpHandler),
+    (r"/(?P<owner>\w+)/(?P<reponame>\w+)/(?P<posttype>issues|pulls)/?",
+     Forums.PostListHandler),
     (r"/(?P<owner>\w+)/(?P<reponame>\w+)/(?P<posttype>issues|pulls)/(?P<postid>\d+)",
      Forums.ForumHandler),
     (r"/(?P<owner>\w+)/(?P<reponame>\w+)/issues/new", Forums.NewIssueHandler),

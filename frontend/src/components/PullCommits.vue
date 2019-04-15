@@ -3,7 +3,7 @@
     <RepoNav v-if="$route.name != 'Topic'"/>
 
     <div>
-      <span style="font-weight: 400; font-size: 32px;">{{ topic }}</span> &nbsp;
+      <span style="font-weight: 400; font-size: 32px;">{{ title }}</span> &nbsp;
       <span
         style="font-weight: 300; font-size: 32px; color: #a3aab1"
       >#{{ $route.params.pullid }}</span>
@@ -41,7 +41,7 @@ import axios from "axios";
 export default {
   data() {
     return {
-      topic: "",
+      title: "",
       pullState: "",
       pullUser: "",
       commitsNumber: "",
@@ -73,20 +73,20 @@ export default {
       // mock.onGet(this.fullPullName() + "/commits").reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   topic: "a topic",
+      //   title: "a title",
       //   pullState: "Merged",
       //   pullUser: "Alice",
       //   commitsNumber: 2,
       //   pullTo: "Alice:master",
       //   pullFrom: "Bob:abc",
-      //   replys: {
-      //     reply1: {
+      //   replys: [
+      //     {
       //       commitsDate: "Apr 1, 2019",
       //       title: "a pull",
       //       user: "Alice",
       //       timeToNow: "8 das ago"
       //     }
-      //   }
+      //   ]
       // });
       axios({
         method: "GET",
@@ -99,7 +99,7 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.topic = response.data.topic;
+          this.title = response.data.title;
           this.pullState = response.data.pullState;
           this.pullUser = response.data.pullUser;
           this.commitsNumber = response.data.commitsNumber;
