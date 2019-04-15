@@ -12,7 +12,8 @@ from gapsule.utils.check_validity import check_mail_validity, check_password_val
 
 
 @log_call()
-def add_user_pending_verifying(username, mail_address, password):
+def add_user_pending_verifying(username: str, mail_address: str,
+                               password: str):
     if (check_username_validity(username) == True
             and check_mail_validity(mail_address) == True):
         pending_info = {}
@@ -28,7 +29,7 @@ def add_user_pending_verifying(username, mail_address, password):
 
 
 @log_call()
-async def check_user_existing(username):
+async def check_user_existing(username: str):
     temp = await fetchrow(
         '''
         SELECT username FROM users_info
@@ -41,7 +42,7 @@ async def check_user_existing(username):
 
 
 @log_call()
-async def check_profile_existing(username):
+async def check_profile_existing(username: str):
     temp = await fetchrow(
         '''
         SELECT username FROM profiles
@@ -53,7 +54,7 @@ async def check_profile_existing(username):
 
 
 @log_call()
-async def create_new_user(username, mail_address, password):
+async def create_new_user(username: str, mail_address: str, password: str):
     if (check_username_validity(username) == False):
         return False
     if (check_mail_validity(mail_address) == False):
@@ -75,7 +76,7 @@ async def create_new_user(username, mail_address, password):
 
 
 @log_call()
-async def verify_user(username, password):
+async def verify_user(username: str, password: str):
     if (check_username_validity(username) == False):
         return False
     if (check_password_validity(password) != False):
@@ -101,15 +102,15 @@ async def verify_user(username, password):
 
 
 @log_call()
-async def set_profile(username,
-                      firstname,
-                      lastname,
-                      icon_path=None,
-                      introduction=None,
-                      company=None,
-                      location=None,
-                      public_email=None,
-                      website=None):
+async def set_profile(username: str,
+                      firstname: str,
+                      lastname: str,
+                      icon_path: str = None,
+                      introduction: str = None,
+                      company: str = None,
+                      location: str = None,
+                      public_email: str = None,
+                      website: str = None):
     if (check_username_validity(username) == False):
         return False
     else:
@@ -177,7 +178,7 @@ async def set_profile(username,
 
 
 @log_call()
-async def get_uid(username):
+async def get_uid(username: str):
     uid = await fetchrow(
         '''
                 SELECT uid FROM users_info
@@ -189,7 +190,7 @@ async def get_uid(username):
         return uid['uid']
 
 
-async def get_profile_info(username):
+async def get_profile_info(username: str):
     temp = await fetchrow(
         '''
             SELECT * FROM profiles
@@ -199,7 +200,7 @@ async def get_profile_info(username):
     return result
 
 
-async def alter_username(old_username, new_username):
+async def alter_username(old_username: str, new_username: str):
     if (check_username_validity(new_username) == False
             or check_username_validity(old_username) == False):
         raise NameError()
@@ -247,7 +248,7 @@ async def alter_username(old_username, new_username):
             return True
 
 
-async def user_login(username, password):
+async def user_login(username: str, password: str):
     flag = await verify_user(username, password)
     if (flag == True):
         temp = await models.connection.fetchrow(
@@ -270,7 +271,7 @@ async def user_login(username, password):
 
 
 @log_call()
-async def user_logout(username):
+async def user_logout(username: str):
     await models.connection.execute(
         '''
             DELETE FROM log_info WHERE username=$1
@@ -278,7 +279,7 @@ async def user_logout(username):
 
 
 @log_call()
-async def check_session_status(username, session):
+async def check_session_status(username: str, session: str):
     temp = await models.connection.fetchrow(
         '''
         SELECT username, session FROM log_info
@@ -293,7 +294,7 @@ async def check_session_status(username, session):
             return False
 
 
-async def get_last_login_time(username):
+async def get_last_login_time(username: str):
     temp = await fetchrow(
         '''
         SELECT login_time FROM log_info

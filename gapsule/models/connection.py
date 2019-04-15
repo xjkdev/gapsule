@@ -4,20 +4,20 @@ import asyncpg
 from gapsule import settings
 
 
-async def _make_connect(config_info):
+async def _make_connect_pool(config_info):
     try:
-        con = await asyncpg.connect(user=config_info['dbuser'],
-                                    database=config_info['dbname'])
+        pool = await asyncpg.create_pool(user=config_info['dbuser'],
+                                         database=config_info['dbname'])
     except asyncpg.InvalidCatalogNameError:
         con1 = await asyncpg.connect(user=config_info['dbuser'],
                                      database='postgres')
         await con1.execute('''CREATE DATABASE ''' + config_info['dbname'])
         await con1.close()
 
-        con = await asyncpg.connect(user=config_info['dbuser'],
-                                    database=config_info['dbname'])
+        pool = await asyncpg.create_pool(user=config_info['dbuser'],
+                                         database=config_info['dbname'])
 
-        await con.execute('''CREATE TABLE users_info(
+        await pool.execute('''CREATE TABLE users_info(
             uid SERIAL,
             username  varchar(20) primary key,
             mail_address varchar(40),
@@ -68,6 +68,7 @@ async def _make_connect(config_info):
             CREATE TABLE posts(
             post_id    integer ,
             repo_id    integer ,
+            is_issue    boolean,
             postername    varchar(20) references users_info(username),
             title       varchar,
             status      varchar,
@@ -84,7 +85,7 @@ async def _make_connect(config_info):
             address_time  timestamptz,
             type        varchar,
             content   varchar,
-            conmmenter varchar    references users_info(username),
+            commenter varchar    references users_info(username),
             primary key(repo_id,post_id,comment_id),
             foreign key (post_id, repo_id) references posts(post_id, repo_id)
             );
@@ -107,8 +108,6 @@ async def _make_connect(config_info):
             primary key(dest_repo_id,pull_id)
             );
             ''')
-        pool = await asyncpg.create_pool(user=config_info['dbuser'],
-                                         database=config_info['dbname'])
 
     return pool
 
@@ -116,7 +115,8 @@ async def _make_connect(config_info):
 def _create_instance():
     try:
         tmp_loop = asyncio.get_event_loop()
-        pool = tmp_loop.run_until_complete(_make_connect(settings.settings))
+        pool = tmp_loop.run_until_complete(
+            _make_connect_pool(settings.settings))
         return pool
     except Exception as e:
         raise RuntimeError("Database connection initiation failed.") from e
