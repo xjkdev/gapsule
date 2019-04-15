@@ -59,7 +59,7 @@ export default {
       reponame: "",
       description: "",
       options: [],
-      repoPropertySelect: ""
+      repoPropertySelect: "Public"
     };
   },
   created() {

@@ -36,8 +36,24 @@
         <b-nav-form>
           <b-button href="/signup" size="sm" class="my-2 my-sm-0" v-if="!username">Sign Up</b-button>
         </b-nav-form>
+
         <img v-if="icon" :src="icon" alt="UserIcon">
-        <span v-if="username">{{ username }}</span>
+        <b-dropdown v-if="username" :text="username" right size="sm">
+          <b-dropdown-item>
+            Signed in as
+            <strong>{{ username }}</strong>
+          </b-dropdown-item>
+          <b-dropdown-divider></b-dropdown-divider>
+          <b-dropdown-item>Your profile</b-dropdown-item>
+          <b-dropdown-item>Your repositories</b-dropdown-item>
+          <b-dropdown-item>Your projects</b-dropdown-item>
+          <b-dropdown-item>Your stars</b-dropdown-item>
+          <b-dropdown-item>Your gists</b-dropdown-item>
+          <b-dropdown-divider></b-dropdown-divider>
+          <b-dropdown-item>Help</b-dropdown-item>
+          <b-dropdown-item>Settings</b-dropdown-item>
+          <b-dropdown-item>Sign out</b-dropdown-item>
+        </b-dropdown>
       </b-navbar-nav>
     </b-collapse>
   </b-navbar>
