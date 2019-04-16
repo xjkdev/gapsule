@@ -153,8 +153,7 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.status = "Closed";
-          console.log("this issue is closed");
+          this.$router.go(0); // reload page.
         } else {
           console.log(response.data.error);
         }
@@ -170,8 +169,7 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.status = "Open";
-          console.log("this issue is opend");
+          this.$router.go(0); // reload page.
         } else {
           console.log(response.data.error);
         }
@@ -193,12 +191,7 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          let tmp = {};
-          tmp["commenter"] = response.data.poster;
-          tmp["address_time"] = "just now";
-          tmp["content"] = this.content;
-          this.replys.push(tmp);
-          this.content = "";
+          this.$router.go(0); // reload page.
         } else {
           console.log(response.data.error);
         }

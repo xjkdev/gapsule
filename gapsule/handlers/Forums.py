@@ -58,26 +58,27 @@ class ForumHandler(BaseHandler):
                                       comments=comments))
 
     @ajaxquery
-    async def post(self, owner, reponame, postid):
+    async def post(self, owner, reponame, posttype, postid):
         data = ForumPostInput(json_decode(self.request.body))
         postid = int(postid)
         repoid = await repo.get_repo_id(owner, reponame)
+        commenter = self.current_user.user
         if data.action == 'newComment':
             await post.create_new_comment(
-                repoid, postid, 'rich', data.content, self.current_user.user)
+                repoid, postid, 'rich', data.content, commenter)
             self.write(dict(state='ok'))
         elif data.action == 'closeIssue':
             if len(data.content) > 0:
                 content = '<action>close</action>' + data.content
                 await post.create_new_comment(
-                    repoid, postid, 'rich', content, self.current_user.user)
+                    repoid, postid, 'rich', content, commenter)
             await post.alter_status(repoid, postid, 'Closed')
             self.write(dict(state='ok'))
         elif data.action == 'reopenIssue':
             if len(data.content) > 0:
                 content = '<action>close</action>' + data.content
                 await post.create_new_comment(
-                    repoid, postid, 'rich', content, self.current_user.user)
+                    repoid, postid, 'rich', content, commenter)
             await post.alter_status(repoid, postid, 'Open')
             self.write(dict(state='ok'))
         else:
@@ -90,7 +91,10 @@ class PostListHandler(BaseHandler):
         repoid = await repo.get_repo_id(owner, reponame)
         # if posttype == 'issues':
         # TODO: 区分issues和pulls
-        allposts = await post.get_all_attached_posts(repoid)
+        if posttype == 'issues':
+            allposts = await post.get_all_issues(repoid)
+        else:
+            allposts = await post.get_all_pull_requests(repoid)
         for ipost in allposts:
             if 'post_time' in ipost:
                 ipost['post_time'] = format_log_time(ipost['post_time'])

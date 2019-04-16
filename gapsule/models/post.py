@@ -62,16 +62,13 @@ async def check_post_existing(repo_id: int, post_id: int):
 
 @log_call()
 async def get_all_posts_of_poster(postername: str):
-    results = []
     temps = await fetch(
         '''
         SELECT * FROM posts
         WHERE postername=$1
         ''', postername)
-    for temp in temps:
-        result = dict(temp)
-        results.append(result)
-    print(results)
+    results = [dict(temp) for temp in temps]
+    return results
 
 
 @log_call()
@@ -213,10 +210,7 @@ async def get_all_attached_posts(repo_id: int):
             SELECT * FROM posts
             WHERE repo_id=$1
         ''', repo_id)
-    results = []
-    for temp in temps:
-        result = dict(temp)
-        results.append(result)
+    results = [dict(temp) for temp in temps]
     return results
 
 
@@ -230,10 +224,17 @@ async def get_all_issues(repo_id: int):
             SELECT * FROM posts
             WHERE repo_id=$1 and is_issue=$2
         ''', repo_id, True)
-    results = []
-    for temp in temps:
-        result = dict(temp)
-        results.append(result)
+    results = [dict(temp) for temp in temps]
+    return results
+
+
+async def get_all_pull_requests(repo_id: int):
+    temps = await fetch(
+        '''
+            SELECT * FROM posts
+            WHERE repo_id=$1 and is_issue=$2
+        ''', repo_id, False)
+    results = [dict(temp) for temp in temps]
     return results
 
 
@@ -244,8 +245,5 @@ async def get_all_comments(repo_id: int, post_id: int):
             SELECT * FROM comments
             WHERE repo_id=$1 and post_id=$2
             ''', repo_id, post_id)
-    results = []
-    for temp in temps:
-        result = dict(temp)
-        results.append(result)
+    results = [dict(temp) for temp in temps]
     return results
