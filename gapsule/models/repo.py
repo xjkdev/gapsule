@@ -8,7 +8,7 @@ from gapsule.models.connection import _connection, fetchrow, execute, fetch
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 from gapsule.models.user import get_uid
 
- 
+
 class RepoNotFoundException(FileNotFoundError):
     pass
 
@@ -44,8 +44,7 @@ async def check_repo_existing(owner: str, reponame: str):
     temp = await fetchrow(
         '''
         SELECT username FROM repos
-        WHERE username = $1 AND reponame = $2''', owner, reponame
-    )
+        WHERE username = $1 AND reponame = $2''', owner, reponame)
     if temp is not None:
         return True
     else:
@@ -118,8 +117,7 @@ async def check_read_permission(owner: str,
                 '''
                     SELECT username FROM read_permission
                     WHERE repo_id=$1 and username=$2
-                ''', await get_repo_id(owner, reponame), username
-            )
+                ''', await get_repo_id(owner, reponame), username)
             if temp is not None:
                 return True
             else:
@@ -128,34 +126,36 @@ async def check_read_permission(owner: str,
         raise RepoNotFoundException()
 
 
-def get_commits_num(owner: str, repo: str, branch: str):
+async def get_commits_num(owner: str, repo: str, branch: str):
     """ 查询 repo的提交次数commits """
-    return len(await git.git_commit_logs(owner, repo, branch, pretty=git.ONELINE))
+    return len(await git.git_commit_logs(owner,
+                                         repo,
+                                         branch,
+                                         pretty=git.ONELINE))
 
 
 # 修改 repo的提交次数commits
 @log_call(warning)
-def set_commits_num(new_num: int):
+async def set_commits_num(new_num: int):
     print('commits_num set as' + str(new_num) + ' successfully')
     return True
 
 
-def get_branches_num(owner: str, repo: str):
+async def get_branches_num(owner: str, repo: str):
     """ 查询  repo的分支数branch """
     return len((await git.git_branches(owner, repo))[1])
 
 
 @log_call()
 async def check_write_permission(owner: str, reponame: str, username: str):
-    if username==owner:
+    if username == owner:
         return True
     if (await check_repo_existing(owner, reponame) == True):
         temp = await fetchrow(
             '''
         SELECT username FROM admin_permission
         WHERE repo_id=$1 and username=$2
-        ''', await get_repo_id(owner, reponame), username
-                              )
+        ''', await get_repo_id(owner, reponame), username)
         if temp is not None:
             return True
         else:
@@ -163,8 +163,7 @@ async def check_write_permission(owner: str, reponame: str, username: str):
                 '''
                 SELECT collaborator FROM collaborate
                 WHERE repo_id=$1 and username=$2
-                ''', await get_repo_id(owner, reponame), username
-            )
+                ''', await get_repo_id(owner, reponame), username)
             if temp2 is not None:
                 return True
             else:
@@ -175,15 +174,14 @@ async def check_write_permission(owner: str, reponame: str, username: str):
 
 @log_call()
 async def check_admin_permission(owner: str, reponame: str, username: str):
-    if username==owner:
+    if username == owner:
         return True
     if (await check_repo_existing(owner, reponame) == True):
         temp = await fetchrow(
             '''
                     SELECT username FROM admin_permission
                     WHERE repo_id=$1 and username=$2
-            ''', await get_repo_id(owner, reponame), username
-        )
+            ''', await get_repo_id(owner, reponame), username)
         if temp is not None:
             return True
         else:
@@ -358,7 +356,7 @@ async def set_repo_introduction(owner: str, reponame: str,
 
 
 async def get_specified_path(owner: str, reponame: str, branch: str,
-                       path=None) -> List[Tuple[str, str, bool]]:
+                             path=None) -> List[Tuple[str, str, bool]]:
     """ 查询  对应版本对应路径下的某个文件夹包含的文件夹（名称）和文件（名称）
         返回三元组，分别为name, hash, is_dir
     """
@@ -441,7 +439,7 @@ async def get_file_content(path: str, branch=None):
 
 
 async def get_all_files(owner: str, reponame: str,
-                  branch: str) -> List[Tuple[str, str]]:
+                        branch: str) -> List[Tuple[str, str]]:
     """ 查询  所有仓库文件 """
     return await git.git_ls_files(owner, reponame, branch)
 
@@ -455,9 +453,12 @@ async def path_exists(owner: str, reponame: str, branch: str, path) -> bool:
 
 
 async def get_history(owner: str, reponame: str,
-                branch: str) -> List[Dict[str, str]]:
+                      branch: str) -> List[Dict[str, str]]:
     """ 查询 历史提交的版本与时间 """
-    return await git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)
+    return await git.git_commit_logs(owner,
+                                     reponame,
+                                     branch,
+                                     pretty=git.MEDIUM)
 
 
 async def get_contributors_info():
