@@ -223,7 +223,7 @@ async def get_all_comments(repo_id, post_id):
     temps = await fetch(
         '''
             SELECT * FROM comments
-            WHERE repo_id=$1, post_id=$2
+            WHERE repo_id=$1 and post_id=$2
             ''', repo_id, post_id)
     results = []
     for temp in temps:

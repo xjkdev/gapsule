@@ -8,10 +8,11 @@
         style="font-weight: 300; font-size: 32px; color: #a3aab1"
       >#{{ $route.params.pullid }}</span>
       <div>
-        <div v-if="pullState=='open'">
+        <div v-if="status=='Open'">
           <b-badge variant="success">Open</b-badge>
           <span>{{ pullUser }} wants to merge {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
         </div>
+        <!-- FIXME: 这里差了 Closed -->
         <div v-else>
           <b-badge variant="info">Merged</b-badge>
           <span>{{ pullUser }} merged {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
@@ -44,7 +45,7 @@ export default {
   data() {
     return {
       title: "",
-      pullState: "",
+      status: "",
       pullUser: "",
       commitsNumber: "",
       pullTo: "",
@@ -76,7 +77,7 @@ export default {
       //   state: "ok",
       //   error: "error",
       //   title: "a title",
-      //   pullState: "Merged",
+      //   status: "Merged",
       //   pullUser: "Alice",
       //   commitsNumber: 2,
       //   pullTo: "Alice:master",
@@ -102,7 +103,7 @@ export default {
       }).then(response => {
         if (response.data.state == "ok") {
           this.title = response.data.title;
-          this.pullState = response.data.pullState;
+          this.status = response.data.status;
           this.pullUser = response.data.pullUser;
           this.commitsNumber = response.data.commitsNumber;
           this.pullTo = response.data.pullTo;

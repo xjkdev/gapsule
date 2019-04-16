@@ -22,8 +22,8 @@ class ForumGetResult(ViewModelDict):
 
 
 class ForumPostInput(ViewModelDict):
-    type = ViewModelField()
-    text = ViewModelField()
+    action: str = ViewModelField(required=True, nullable=False)
+    content: str = ViewModelField(required=False)
 
 
 class NewIssueInput(ViewModelDict):
@@ -50,17 +50,38 @@ class ForumHandler(BaseHandler):
                     comment['address_time'])
             if 'conmmenter' in comment:  # FIXME
                 comment['commenter'] = comment['conmmenter']
-        # print(poster, title, comments)
-        self.write(ForumGetResult(state='ok', title=title, poster=poster, isOpen=(status == 'Open'),
-                                  comments=comments))
+        if posttype == 'issues':
+            self.write(ForumGetResult(state='ok', title=title, poster=poster, status=status,
+                                      comments=comments))
+        else:
+            self.write(ForumGetResult(state='ok', title=title, poster=poster, status=status,
+                                      comments=comments))
 
     @ajaxquery
     async def post(self, owner, reponame, postid):
-        repoid = await repo.get_repo_id(owner, reponame)
         data = ForumPostInput(json_decode(self.request.body))
-        await post.create_new_comment(
-            repoid, postid, 'rich', data['content'], self.current_user.user)
-        self.write(dict(state='ok'))
+        postid = int(postid)
+        repoid = await repo.get_repo_id(owner, reponame)
+        if data.action == 'newComment':
+            await post.create_new_comment(
+                repoid, postid, 'rich', data.content, self.current_user.user)
+            self.write(dict(state='ok'))
+        elif data.action == 'closeIssue':
+            if len(data.content) > 0:
+                content = '<action>close</action>' + data.content
+                await post.create_new_comment(
+                    repoid, postid, 'rich', content, self.current_user.user)
+            await post.alter_status(repoid, postid, 'Closed')
+            self.write(dict(state='ok'))
+        elif data.action == 'reopenIssue':
+            if len(data.content) > 0:
+                content = '<action>close</action>' + data.content
+                await post.create_new_comment(
+                    repoid, postid, 'rich', content, self.current_user.user)
+            await post.alter_status(repoid, postid, 'Open')
+            self.write(dict(state='ok'))
+        else:
+            self.write(dict(state='error', error='invalid action.'))
 
 
 class PostListHandler(BaseHandler):

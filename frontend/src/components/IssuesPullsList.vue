@@ -4,7 +4,7 @@
 
     <b-row>
       <b-col cols="4">
-        <b-form-input v-if="isIssuePage" placeholder="Search issues" @keyup.enter="getSearchDatas"></b-form-input>
+        <b-form-input v-if="isIssuePage" placeholder="Search Issues" @keyup.enter="getSearchDatas"></b-form-input>
         <b-form-input v-else placeholder="Search Pulls" @keyup.enter="getSearchDatas"></b-form-input>
       </b-col>
       <b-col cols="2" offset="6">
@@ -36,9 +36,6 @@ import axios from "axios";
 // import MockAdapter from "axios-mock-adapter";
 export default {
   props: {
-    isIssuePage: {
-      type: Boolean
-    },
     operateType: {
       // type: String
       validator: function(value) {
@@ -60,7 +57,11 @@ export default {
   methods: {
     fullIssuesName() {
       let param = this.$route.params;
-      return "/" + param.owner + "/" + param.repo + "/" + this.operateType;
+      if (this.operateType == "issues") {
+        return "/" + param.owner + "/" + param.repo + "/issues";
+      } else {
+        return "/" + param.owner + "/" + param.repo + "/pulls";
+      }
     },
     getIssues() {
       // let mock = new MockAdapter(axios);
@@ -102,12 +103,17 @@ export default {
       this.getIssues();
     },
     newIssue() {
-      if (this.isIssuePage) {
+      if (this.operateType == "issues") {
         this.$router.push(this.fullIssuesName() + "/new");
       } else {
         let param = this.$route.params;
         this.$router.push("/" + param.owner + "/" + param.repo + "/compare");
       }
+    }
+  },
+  computed: {
+    isIssuePage() {
+      return this.operateType == "issues";
     }
   },
   components: { RepoNav }

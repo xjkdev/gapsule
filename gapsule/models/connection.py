@@ -6,8 +6,8 @@ from gapsule import settings
 
 async def _make_connect(config_info):
     try:
-        con = await asyncpg.connect(user=config_info['dbuser'],
-                                    database=config_info['dbname'])
+        con = await asyncpg.create_pool(user=config_info['dbuser'],
+                                        database=config_info['dbname'])
     except asyncpg.InvalidCatalogNameError:
         con1 = await asyncpg.connect(user=config_info['dbuser'],
                                      database='postgres')
