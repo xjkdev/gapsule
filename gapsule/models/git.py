@@ -106,11 +106,9 @@ def _read_medium_log(log: str) -> List[Dict[str, str]]:
     return result
 
 
-async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE,
-                          path=None, maxsize: int = None) \
+async def git_log(root: str,  branch: str, pretty=ONELINE,
+                  path=None, maxsize: int = None) \
         -> Union[List[Tuple[str, str]], List[Dict[str, str]], List[Tuple[str, str, str]]]:
-    root = get_repo_dirpath(owner, reponame)
-    _check_exists(root)
     cmd = ['git', 'log', '--date=iso8601-strict']
     if isinstance(maxsize, int):
         cmd += ['-n', str(maxsize)]
@@ -123,7 +121,7 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
         if ('does not have any commits yet' in err or
                 "fatal: ambiguous argument 'master': unknown revision" in err):
             return []
-        raise RuntimeError("git log error " + str(returncode))
+        raise RuntimeError("git log error " + str(returncode), repr(err))
     out = out.decode()
     if pretty == ONELINE:
         result = [line.split(' ', 1)
@@ -134,6 +132,14 @@ async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE
         result = [line.split('\t', 2)
                   for line in out.split('\n')]
     return result
+
+
+async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE,
+                          path=None, maxsize: int = None) \
+        -> Union[List[Tuple[str, str]], List[Dict[str, str]], List[Tuple[str, str, str]]]:
+    root = get_repo_dirpath(owner, reponame)
+    _check_exists(root)
+    return await git_log(root, branch, pretty, path, maxsize)
 
 
 async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
@@ -188,7 +194,7 @@ async def git_create_branch(root: str, newbranch: str, frombranch: str):
 async def git_clone(workingdir: str, owner: str, reponame: str, branch: str = None):
     root = get_repo_dirpath(owner, reponame)
     cmd = ['git', 'clone']
-    if branch is None:
+    if branch is not None:
         cmd += ['-b', branch]
     cmd += ['file://' + root]
     returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
@@ -221,7 +227,7 @@ class CanNotAutoMerge(RuntimeError):
 
 async def git_merge(workingdir: str, dstbranch: str, srcbranch: str):
     await git_checkout(workingdir, dstbranch)
-    cmd = ['git', 'merge', '--no-ff', srcbranch]
+    cmd = ['git', 'merge', '--no-commit', '--no-ff', srcbranch]
     returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
                                        timeout=5)
     if returncode == 1:
@@ -230,21 +236,31 @@ async def git_merge(workingdir: str, dstbranch: str, srcbranch: str):
         raise RuntimeError("git merge error")
 
 
-async def git_push(workingdir: str, dstbranch: str, remote: str = None):
+async def git_push(workingdir: str, dstbranch: str, dstremote: str = None):
     if dstremote is None:
         dstremote = 'origin'
-    cmd = ['git', 'push', remote, dstbranch]
+    cmd = ['git', 'push', dstremote, dstbranch]
     returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
                                        timeout=5)
     if returncode != 0:
         raise RuntimeError("git push error")
 
 
-async def git_pull(workingdir: str, remote: str = None):
+async def git_pull(workingdir: str, dstremote: str = None):
     if dstremote is None:
         dstremote = 'origin'
-    cmd = ['git', 'pull', remote]
+    cmd = ['git', 'pull', dstremote]
     returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+                                       timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git pull error")
+
+
+async def git_commit(workingdir: str, message: str):
+    message = message.encode()
+    cmd = ['git', 'commit', '--file=-']
+    returncode, _out, _err = await run(cmd, cwd=workingdir, input=message,
+                                       stdout=DEVNULL, stderr=DEVNULL,
                                        timeout=5)
     if returncode != 0:
         raise RuntimeError("git pull error")
