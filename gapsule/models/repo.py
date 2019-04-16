@@ -67,7 +67,7 @@ async def endow_read_permission(owner: str, reponame: str,
 @log_call()
 async def remove_read_permission(owner: str, reponame: str,
                                  username_to_remove: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 delete from read_permission
@@ -80,7 +80,7 @@ async def remove_read_permission(owner: str, reponame: str,
 @log_call()
 async def endow_admin_permission(owner: str, reponame: str,
                                  username_permitted: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 INSERT INTO admin_permission(repo_id,username)
@@ -93,7 +93,7 @@ async def endow_admin_permission(owner: str, reponame: str,
 @log_call()
 async def remove_admin_permission(owner: str, reponame: str,
                                   username_to_remove: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 delete from admin_permission
@@ -109,7 +109,7 @@ async def check_read_permission(owner: str,
                                 username: str = None):
     if username == owner:
         return True
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         if await get_repo_visibility(owner, reponame):
             return True
         else:
@@ -150,7 +150,7 @@ async def get_branches_num(owner: str, repo: str):
 async def check_write_permission(owner: str, reponame: str, username: str):
     if username == owner:
         return True
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         temp = await fetchrow(
             '''
         SELECT username FROM admin_permission
@@ -176,7 +176,7 @@ async def check_write_permission(owner: str, reponame: str, username: str):
 async def check_admin_permission(owner: str, reponame: str, username: str):
     if username == owner:
         return True
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         temp = await fetchrow(
             '''
                     SELECT username FROM admin_permission
@@ -294,7 +294,7 @@ async def get_owner_id(repo_id: int):
 
 async def set_default_branch(owner: str, reponame: str,
                              new_default_branch: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 UPDATE repos
@@ -305,7 +305,7 @@ async def set_default_branch(owner: str, reponame: str,
 
 
 async def get_default_branch(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await fetchrow(
             '''
                 SELECT default_branch FROM repos
@@ -317,7 +317,7 @@ async def get_default_branch(owner: str, reponame: str):
 
 
 async def get_forked_from(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await fetchrow(
             '''
                 SELECT forked_from FROM repos
@@ -344,7 +344,7 @@ async def get_repo_introduction(owner: str, reponame: str):
 @log_call()
 async def set_repo_introduction(owner: str, reponame: str,
                                 new_introduction: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 UPDATE  repos
@@ -379,7 +379,7 @@ async def get_repo_star_num(owner: str, reponame: str):
 
 @log_call()
 async def inc_repo_star_num(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         new_num = await get_repo_star_num(owner, reponame) + 1
         await execute(
             '''
@@ -407,7 +407,7 @@ async def get_repo_fork_num(owner: str, reponame: str):
 
 @log_call()
 async def inc_repo_fork_num(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         new_num = await get_repo_fork_num(owner, reponame) + 1
         await execute(
             '''
