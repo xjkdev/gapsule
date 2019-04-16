@@ -252,11 +252,12 @@ class CanNotAutoMerge(RuntimeError):
 async def git_merge(workingdir: str, dstbranch: str, srcbranch: str):
     await git_checkout(workingdir, dstbranch)
     cmd = ['git', 'merge', '--no-commit', '--no-ff', srcbranch]
-    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
-                                       timeout=5)
+    returncode, out, err = await run(cmd, cwd=workingdir, stdout=PIPE, stderr=PIPE,
+                                     timeout=5)
     if returncode == 1:
         raise CanNotAutoMerge('can not auto merge')
     elif returncode != 0:
+        print(out, err)
         raise RuntimeError("git merge error")
 
 
