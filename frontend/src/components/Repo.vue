@@ -22,15 +22,9 @@
       </b-nav-item>
     </b-nav>
 
-    <b-row style="white-space: nowrap;overflow-x: hidden;">
-      <div>
-        <b-dropdown
-          class="col-2"
-          variant="info"
-          boundary="window"
-          size="sm"
-          :text="'Branch: ' + currentBranch"
-        >
+    <div style="white-space: nowrap; overflow-x: hidden;">
+      <div style="display: inline-block">
+        <b-dropdown variant="info" boundary="window" size="sm" :text="'Branch: ' + currentBranch">
           <b-dropdown-item
             v-for="branch in branches"
             :key="branch"
@@ -38,37 +32,26 @@
           >{{ branch }}</b-dropdown-item>
         </b-dropdown>
       </div>
-      <b-col cols="2">
-        <button
-          type="button"
-          class="d-none d-md-inline-block btn btn-sm btn-secondary"
-          @click.prevent="newPull"
-        >New pull request</button>
-      </b-col>
-      <!-- FIXME: 改变大小时显示错误 -->
-      <b-col cols="3" offset="3" style="overflow: hidden">
-        <b-btn-group class="-md-inline-flex">
-          <b-button variant="secondary" size="sm">Create new file</b-button>
-          <b-button variant="secondary" size="sm">Upload files</b-button>
-          <b-button variant="secondary" size="sm">Find file</b-button>
-        </b-btn-group>&nbsp;
-      </b-col>
-      <div class="clone">
-        <b-dropdown
-          class="col-2"
-          variant="success"
-          boundary="window"
-          right
-          size="sm"
-          text="Clone or download"
-        >
+      <button
+        type="button"
+        class="d-none d-md-inline-block btn btn-sm btn-secondary"
+        @click.prevent="newPull"
+        style="display: inline-block; margin-left: 5px;"
+      >New pull request</button>
+      <div class="clone" style="float: right">
+        <b-dropdown variant="success" boundary="window" size="sm" text="Clone or download">
           <b-dropdown-item
             @click.prevent="clone"
           >Clone: http://gapsule.com/{{$route.params.owner}}/{{$route.params.repo}}.git</b-dropdown-item>
           <b-dropdown-item @click.prevent="download">Download Zip</b-dropdown-item>
         </b-dropdown>
       </div>
-    </b-row>
+      <b-btn-group class="-md-inline-flex file-button" style="float: right; margin-right: 5px;">
+        <b-button variant="secondary" size="sm">Create new file</b-button>
+        <b-button variant="secondary" size="sm">Upload files</b-button>
+        <b-button variant="secondary" size="sm">Find file</b-button>
+      </b-btn-group>&nbsp;
+    </div>
 
     <b-card no-body class="filelist">
       <b-card-header>file list</b-card-header>
@@ -252,9 +235,9 @@ export default {
 .card-header {
   padding: 0.3rem 1rem;
 }
-/* .clone {
-  position: absolute;
-  right: 0;
-  z-index: 90;
-} */
+@media (max-width: 1000px) {
+  .file-button {
+    display: none;
+  }
+}
 </style>
