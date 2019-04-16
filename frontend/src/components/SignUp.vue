@@ -1,5 +1,12 @@
 <template>
   <div>
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <el-steps :active="0" finish-status="success" align-center style="margin: 0 auto">
       <el-step title="Sign Up"></el-step>
       <el-step title="Verify Your Password"></el-step>
@@ -70,7 +77,8 @@ export default {
       email: "",
       password: "",
       password_entered: false,
-      errormessage: ""
+      error: "",
+      hasError: false
     };
   },
   methods: {
@@ -97,7 +105,8 @@ export default {
               );
             }
           } else {
-            this.errormessage = response.data.error;
+            this.error = response.data.error;
+            this.hasError = true;
           }
         })
         .catch(error => {

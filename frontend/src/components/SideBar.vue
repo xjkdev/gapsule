@@ -1,5 +1,12 @@
 <template>
   <div class="sidebar">
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <b-card no-body>
       <b-card-header class="bg-transparent">Projects</b-card-header>
       <b-list-group flush>
@@ -58,7 +65,9 @@ export default {
     return {
       projects: [],
       topics: [],
-      people: []
+      people: [],
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -133,7 +142,8 @@ export default {
           this.topics = response.data.topics;
           this.people = response.data.people;
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

@@ -2,6 +2,13 @@
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <b-row>
       <b-col cols="4">
         <b-form-input v-if="isIssuePage" placeholder="Search Issues" @keyup.enter="getSearchDatas"></b-form-input>
@@ -45,7 +52,9 @@ export default {
   },
   data() {
     return {
-      issues: ""
+      issues: "",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -95,7 +104,8 @@ export default {
         if (response.data.state == "ok") {
           this.issues = response.data.issues;
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     },
