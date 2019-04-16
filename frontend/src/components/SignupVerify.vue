@@ -1,5 +1,12 @@
 <template>
   <div>
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <el-steps :active="1" finish-status="success" align-center style="margin: 0 auto">
       <el-step title="Sign Up"></el-step>
       <el-step title="Verify Your Password"></el-step>
@@ -44,7 +51,9 @@ export default {
     return {
       username: "",
       password: "",
-      token: ""
+      token: "",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -70,6 +79,9 @@ export default {
           globals.cache.username = this.username;
           globals.cache.token = this.token;
           this.$router.replace("/signup/finishing");
+        } else {
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

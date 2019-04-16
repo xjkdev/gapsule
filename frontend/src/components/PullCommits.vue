@@ -2,6 +2,13 @@
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <div>
       <span style="font-weight: 400; font-size: 32px;">{{ title }}</span> &nbsp;
       <span
@@ -50,7 +57,9 @@ export default {
       commitsNumber: "",
       pullTo: "",
       pullFrom: "",
-      replys: ""
+      replys: "",
+      error: "",
+      hasError: false
     };
   },
   beforeRouteEnter(to, from, next) {
@@ -110,7 +119,8 @@ export default {
           this.pullFrom = response.data.pullFrom;
           this.replys = response.data.replys;
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

@@ -1,5 +1,12 @@
 <template>
   <div>
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <el-steps :active="2" finish-status="success" align-center style="margin: 0 auto">
       <el-step title="Sign Up"></el-step>
       <el-step title="Verify Your Password"></el-step>
@@ -97,7 +104,9 @@ export default {
       biography: "",
       company: "",
       location: "",
-      website: ""
+      website: "",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -118,7 +127,6 @@ export default {
         reader.readAsDataURL(file);
         reader.onload = function() {
           that.icon = this.result;
-          console.log(that.icon);
         };
       } else {
         e.target.value = "";
@@ -152,18 +160,15 @@ export default {
           location: this.location,
           website: this.website
         }
-      })
-        .then(response => {
-          if (response.data.state == "ok") {
-            globals.cache.password = null;
-            this.$router.replace("/signin");
-          } else {
-            console.log(response.data.error);
-          }
-        })
-        .catch(error => {
-          console.log(error);
-        });
+      }).then(response => {
+        if (response.data.state == "ok") {
+          globals.cache.password = null;
+          this.$router.replace("/signin");
+        } else {
+          this.error = response.data.error;
+          this.hasError = true;
+        }
+      });
     }
   }
 };

@@ -1,6 +1,12 @@
 <template>
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
 
     <div>
       <span style="font-weight: 400; font-size: 32px;">{{ title }}</span> &nbsp;
@@ -108,7 +114,9 @@ export default {
       status: "Open",
       commitsNumber: "",
       pullTo: "",
-      pullFrom: ""
+      pullFrom: "",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -155,7 +163,8 @@ export default {
         if (response.data.state == "ok") {
           this.$router.go(0); // reload page.
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     },
@@ -171,7 +180,8 @@ export default {
         if (response.data.state == "ok") {
           this.$router.go(0); // reload page.
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     },
@@ -193,7 +203,8 @@ export default {
         if (response.data.state == "ok") {
           this.$router.go(0); // reload page.
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     },
@@ -239,7 +250,8 @@ export default {
           this.pullFrom = response.data.pullFrom;
           this.replys = response.data.comments;
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     },
@@ -287,7 +299,8 @@ export default {
             document.title = this.title;
           }
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

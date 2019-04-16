@@ -2,6 +2,13 @@
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <b-card style="width: 60%">
       <b-form @submit.prevent="onSubmit">
         <b-form-input v-model="title" placeholder="Title" required style="margin-bottom: 10px"></b-form-input>
@@ -28,7 +35,9 @@ export default {
   data() {
     return {
       title: "",
-      comment: ""
+      comment: "",
+      error: "",
+      hasError: false
     };
   },
   methods: {
@@ -58,7 +67,8 @@ export default {
             this.fullIssuesName() + "/" + response.data.issueid
           );
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

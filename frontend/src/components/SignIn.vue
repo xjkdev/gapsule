@@ -1,5 +1,12 @@
 <template>
   <div id="login">
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <div class="logo">
       <img src="../images/logo.jpg" alt="Logo">
     </div>
@@ -51,7 +58,9 @@ export default {
   data() {
     return {
       username: "",
-      password: ""
+      password: "",
+      error: "",
+      hasError: false
     };
   },
   methods: {
@@ -67,7 +76,8 @@ export default {
         if (response.status == 200 && response.data.state == "ok") {
           this.$router.push("/");
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }
