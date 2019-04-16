@@ -59,7 +59,7 @@ async def create_new_user(username: str, mail_address: str, password: str):
         return False
     if not check_password_validity(password):
         return False
-     
+
     flag = await check_user_existing(username)
     if flag:
         raise NameError('Username already existing')
@@ -268,11 +268,11 @@ async def user_login(username: str, password: str):
 
 
 @log_call()
-async def user_logout(username: str):
+async def user_logout(username: str, session: str):
     await execute(
         '''
-            DELETE FROM log_info WHERE username=$1
-            ''', username)
+            DELETE FROM log_info WHERE username=$1 and session=$2
+            ''', username, session)
 
 
 @log_call()

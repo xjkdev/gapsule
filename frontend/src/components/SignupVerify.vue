@@ -12,7 +12,7 @@
         <ul class="main">
           <li class="username">
             <label for="username">Username</label>
-            <b-form-input id="username" type="text" disabled v-model="username"/>
+            <b-form-input id="username" type="text" readonly v-model="username"/>
           </li>
 
           <li class="password">

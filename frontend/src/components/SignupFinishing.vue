@@ -156,6 +156,8 @@ export default {
         .then(response => {
           if (response.data.state == "ok") {
             globals.cache.password = null;
+            globals.cache.username = null;
+            globals.cache.token = null;
             this.$router.replace("/signin");
           } else {
             console.log(response.data.error);

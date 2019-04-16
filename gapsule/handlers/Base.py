@@ -47,8 +47,8 @@ class BaseHandler(web.RequestHandler):
 
     def get_login_url(self):
         self.require_setting(
-            "verify_url", "@gapsule.utils.authenticated")
-        return self.application.settings["verify_url"]
+            "login_url", "@gapsule.utils.authenticated")
+        return self.application.settings["login_url"]
 
     def get_verify_url(self):
         self.require_setting(

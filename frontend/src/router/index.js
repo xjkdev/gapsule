@@ -6,6 +6,7 @@ import Topic from "@/components/Topic"
 import SignIn from "@/components/SignIn"
 import SignUp from "@/components/SignUp"
 import SignUpVerify from "@/components/SignupVerify"
+import VerifyActivate from "@/components/VerifyActivate"
 import SignupFinishing from "@/components/SignupFinishing"
 import IssuesPullsList from "@/components/IssuesPullsList"
 import NewIssue from "@/components/NewIssue"
@@ -22,6 +23,7 @@ export default new Router({
     { path: '/new', name: 'NewRepo', component: NewRepo, meta: { title: 'Create a New Repository' } },
     { path: '/signin', name: 'SignIn', component: SignIn, meta: { title: 'SignIn' } },
     { path: '/signup', name: 'SignUp', component: SignUp, meta: { title: 'Join Gapsule' } },
+    { path: '/verify', name: 'Verify', component: VerifyActivate, meta: { title: "Verifying required to continue" } },
     {
       path: '/signup/verify',
       name: 'SignupVerify',

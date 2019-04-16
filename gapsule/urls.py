@@ -11,6 +11,7 @@ routes = [
     (r"/new", Repo.NewRepoHandler),
     (r"/signout", Signout.SignOutHandler),
     (r"/signin/?", Signin.SignInHandler),
+    (r"/verify", Signin.ActivateHandler),
     (r"/signup(/verify|/finishing)?/?", Signup.SignUpHandler),
     (r"/(?P<owner>\w+)/(?P<reponame>\w+)/(?P<posttype>issues|pulls)/?",
      Forums.PostListHandler),
