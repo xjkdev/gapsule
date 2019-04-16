@@ -1,30 +1,37 @@
 <template>
-  <div id="login">
-    <h3 style="text-align: center">Vertify your password</h3>
+  <div>
+    <el-steps :active="1" finish-status="success" align-center style="margin: 0 auto">
+      <el-step title="Sign Up"></el-step>
+      <el-step title="Verify Your Password"></el-step>
+      <el-step title="Fill In Your Information"></el-step>
+    </el-steps>
+    <div id="login">
+      <h3 style="text-align: center">Verify your password</h3>
 
-    <b-form @submit.prevent="onSubmit">
-      <ul class="main">
-        <li class="username">
-          <label for="username">Username</label>
-          <b-form-input id="username" type="text" disabled v-model="username"/>
-        </li>
+      <b-form @submit.prevent="onSubmit">
+        <ul class="main">
+          <li class="username">
+            <label for="username">Username</label>
+            <b-form-input id="username" type="text" disabled v-model="username"/>
+          </li>
 
-        <li class="password">
-          <label for="password">Password</label>
-          <b-form-input
-            id="password"
-            type="password"
-            v-model="password"
-            required
-            placeholder="Enter password"
-          />
-        </li>
+          <li class="password">
+            <label for="password">Password</label>
+            <b-form-input
+              id="password"
+              type="password"
+              v-model="password"
+              required
+              placeholder="Enter password"
+            />
+          </li>
 
-        <li class="operation">
-          <b-button type="submit" variant="primary" class="submit">Submit</b-button>
-        </li>
-      </ul>
-    </b-form>
+          <li class="operation">
+            <b-button type="submit" variant="primary" class="submit">Submit</b-button>
+          </li>
+        </ul>
+      </b-form>
+    </div>
   </div>
 </template>
 
@@ -75,6 +82,7 @@ export default {
   width: 320px;
   height: 100%;
   margin: 0 auto;
+  margin-top: 10px;
 }
 ul {
   list-style: none;
