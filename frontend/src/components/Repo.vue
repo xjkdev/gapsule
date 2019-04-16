@@ -2,6 +2,13 @@
   <div class="dashboard">
     <RepoNav/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <div style="padding: 0.2rem 1rem 0.2rem 1rem">descriptions</div>
 
     <b-nav pills fill class="border rounded" style=" padding: 0.2rem 0">
@@ -105,7 +112,8 @@ export default {
       files: [],
       allFiles: [],
       readme: "",
-      msg: "Welcome to Your Vue.js App"
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -215,7 +223,8 @@ export default {
           this.allFiles = response.data.files;
           this.changeFileList(this.allFiles);
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

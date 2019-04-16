@@ -2,16 +2,24 @@
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <div>
-      <span style="font-weight: 400; font-size: 32px;">{{ topic }}</span> &nbsp;
+      <span style="font-weight: 400; font-size: 32px;">{{ title }}</span> &nbsp;
       <span
         style="font-weight: 300; font-size: 32px; color: #a3aab1"
       >#{{ $route.params.pullid }}</span>
       <div>
-        <div v-if="pullState=='open'">
+        <div v-if="status=='Open'">
           <b-badge variant="success">Open</b-badge>
           <span>{{ pullUser }} wants to merge {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
         </div>
+        <!-- FIXME: 这里差了 Closed -->
         <div v-else>
           <b-badge variant="info">Merged</b-badge>
           <span>{{ pullUser }} merged {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
@@ -43,13 +51,15 @@ import axios from "axios";
 export default {
   data() {
     return {
-      topic: "",
-      pullState: "",
+      title: "",
+      status: "",
       pullUser: "",
       commitsNumber: "",
       pullTo: "",
       pullFrom: "",
-      replys: ""
+      replys: "",
+      error: "",
+      hasError: false
     };
   },
   beforeRouteEnter(to, from, next) {
@@ -75,20 +85,20 @@ export default {
       // mock.onGet(this.fullPullName() + "/commits").reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   topic: "a topic",
-      //   pullState: "Merged",
+      //   title: "a title",
+      //   status: "Merged",
       //   pullUser: "Alice",
       //   commitsNumber: 2,
       //   pullTo: "Alice:master",
       //   pullFrom: "Bob:abc",
-      //   replys: {
-      //     reply1: {
+      //   replys: [
+      //     {
       //       commitsDate: "Apr 1, 2019",
       //       title: "a pull",
       //       user: "Alice",
       //       timeToNow: "8 das ago"
       //     }
-      //   }
+      //   ]
       // });
       axios({
         method: "GET",
@@ -101,15 +111,16 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.topic = response.data.topic;
-          this.pullState = response.data.pullState;
+          this.title = response.data.title;
+          this.status = response.data.status;
           this.pullUser = response.data.pullUser;
           this.commitsNumber = response.data.commitsNumber;
           this.pullTo = response.data.pullTo;
           this.pullFrom = response.data.pullFrom;
           this.replys = response.data.replys;
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

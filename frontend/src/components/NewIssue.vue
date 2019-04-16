@@ -2,12 +2,19 @@
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <b-card style="width: 60%">
       <b-form @submit.prevent="onSubmit">
         <b-form-input v-model="title" placeholder="Title" required style="margin-bottom: 10px"></b-form-input>
         <b-form-textarea
-          v-model="commet"
-          placeholder="Leave a commet"
+          v-model="comment"
+          placeholder="Leave a comment"
           size="md"
           rows="5"
           max-rows="10"
@@ -28,7 +35,9 @@ export default {
   data() {
     return {
       title: "",
-      commet: ""
+      comment: "",
+      error: "",
+      hasError: false
     };
   },
   methods: {
@@ -50,7 +59,7 @@ export default {
           owner: this.$route.params.owner,
           repo: this.$route.params.repo,
           title: this.title,
-          commet: this.commet
+          comment: this.comment
         }
       }).then(response => {
         if (response.data.state == "ok") {
@@ -58,7 +67,8 @@ export default {
             this.fullIssuesName() + "/" + response.data.issueid
           );
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

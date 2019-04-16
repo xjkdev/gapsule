@@ -7,10 +7,9 @@ import SignIn from "@/components/SignIn"
 import SignUp from "@/components/SignUp"
 import SignUpVerify from "@/components/SignupVerify"
 import SignupFinishing from "@/components/SignupFinishing"
-import IssuesPulls from "@/components/IssuesPulls"
+import IssuesPullsList from "@/components/IssuesPullsList"
 import NewIssue from "@/components/NewIssue"
 import PullCompare from "@/components/PullCompare"
-import PullConversion from "@/components/PullConversion"
 import PullCommits from "@/components/PullCommits"
 import FileContent from "@/components/FileContent"
 import NewRepo from "@/components/NewRepo"
@@ -37,39 +36,43 @@ export default new Router({
     },
     { path: '/', name: 'DashBoard', component: DashBoard },
     {
-      path: '/topics/:title',
+      path: '/topics/:postid(\\d+)',
       name: 'Topic',
       component: Topic,
-      meta() { return this.params.title }
+      props: {
+        operateType: 'topic',
+      },
+      meta: { title: 'topic' }
     },
     {
       path: '/:owner/:repo/issues',
-      name: 'Issues',
-      component: IssuesPulls,
+      name: 'IssuesList',
+      component: IssuesPullsList,
       props: {
-        isIssuePage: true,
         operateType: 'issues',
       },
       meta() { return 'Issues ' + this.params.owner + '/' + this.params.repo }
     },
     {
       path: '/:owner/:repo/issues/new',
-      name: 'Issues',
+      name: 'NewIssue',
       component: NewIssue,
       meta() { return 'New Issues · ' + this.params.owner + '/' + this.params.repo }
     },
     {
-      path: '/:owner/:repo/issues/:issueid',
+      path: '/:owner/:repo/issues/:postid(\\d+)',
       name: 'Issues',
       component: Topic,
-      meta() { return 'Issues ' + this.params.owner + '/' + this.params.repo + '/' + this.params.issueid }
+      props: {
+        operateType: 'issues',
+      },
+      meta() { return 'Issues ' + this.params.owner + '/' + this.params.repo + '/' + this.params.postid }
     },
     {
-      path: '/:owner/:repo/pull',
-      name: 'PullRequest',
-      component: IssuesPulls,
+      path: '/:owner/:repo/pulls',
+      name: 'PullRequestList',
+      component: IssuesPullsList,
       props: {
-        isIssuePage: false,
         operateType: 'pull',
       },
       meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo }
@@ -81,13 +84,16 @@ export default new Router({
       meta() { return 'Compare · ' + this.params.owner + '/' + this.params.repo }
     },
     {
-      path: '/:owner/:repo/pull/:pullid',
+      path: '/:owner/:repo/pull/:postid(\\d+)',
       name: 'PullConversion',
-      component: PullConversion,
-      meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo + '/' + this.params.pullid }
+      component: Topic,
+      props: {
+        operateType: 'pull',
+      },
+      meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo + '/' + this.params.postid }
     },
     {
-      path: '/:owner/:repo/pull/:pullid/commits',
+      path: '/:owner/:repo/pull/:pullid(\\d+)/commits',
       name: 'PullCommits',
       component: PullCommits,
       meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo + '/' + this.params.pullid + '/commits' }

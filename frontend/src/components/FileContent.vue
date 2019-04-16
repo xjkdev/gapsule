@@ -2,6 +2,13 @@
   <div class="dashboard">
     <RepoNav/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <b-card no-body header="filename" header-tag="header">
       <span slot="header">{{ fileName() }}</span>
       <b-card-body>
@@ -18,7 +25,9 @@ import axios from "axios";
 export default {
   data() {
     return {
-      filetext: "no code in this file"
+      filetext: "no code in this file",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -52,7 +61,8 @@ export default {
             ? response.data.filetext
             : "no code in this file";
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

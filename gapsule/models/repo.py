@@ -1,6 +1,7 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 import os
 from logging import warning
+import chardet
 from gapsule.utils.log_call import log_call
 from gapsule.models import git
 from gapsule.utils.cookie_session import datetime_now
@@ -361,6 +362,29 @@ async def get_specified_path(owner: str, reponame: str, branch: str,
         返回三元组，分别为name, hash, is_dir
     """
     return await git.git_ls_files(owner, reponame, branch, path=path)
+
+
+_TEXTCHARS = bytearray({7, 8, 9, 10, 12, 13, 27} |
+                       set(range(0x20, 0x100)) - {0x7f})
+
+
+def _is_binary_string(bytes):
+    return bool(bytes.translate(None, _TEXTCHARS))
+
+
+@log_call()
+def get_file_content(owner, reponame, branch, path) -> Optional[str]:
+    """ 查询  对应路径下的某个文件的内容
+        如果文件不存在或为目录，会抛出OSError
+        如果为二进制文件或大文件，返回空
+    """
+    data = git.git_cat_file(owner, reponame, branch, path)
+    if len(data) > 204800 or _is_binary_string(data[:20480]):  # big file
+        return None
+    det = chardet.detect(data)
+    if det['confidence'] < 0.5:
+        return None
+    return data.decode(det['encoding'])
 
 
 @log_call()
