@@ -32,10 +32,17 @@ async def init_git_repo(owner: str, reponame: str) -> None:
                                   stdout=DEVNULL, stderr=DEVNULL, timeout=2)
     if code1 != 0:
         raise RuntimeError("Repo Init failed")
-    code2, _out, _err = await run(['git', 'config', '--add', 'http.receivepack', 'true'], cwd=root,
-                                  stdout=DEVNULL, stderr=DEVNULL, timeout=2)
-    if code2 != 0:
-        raise RuntimeError("Repo Init failed")
+    try:
+        await git_config(root, 'http.receivepack', 'true')
+    except Exception as e:
+        raise RuntimeError("Repo Init failed") from e
+
+
+async def git_config(workingdir: str, key: str, value: str):
+    returncode, _out, _err = await run(['git', 'config', '--add', key, value], cwd=workingdir,
+                                       stdout=DEVNULL, stderr=DEVNULL, timeout=2)
+    if returncode != 0:
+        raise RuntimeError("Repo Config failed")
 
 
 async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = None, show_tree=False,

@@ -3,7 +3,7 @@ import asyncio
 
 from dataclasses import dataclass
 from typing import Optional, Dict, Tuple, List
-from gapsule.models import git, repo
+from gapsule.models import git, repo, user
 from gapsule.models.git import git_branches
 from gapsule.models.repo import get_repo_id
 from gapsule.models.connection import execute, fetchrow
@@ -30,8 +30,9 @@ def is_merge_message(message: str, pullid: int):
 
 async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                               srcowner: str, srcrepo: str, srcbranch: str,
-                              title: str, status: str, visibility: bool):
-
+                              title: str, authorname: str,
+                              status: str, visibility: bool):
+    authoremail = await user.get_user_mail_address(authorname)
     dst_repo_id = await get_repo_id(dstowner, dstrepo)
     src_repo_id = await get_repo_id(srcowner, srcrepo)
 
@@ -50,10 +51,11 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     if current_id['max'] != None:
         this_id = current_id['max'] + 1
 
-    flag_auto_merged = await create_pull_request_git(dstowner, dstrepo,
-                                                     dstbranch, this_id,
-                                                     srcowner, srcrepo,
-                                                     srcbranch, title)
+    flag_auto_merged = await create_pull_request_git(dstowner, dstrepo, dstbranch,
+                                                     this_id,
+                                                     srcowner, srcrepo, srcbranch,
+                                                     authorname, authoremail,
+                                                     title)
     await execute(
         '''
         INSERT INTO pull_requests(dest_repo_id,dest_branch,pull_id,src_repo_id,src_branch,created_time,status,auto_merge_status)
@@ -116,9 +118,10 @@ def finish_working_dir(owner, reponame, pullid):
     del _working_dirs[(owner, reponame, pullid)]
 
 
-async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,
-                                  pullid: int, srcowner: str, srcrepo: str,
-                                  srcbranch: str, content: str = None):
+async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, pullid: int,
+                                  srcowner: str, srcrepo: str, srcbranch: str,
+                                  authorname: str, authoremail: str,
+                                  content: str = None):
     dstroot = git.get_repo_dirpath(dstowner, dstrepo)
     srcroot = git.get_repo_dirpath(srcowner, srcrepo)
     pr_head_branch = 'refs/pull/{}/head'.format(pullid)
@@ -128,7 +131,8 @@ async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,
     await git.git_fetch(workingdir, pr_head_branch, dstroot, pr_head_branch)
     flag_auto_merged = True
     try:
-        # TODO: merge author
+        await git.git_config(workingdir, 'user.name', authorname)
+        await git.git_config(workingdir, 'user.email', authoremail)
         await git.git_merge(workingdir, dstbranch, pr_head_branch)
         msg = get_merge_message(pullid, srcowner, srcbranch, content)
         await git.git_commit(workingdir, msg)

@@ -52,6 +52,19 @@ async def check_profile_existing(username: str):
 
 
 @log_call()
+async def get_user_mail_address(username: str):
+    if check_user_existing(username):
+        result = await fetchrow(
+            '''
+            SELECT mail_address FROM users_info
+            WHERE username = $1
+            ''', username)
+        return result['mail_address']
+    else:
+        raise NameError("user does not exist")
+
+
+@log_call()
 async def create_new_user(username: str, mail_address: str, password: str):
     if not check_username_validity(username):
         return False
@@ -59,7 +72,7 @@ async def create_new_user(username: str, mail_address: str, password: str):
         return False
     if not check_password_validity(password):
         return False
-     
+
     flag = await check_user_existing(username)
     if flag:
         raise NameError('Username already existing')

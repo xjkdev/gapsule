@@ -83,8 +83,10 @@ class GitModelTestCase(TestCase):
             create_branch(self, tmpdir)
             commit_file(self, tmpdir, 'test1.txt', 'testing pull request',
                         'add commit', set_branch=True)
-        await pullrequest.create_pull_request_git(
-            'abcd', 'efgh', 'master', 1, 'abcd', 'efgh', 'test-branch')
+        await pullrequest.create_pull_request_git('abcd', 'efgh', 'master',
+                                                  1,
+                                                  'abcd', 'efgh', 'test-branch',
+                                                  'testuser', 'test@example.com')
         pull_head_log = await git.git_commit_logs('abcd', 'efgh', 'refs/pull/1/head')
         self.assertEqual(pull_head_log[0][1], 'add commit')
         pull_merge_log = await git.git_commit_logs('abcd', 'efgh', 'refs/pull/1/merge')
