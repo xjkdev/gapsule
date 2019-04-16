@@ -42,8 +42,8 @@ async def create_new_attached_post(repo_id: int,
 @log_call()
 async def create_new_nonattached_post(postername: str, title: str, status: str,
                                       visibility: bool):
-    this_id = await create_new_attached_post(0, False, postername, title,
-                                             status, visibility)
+    this_id = await create_new_attached_post(0, postername, title, status,
+                                             visibility)
     return this_id
 
 

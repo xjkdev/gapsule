@@ -8,7 +8,7 @@ from gapsule.models.connection import _connection, fetchrow, execute, fetch
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 from gapsule.models.user import get_uid
 
-
+ 
 class RepoNotFoundException(FileNotFoundError):
     pass
 
@@ -55,7 +55,7 @@ async def check_repo_existing(owner: str, reponame: str):
 @log_call()
 async def endow_read_permission(owner: str, reponame: str,
                                 username_permitted: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 INSERT INTO read_permission(repo_id,username)
@@ -108,8 +108,10 @@ async def remove_admin_permission(owner: str, reponame: str,
 async def check_read_permission(owner: str,
                                 reponame: str,
                                 username: str = None):
+    if username == owner:
+        return True
     if (await check_repo_existing(owner, reponame) == True):
-        if await get_repo_visibility(owner, reponame) == True:
+        if await get_repo_visibility(owner, reponame):
             return True
         else:
             temp = await fetchrow(
@@ -145,6 +147,8 @@ def get_branches_num(owner: str, repo: str):
 
 @log_call()
 async def check_write_permission(owner: str, reponame: str, username: str):
+    if username==owner:
+        return True
     if (await check_repo_existing(owner, reponame) == True):
         temp = await fetchrow(
             '''
@@ -171,6 +175,8 @@ async def check_write_permission(owner: str, reponame: str, username: str):
 
 @log_call()
 async def check_admin_permission(owner: str, reponame: str, username: str):
+    if username==owner:
+        return True
     if (await check_repo_existing(owner, reponame) == True):
         temp = await fetchrow(
             '''
@@ -351,7 +357,7 @@ async def set_repo_introduction(owner: str, reponame: str,
         raise RepoNotFoundException()
 
 
-def get_specified_path(owner: str, reponame: str, branch: str,
+async def get_specified_path(owner: str, reponame: str, branch: str,
                        path=None) -> List[Tuple[str, str, bool]]:
     """ 查询  对应版本对应路径下的某个文件夹包含的文件夹（名称）和文件（名称）
         返回三元组，分别为name, hash, is_dir
@@ -430,17 +436,17 @@ async def get_repo_visibility(owner: str, reponame: str):
         raise RepoNotFoundException()
 
 
-def get_file_content(path: str, branch=None):
+async def get_file_content(path: str, branch=None):
     return 'content:...'
 
 
-def get_all_files(owner: str, reponame: str,
+async def get_all_files(owner: str, reponame: str,
                   branch: str) -> List[Tuple[str, str]]:
     """ 查询  所有仓库文件 """
     return await git.git_ls_files(owner, reponame, branch)
 
 
-def path_exists(owner: str, reponame: str, branch: str, path) -> bool:
+async def path_exists(owner: str, reponame: str, branch: str, path) -> bool:
     """ 查询  对应路径的文件（夹）是否存在 """
     files = await git.git_ls_files(owner, reponame, branch, show_tree=True)
     files = [info[0] for info in files]
@@ -448,7 +454,7 @@ def path_exists(owner: str, reponame: str, branch: str, path) -> bool:
     return path in files
 
 
-def get_history(owner: str, reponame: str,
+async def get_history(owner: str, reponame: str,
                 branch: str) -> List[Dict[str, str]]:
     """ 查询 历史提交的版本与时间 """
     return await git.git_commit_logs(owner, reponame, branch, pretty=git.MEDIUM)

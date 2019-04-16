@@ -20,10 +20,10 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     dst_repo_id = await get_repo_id(dstowner, dstrepo)
     src_repo_id = await get_repo_id(srcowner, srcrepo)
 
-    branches = await git_branches(dstowner, dstrepo)[1]
+    branches = (await git_branches(dstowner, dstrepo))[1]
     if not dstbranch in branches:
         raise BranchNotFoundException()
-    branches2 = await git_branches(srcowner, srcrepo)[1]
+    branches2 = (await git_branches(srcowner, srcrepo))[1]
     if not srcbranch in branches2:
         raise BranchNotFoundException()
     current_id = await fetchrow(
@@ -45,8 +45,9 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)
         ''', dst_repo_id, dstbranch, this_id, src_repo_id, srcbranch,
         datetime_now(), status, flag_auto_merged)
-    await create_new_attached_post(dst_repo_id, False, srcowner, title, status,
-                                   visibility)
+
+    await create_new_attached_post(dst_repo_id, srcowner, title, status,
+                                   visibility, False)
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,

@@ -276,7 +276,7 @@ async def user_login(username: str, password: str):
 
 @log_call()
 async def user_logout(username: str):
-    await models.connection.execute(
+    await execute(
         '''
             DELETE FROM log_info WHERE username=$1
             ''', username)
@@ -284,7 +284,7 @@ async def user_logout(username: str):
 
 @log_call()
 async def check_session_status(username: str, session: str):
-    temp = await models.connection.fetchrow(
+    temp = await fetchrow(
         '''
         SELECT username, session FROM log_info
         WHERE username =$1
