@@ -14,7 +14,7 @@ class RepoNotFoundException(FileNotFoundError):
 
 
 @log_call()
-async def creat_new_repo(owner: str,
+async def create_new_repo(owner: str,
                          reponame: str,
                          introduction: str = None,
                          star_num: int = 0,
