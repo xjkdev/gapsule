@@ -26,7 +26,9 @@ class FolderListResult(ViewModelDict):
 
 
 class FileContentResult(ViewModelDict):
-    content: Optional[str] = ViewModelField(required=True)
+    status: str = ViewModelField(required=True, nullable=False)
+    content: Optional[str] = ViewModelField(required=False)
+    error: str = ViewModelField(required=False)
 
 
 class CreateNewRepoInput(ViewModelDict):
@@ -38,14 +40,14 @@ class CreateNewRepoInput(ViewModelDict):
 
 class CodeListHandler(BaseHandler):
     @ajaxquery
-    async def get(self, username, projectname):
+    async def get(self, owner, reponame):
         commit, branch, release, contributor, files, default_branch = await asyncio.gather(
-            get_commits_num(username, projectname, 'master'),
-            get_branches_num(username, projectname),
+            get_commits_num(owner, reponame, 'master'),
+            get_branches_num(owner, reponame),
             get_releases_num(),
             get_contributors_info(),
-            get_specified_path(username, projectname, 'master'),
-            get_default_branch(username, projectname),
+            get_specified_path(owner, reponame, 'master'),
+            get_default_branch(owner, reponame),
         )
         state_dict = CodeListResult(
             state="ok",
@@ -62,19 +64,23 @@ class CodeListHandler(BaseHandler):
 
 class FolderListHandler(BaseHandler):
     @ajaxquery
-    async def get(self, username, projectname, branch, restpath):
-        files = await get_specified_path(username,
-                                         projectname, branch, restpath)
+    async def get(self, owner, reponame, branch, restpath):
+        files = await get_specified_path(owner,
+                                         reponame, branch, restpath)
         folder_dict = FolderListResult(files=files)
         self.write(folder_dict)
 
 
 class FileContentHandler(BaseHandler):
     @ajaxquery
-    async def get(self, username, projectname, branch, restpath):
-        content = await get_file_content(restpath)
-        file_dict = FileContentResult(content=content)
-        self.write(file_dict)
+    async def get(self, owner, reponame, branch, restpath):
+        try:
+            data = await get_file_content(owner, reponame, branch, restpath)
+            self.write(dict(status="ok", content=data))
+        except OSError as e:
+            print(e)
+            self.write(dict(status="error", content=None,
+                            error='os error occurs.'))
 
 
 class NewRepoHandler(BaseHandler):

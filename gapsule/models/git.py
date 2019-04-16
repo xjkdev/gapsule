@@ -38,14 +38,16 @@ async def init_git_repo(owner: str, reponame: str) -> None:
         raise RuntimeError("Repo Init failed")
 
 
-async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = None, show_tree=False) \
-        -> Union[List[Tuple[str, str]], List[Tuple[str, str, bool]]]:
+async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = None, show_tree=False,
+                       recursive=True) -> Union[List[Tuple[str, str]], List[Tuple[str, str, bool]]]:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
+    cmd = ['git', 'ls-tree']
+    if recursive:
+        cmd += ['-r']
     if show_tree:
-        cmd = ['git', 'ls-tree', '-r', '-t', branch]
-    else:
-        cmd = ['git', 'ls-tree', '-r', branch]
+        cmd += ['-t']
+    cmd += [branch]
     if path is not None:
         cmd.append(path)
     returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
@@ -156,16 +158,38 @@ async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
 async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
                                       files: List[str] = None) -> List[str]:
     if files is None:
-        files = map(lambda x: x[0], await git_ls_files(owner, reponame, branch))
+        files = [x[0] for x in await git_ls_files(owner, reponame, branch,
+                                                  recursive=False)]
 
     async def _task(f):
         r = await git_commit_logs(owner, reponame, branch, path=f,
                                   pretty=HASH_DATE_AND_MESSAGE, maxsize=1)
-        return r[0]
-    done, pending = asyncio.gather((_task(f) for f in files), 5)
-    if len(pending) > 0:
+        return [f] + r[0]
+    tasklist = (_task(f) for f in files)
+    done = await asyncio.gather(*tasklist, return_exceptions=True)
+    if len(done) < len(files):
         print("get_all_files_lastest_commit, not all tasks done.")
-    return [f.result() for f in done]
+    return done
+
+
+async def git_cat_file(owner: str, reponame: str, branch: str, path: str) -> bytes:
+    root = get_repo_dirpath(owner, reponame)
+    _check_exists(root)
+
+    files = await git_ls_files(owner, reponame, branch, path=path, show_tree=True,
+                               recursive=False)
+    if len(files) != 1:
+        raise FileNotFoundError(path)
+    _name, objhash, isdir = files[0]
+    if isdir:
+        raise OSError("trying to read content of directory")
+    proc = await asyncio.create_subprocess_exec('git', 'cat-file', 'blob', objhash,
+                                                cwd=root, stdout=PIPE, stderr=PIPE)
+    out, err = await asyncio.wait_for(proc.communicate(), 5)
+    if await asyncio.wait_for(proc.wait(), 1) != 0:
+        print(err.decode())
+        raise OSError("git cat file error")
+    return out
 
 
 async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str):
