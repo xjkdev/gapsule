@@ -6,6 +6,7 @@ from gapsule.models.git import git_branches
 from gapsule.models.repo import get_repo_id
 from gapsule.models.connection import execute, fetchrow
 from gapsule.utils.cookie_session import datetime_now
+from gapsule.models.post import create_new_attached_post
 
 
 class BranchNotFoundException(FileNotFoundError):
@@ -13,15 +14,16 @@ class BranchNotFoundException(FileNotFoundError):
 
 
 async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
-                              srcowner: str, srcrepo: str, srcbranch: str):
+                              srcowner: str, srcrepo: str, srcbranch: str,
+                              title, status, visibility):
 
     dst_repo_id = await get_repo_id(dstowner, dstrepo)
     src_repo_id = await get_repo_id(srcowner, srcrepo)
 
-    branches = await git_branches(dstowner, dstrepo)
+    branches = (await git_branches(dstowner, dstrepo))[1]
     if not dstbranch in branches:
         raise BranchNotFoundException()
-    branches2 = await git_branches(srcowner, srcrepo)
+    branches2 = (await git_branches(srcowner, srcrepo))[1]
     if not srcbranch in branches2:
         raise BranchNotFoundException()
     current_id = await fetchrow(
@@ -37,13 +39,15 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                                                      dstbranch, this_id,
                                                      srcowner, srcrepo,
                                                      srcbranch)
-
     await execute(
         '''
-        INSERT INTO pull_requests(dest_repo_id,dest_branch,pull_id,src_repo_id,src_branch,created_time,status,automerge_status)
+        INSERT INTO pull_requests(dest_repo_id,dest_branch,pull_id,src_repo_id,src_branch,created_time,status,auto_merge_status)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)
         ''', dst_repo_id, dstbranch, this_id, src_repo_id, srcbranch,
-        datetime_now(), flag_auto_merged)
+        datetime_now(), status, flag_auto_merged)
+
+    await create_new_attached_post(dst_repo_id, srcowner, title, status,
+                                   visibility, False)
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,

@@ -15,8 +15,12 @@ class CommentNotFoundException(FileNotFoundError):
 
 
 @log_call()
-async def create_new_attached_post(repo_id, postername, title, status,
-                                   visibility):
+async def create_new_attached_post(repo_id: int,
+                                   postername: str,
+                                   title: str,
+                                   status: str,
+                                   visibility: bool,
+                                   is_issue: bool = True):
     current_id = await fetchrow(
         '''
         SELECT max(post_id) FROM posts
@@ -28,22 +32,23 @@ async def create_new_attached_post(repo_id, postername, title, status,
 
     await execute(
         '''
-        INSERT INTO posts(post_id,repo_id,postername,title,status,visibility,post_time)
-        VALUES($1,$2,$3,$4,$5,$6,$7)
-        ''', this_id, repo_id, postername, title, status, visibility,
+        INSERT INTO posts(post_id,repo_id,is_issue,postername,title,status,visibility,post_time)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+        ''', this_id, repo_id, is_issue, postername, title, status, visibility,
         datetime_now())
     return this_id
 
 
 @log_call()
-async def create_new_nonattached_post(postername, title, status, visibility):
+async def create_new_nonattached_post(postername: str, title: str, status: str,
+                                      visibility: bool):
     this_id = await create_new_attached_post(0, postername, title, status,
                                              visibility)
     return this_id
 
 
 @log_call()
-async def check_post_existing(repo_id, post_id):
+async def check_post_existing(repo_id: int, post_id: int):
     temp = await fetchrow(
         '''
         SELECT * FROM posts
@@ -56,7 +61,7 @@ async def check_post_existing(repo_id, post_id):
 
 
 @log_call()
-async def get_all_posts(postername):
+async def get_all_posts_of_poster(postername: str):
     results = []
     temps = await fetch(
         '''
@@ -70,7 +75,7 @@ async def get_all_posts(postername):
 
 
 @log_call()
-async def get_postername(repo_id, post_id):
+async def get_postername(repo_id: int, post_id: int):
     result = await fetchrow(
         '''
         SELECT postername FROM posts
@@ -80,7 +85,7 @@ async def get_postername(repo_id, post_id):
 
 
 @log_call()
-async def get_title(repo_id, post_id):
+async def get_title(repo_id: int, post_id: int):
     result = await fetchrow(
         '''
         SELECT title FROM posts
@@ -90,7 +95,7 @@ async def get_title(repo_id, post_id):
 
 
 @log_call()
-async def get_status(repo_id, post_id):
+async def get_status(repo_id: int, post_id: int):
     result = await fetchrow(
         '''
         SELECT status FROM posts
@@ -100,7 +105,7 @@ async def get_status(repo_id, post_id):
 
 
 @log_call()
-async def alter_status(repo_id, post_id, new_status):
+async def alter_status(repo_id: int, post_id: int, new_status: str):
     await execute(
         '''
         UPDATE posts
@@ -110,7 +115,7 @@ async def alter_status(repo_id, post_id, new_status):
 
 
 @log_call()
-async def get_visibility(repo_id, post_id):
+async def get_visibility(repo_id: int, post_id: int):
     result = await fetchrow(
         '''
         SELECT visibility FROM posts
@@ -120,7 +125,8 @@ async def get_visibility(repo_id, post_id):
 
 
 @log_call()
-async def create_new_comment(repo_id, post_id, type, content, commenter_name):
+async def create_new_comment(repo_id: int, post_id: int, type: str,
+                             content: str, commenter_name: str):
     if await check_post_existing(repo_id, post_id):
         current_id = await fetchrow(
             '''
@@ -132,7 +138,7 @@ async def create_new_comment(repo_id, post_id, type, content, commenter_name):
             this_id = current_id['max'] + 1
         await execute(
             '''
-                INSERT INTO comments(post_id,repo_id,comment_id,is_reply,reply_to_id,address_time,type,content,conmmenter)
+                INSERT INTO comments(post_id,repo_id,comment_id,is_reply,reply_to_id,address_time,type,content,commenter)
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
                 ''', post_id, repo_id, this_id, False, None, datetime_now(),
             type, content, commenter_name)
@@ -149,8 +155,8 @@ async def create_new_comment(repo_id, post_id, type, content, commenter_name):
 
 
 @log_call()
-async def create_new_reply(repo_id, post_id, reply_to_id, type, content,
-                           replier_name):
+async def create_new_reply(repo_id: int, post_id: int, reply_to_id: int,
+                           type: str, content: str, replier_name: str):
     if await check_post_existing(repo_id, post_id):
         current_id = await fetchrow(
             '''
@@ -162,7 +168,7 @@ async def create_new_reply(repo_id, post_id, reply_to_id, type, content,
             this_id = current_id['max'] + 1
         await execute(
             '''
-            INSERT INTO comments(post_id,repo_id,comment_id, is_reply,reply_to_id,address_time,type,content,conmmenter)
+            INSERT INTO comments(post_id,repo_id,comment_id, is_reply,reply_to_id,address_time,type,content,commenter)
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
             ''', post_id, repo_id, this_id, True, reply_to_id, datetime_now(),
             type, content, replier_name)
@@ -176,7 +182,7 @@ async def create_new_reply(repo_id, post_id, reply_to_id, type, content,
 
 
 @log_call()
-async def check_comment_existing(repo_id, post_id, comment_id):
+async def check_comment_existing(repo_id: int, post_id: int, comment_id: int):
     temp = await fetchrow(
         '''
         SELECT FROM comments
@@ -189,7 +195,7 @@ async def check_comment_existing(repo_id, post_id, comment_id):
 
 
 @log_call()
-async def delete_comment(repo_id, post_id, comment_id):
+async def delete_comment(repo_id: int, post_id: int, comment_id: int):
     if check_comment_existing(repo_id, post_id, comment_id):
         await execute(
             '''
@@ -200,7 +206,7 @@ async def delete_comment(repo_id, post_id, comment_id):
         raise CommentNotFoundException()
 
 
-async def get_all_attached_posts(repo_id):
+async def get_all_attached_posts(repo_id: int):
     # 查询一个repo下所有的帖子id
     temps = await fetch(
         '''
@@ -218,8 +224,21 @@ async def get_all_nonattached_posts():
     return await get_all_attached_posts(0)
 
 
+async def get_all_issues(repo_id: int):
+    temps = await fetch(
+        '''
+            SELECT * FROM posts
+            WHERE repo_id=$1 and is_issue=$2
+        ''', repo_id, True)
+    results = []
+    for temp in temps:
+        result = dict(temp)
+        results.append(result)
+    return results
+
+
 @log_call()
-async def get_all_comments(repo_id, post_id):
+async def get_all_comments(repo_id: int, post_id: int):
     temps = await fetch(
         '''
             SELECT * FROM comments

@@ -1,48 +1,62 @@
 <template>
-  <div id="signup">
-    <h2 style="text-align: center">Join Gapsule</h2>
+  <div>
+    <el-steps :active="0" finish-status="success" align-center style="margin: 0 auto">
+      <el-step title="Sign Up"></el-step>
+      <el-step title="Verify Your Password"></el-step>
+      <el-step title="Fill In Your Information"></el-step>
+    </el-steps>
 
-    <b-form @submit.prevent="onSubmit">
-      <ul class="main">
-        <span style="color: red">{{ errormessage }}</span>
-        <li class="username">
-          <label for="username">Username</label>
-          <span style="color: red">*</span>
-          <b-form-input
-            id="username"
-            type="text"
-            v-model="username"
-            required
-            placeholder="Enter Username"
-          />
-        </li>
+    <div id="signup">
+      <h2 style="text-align: center">Join Gapsule</h2>
 
-        <li class="email">
-          <label for="email">Email</label>
-          <span style="color: red">*</span>
-          <b-form-input id="email" type="email" v-model="email" required placeholder="Enter Email"/>
-        </li>
+      <b-form @submit.prevent="onSubmit">
+        <ul class="main">
+          <span style="color: red">{{ errormessage }}</span>
+          <li class="username">
+            <label for="username">Username</label>
+            <span style="color: red">*</span>
+            <b-form-input
+              id="username"
+              type="text"
+              v-model="username"
+              required
+              placeholder="Enter Username"
+            />
+          </li>
 
-        <li class="password">
-          <label for="password">Password</label>
-          <span style="color: red">*</span>
-          <b-input
-            v-model="password"
-            id="password"
-            required
-            :state="validation"
-            type="password"
-            placeholder="Enter Password"
-          />
-          <b-form-invalid-feedback :state="validation">Your password must be 6-18 characters long</b-form-invalid-feedback>
-          <b-form-valid-feedback :state="validation">Looks good</b-form-valid-feedback>
-        </li>
+          <li class="email">
+            <label for="email">Email</label>
+            <span style="color: red">*</span>
+            <b-form-input
+              id="email"
+              type="email"
+              v-model="email"
+              required
+              placeholder="Enter Email"
+            />
+          </li>
 
-        <li class="operation">
-          <b-button block type="submit" variant="primary" class="submit">Next</b-button>
-        </li>
-      </ul>
-    </b-form>
+          <li class="password">
+            <label for="password">Password</label>
+            <span style="color: red">*</span>
+            <b-input
+              v-model="password"
+              id="password"
+              required
+              :state="validation"
+              type="password"
+              placeholder="Enter Password"
+            />
+            <b-form-invalid-feedback :state="validation">Your password must be 6-18 characters long</b-form-invalid-feedback>
+            <b-form-valid-feedback :state="validation">Looks good</b-form-valid-feedback>
+          </li>
+
+          <li class="operation">
+            <b-button block type="submit" variant="primary" class="submit">Next</b-button>
+          </li>
+        </ul>
+      </b-form>
+    </div>
   </div>
 </template>
 
@@ -106,6 +120,7 @@ export default {
   width: 320px;
   height: 100%;
   margin: 0 auto;
+  margin-top: 10px;
 }
 ul {
   list-style: none;
