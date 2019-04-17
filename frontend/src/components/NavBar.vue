@@ -60,6 +60,7 @@
 </template>
 
 <script>
+import { getCookie } from "@/utils/get_cookie";
 export default {
   name: "NavBar",
   mounted() {
@@ -67,8 +68,8 @@ export default {
     // let collapseinit = new Collapse(togglebtn);
   },
   created() {
-    this.username = this.getCookie("username");
-    this.icon = this.getCookie("icon");
+    this.username = getCookie("username");
+    this.icon = getCookie("icon");
   },
   watch: {
     $route: "getData"
@@ -79,22 +80,7 @@ export default {
       icon: ""
     };
   },
-  methods: {
-    getCookie(name) {
-      var nameEQ = name + "=";
-      var ca = document.cookie.split(";");
-      for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) == " ") {
-          c = c.substring(1, c.length);
-        }
-        if (c.indexOf(nameEQ) == 0) {
-          return c.substring(nameEQ.length, c.length);
-        }
-      }
-      return "";
-    }
-  }
+  methods: {}
 };
 </script>
 

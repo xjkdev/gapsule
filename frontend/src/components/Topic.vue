@@ -17,13 +17,13 @@
         <b-badge v-if="isOpen" variant="success" disabled size="sm">Opened</b-badge>
         <b-badge v-else variant="danger" disabled size="sm">Closed</b-badge>
         &nbsp;
-        {{ poster }} opened this issue {{ date }} · {{ commetsNumber }} comments
+        {{ poster }} opened this issue {{ fromNowTime(date) }} · {{ commetsNumber }} comments
       </p>
       <p v-else-if="this.operateType=='topic'">
         <b-badge v-if="isOpen" variant="success" disabled size="sm">Opened</b-badge>
         <b-badge v-else variant="danger" disabled size="sm">Closed</b-badge>
         &nbsp;
-        {{ poster }} opened this topic {{ date }} · {{ commetsNumber }} comments
+        {{ poster }} opened this topic {{ fromNowTime(date) }} · {{ commetsNumber }} comments
       </p>
       <p v-else-if="isOpen">
         <b-badge variant="success">Open</b-badge>
@@ -54,7 +54,7 @@
       <router-link :to="'/'+reply.commenter" slot="header" style="color: #656d74">
         <strong>{{ reply.commenter }}</strong>&nbsp;
       </router-link>
-      <span slot="header">commented {{reply.address_time}}</span>
+      <span slot="header">commented {{fromNowTime(reply.address_time)}}</span>
       <b-card-body>
         <p class="card-text">{{ reply.content }}</p>
       </b-card-body>
@@ -92,6 +92,7 @@
 <script>
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
+import moment from "moment";
 // import MockAdapter from "axios-mock-adapter";
 export default {
   props: {
@@ -130,6 +131,9 @@ export default {
     $route: "getData"
   },
   methods: {
+    fromNowTime(time) {
+      return moment(time).fromNow();
+    },
     fullUrl() {
       if (this.operateType == "issues") {
         return this.fullIssueName();
@@ -223,13 +227,13 @@ export default {
       //     {
       //       comment_id: 0,
       //       commenter: "Alice",
-      //       address_time: "1 day ago",
+      //       address_time: "2019-04-17T11:20:29+08:00",
       //       content: "a reply text"
       //     },
       //     {
       //       comment_id: 1,
       //       commenter: "Bob",
-      //       address_time: "2 days ago",
+      //       address_time: "2019-04-16T20:12:00+0800",
       //       content: "another reply text"
       //     }
       //   ]
@@ -266,13 +270,13 @@ export default {
       //     {
       //       comment_id: 0,
       //       commenter: "Alice",
-      //       address_time: "1 day ago",
+      //       address_time: "2019-04-16T11:20:29+08:00",
       //       content: "a reply text"
       //     },
       //     {
       //       comment_id: 1,
       //       commenter: "Bob",
-      //       address_time: "2 days ago",
+      //       address_time: "2019-04-15T20:12:00+0800",
       //       content: "another reply text"
       //     }
       //   ],
