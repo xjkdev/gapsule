@@ -6,10 +6,12 @@ import BootstrapVue from 'bootstrap-vue';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue/dist/bootstrap-vue.css';
 import { Steps, Step } from 'element-ui';
+import moment from "moment"
 
 Vue.use(BootstrapVue);
 Vue.use(Steps);
 Vue.use(Step);
+Vue.use(moment)
 
 Vue.config.productionTip = false
 
