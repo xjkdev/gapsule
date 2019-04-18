@@ -195,11 +195,11 @@ export default {
       //   contributorNumber: 4,
       //   readme: "readme",
       //   files: [
-      //     "folder1/folder2/folder3/a.py",
-      //     "folder4/folder5/b.vue",
-      //     "folder1/folder2/xx",
-      //     "folder1/c.txt",
-      //     "d.js"
+      //     ["folder1/folder2/folder3/a.py", " "],
+      //     ["folder4/folder5/b.vue", " "],
+      //     ["folder1/folder2/xx", " "],
+      //     ["folder1/c.txt", " "],
+      //     ["d.js", " "]
       //   ],
       //   branches: ["master", "develop"]
       // });
@@ -213,14 +213,17 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          console.log(response.data);
+          // console.log(response.data);
           this.commitNumber = response.data.commitNumber;
           this.branchNumber = response.data.branchNumber;
           this.releaseNumber = response.data.releaseNumber;
           this.contributorNumber = response.data.contributorNumber;
           this.readme = response.data.readme;
           this.branches = response.data.branches;
-          this.allFiles = response.data.files;
+          for (let i = 0; i < response.data.files.length; i++) {
+            this.allFiles.push(response.data.files[i][0]);
+          }
+          // this.allFiles = response.data.files;
           this.changeFileList(this.allFiles);
         } else {
           this.error = response.data.error;
