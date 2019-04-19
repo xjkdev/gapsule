@@ -1,5 +1,5 @@
 <template>
-  <b-navbar toggleable="lg" type="dark" class="bg-dark">
+  <b-navbar v-if="showNavbar" toggleable="lg" type="dark" class="bg-dark">
     <b-navbar-brand to="/">Gapsule</b-navbar-brand>
     <b-navbar-toggle id="navbar-toggler" target="navbarSupportedContent">
       <span class="navbar-toggler-icon"></span>
@@ -70,6 +70,11 @@ export default {
   created() {
     this.username = getCookie("username");
     this.icon = getCookie("icon");
+    // eslint-disable-next-line to ignore the next line.
+    this.$router.afterEach((to, _from) => {
+      this.showNavbar = to.name != "NonExisting";
+    });
+    this.showNavbar = this.$route.name != "NonExisting";
   },
   watch: {
     $route: "getData"
@@ -77,7 +82,8 @@ export default {
   data() {
     return {
       username: "",
-      icon: ""
+      icon: "",
+      showNavbar: true
     };
   },
   methods: {}
