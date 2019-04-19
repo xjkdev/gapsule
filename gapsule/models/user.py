@@ -97,43 +97,12 @@ async def create_new_user(username: str, mail_address: str, password: str):
     else:
         return False
 
-    flag = await check_user_existing(username)
-    if flag:
-        raise NameError('Username already existing')
-
-    salt = crypt.mksalt()
-    encrypted_password = crypt.crypt(password, salt)
-    await execute(
-        '''
-    INSERT INTO users_info(username, mail_address, password, salt) VALUES($1, $2, $3, $4)''',
-        username, mail_address, encrypted_password, salt)
-    return True
-
 
 @log_call()
 async def verify_user(username: str, password: str):
     if not check_username_validity(username):
         return False
     if not check_password_validity(password):
-        return False
-    flag = await check_user_existing(username)
-    if not flag:
-        raise NameError('User does not exist')
-
-    temp_salt = await fetchrow(
-        '''
-        SELECT salt FROM users_info
-        WHERE username =$1
-        ''', username)
-    temp_encrypted_pw = crypt.crypt(password, salt=temp_salt['salt'])
-    temp_password = await fetchrow(
-        '''
-        SELECT password FROM users_info
-        WHERE username =$1
-        ''', username)
-    if temp_encrypted_pw == temp_password['password']:
-        return True
-    else:
         return False
     if (check_password_validity(password) != False):
         flag = await check_user_existing(username)

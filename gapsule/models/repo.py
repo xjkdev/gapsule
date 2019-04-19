@@ -460,10 +460,6 @@ async def get_repo_visibility(owner: str, reponame: str):
         raise RepoNotFoundException()
 
 
-async def get_file_content(path: str, branch=None):
-    return 'content:...'
-
-
 async def get_all_files(owner: str, reponame: str,
                         branch: str) -> List[Tuple[str, str]]:
     """ 查询  所有仓库文件 """
