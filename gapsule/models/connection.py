@@ -20,12 +20,12 @@ async def _make_connect_pool(config_info):
         await pool.execute('''CREATE TABLE users_info(
             uid SERIAL,
             username  varchar(20) primary key,
-            mail_address varchar(40),
-            password varchar(40) NOT NULL,
-            salt char(10)
+            mail_address varchar,
+            password varchar NOT NULL,
+            salt varchar
             );
             CREATE TABLE profiles(
-            username   varchar(20) references users_info(username),
+            username   varchar(20) references users_info(username) on delete cascade,
             icon_url   varchar(40),
             firstname   varchar not null,
             lastname    varchar not null,
@@ -36,13 +36,13 @@ async def _make_connect_pool(config_info):
             website     varchar
             );
             CREATE TABLE log_info(
-            username   varchar(20) references users_info(username),
+            username   varchar(20) references users_info(username) on delete cascade,
             session     varchar,
             login_time  timestamptz
             );
             CREATE TABLE repos(
             repo_id     SERIAL,
-            username    varchar(20) references users_info(username),
+            username    varchar(20) references users_info(username) on delete cascade,
             reponame    varchar,
             introduction    varchar,
             create_time     timestamptz,
@@ -69,7 +69,7 @@ async def _make_connect_pool(config_info):
             post_id    integer ,
             repo_id    integer ,
             is_issue    boolean,
-            postername    varchar(20) references users_info(username),
+            postername    varchar(20) references users_info(username) on delete cascade,
             title       varchar,
             status      varchar,
             visibility  boolean,
@@ -85,7 +85,7 @@ async def _make_connect_pool(config_info):
             address_time  timestamptz,
             type        varchar,
             content   varchar,
-            commenter varchar    references users_info(username),
+            commenter varchar    references users_info(username) on delete cascade,
             primary key(repo_id,post_id,comment_id),
             foreign key (post_id, repo_id) references posts(post_id, repo_id)
             );

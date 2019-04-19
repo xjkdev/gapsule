@@ -21,8 +21,10 @@ class ViewModelTestCase(unittest.TestCase):
 
     def test_required_and_not_nullable2(self):
         class _class2(ViewModelDict):
-            field1 = ViewModelField(
-                str, required=True, nullable=False, default="NonNone")
+            field1 = ViewModelField(str,
+                                    required=True,
+                                    nullable=False,
+                                    default="NonNone")
 
         d2 = _class2()
         self.assertIs(d2.field1, d2['field1'])
@@ -30,8 +32,8 @@ class ViewModelTestCase(unittest.TestCase):
 
     def test_required_and_not_nullable3(self):
         class _class2(ViewModelDict):
-            field1 = ViewModelField(
-                str, required=True, nullable=False)
+            field1 = ViewModelField(str, required=True, nullable=False)
+
         with self.assertRaises(AttributeError):
             d2 = _class2(field1='')
             d2.field1 = ''
@@ -45,8 +47,8 @@ class ViewModelTestCase(unittest.TestCase):
 
     def test_default_name2(self):
         class _class4(ViewModelDict):
-            field1: str = ViewModelField(required=True,
-                                         default_factory=lambda: "not classmethod")
+            field1: str = ViewModelField(
+                required=True, default_factory=lambda: "not classmethod")
 
         d4 = _class4()
         self.assertEqual(d4.field1, "not classmethod")
@@ -62,8 +64,7 @@ class ViewModelTestCase(unittest.TestCase):
 
     def test_validation1(self):
         class _class4(ViewModelDict):
-            field1 = ViewModelField(
-                required=True, validator=lambda x: x > 0)
+            field1 = ViewModelField(required=True, validator=lambda x: x > 0)
 
         d4 = _class4(field1=2)
         self.assertEqual(d4.field1, 2)

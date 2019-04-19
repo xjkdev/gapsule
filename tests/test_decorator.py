@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import Mock, MagicMock, NonCallableMock
+
 from gapsule.utils.decorators import ajaxquery, unauthenticated, active_authenticated
 from tornado.web import RequestHandler
 
@@ -9,13 +10,12 @@ class AjaxQueryTestCase(unittest.TestCase):
         render_mock = Mock()
         handle_mock = Mock()
         ajax_arg_mock = Mock(return_value=ajax_value)
-        query = NonCallableMock(spec=RequestHandler,
-                                get_query_argument=ajax_arg_mock,
-                                request=Mock(method=method),
-                                render=render_mock,
-                                get_template_name=Mock(
-                                    return_value='index.html')
-                                )
+        query = NonCallableMock(
+            spec=RequestHandler,
+            get_query_argument=ajax_arg_mock,
+            request=Mock(method=method),
+            render=render_mock,
+            get_template_name=Mock(return_value='index.html'))
         return query, handle_mock, render_mock
 
     def test_post_query(self):
@@ -43,15 +43,16 @@ class AjaxQueryTestCase(unittest.TestCase):
 class AuthenticatedTestCase(unittest.TestCase):
     def create_query(self, method, user):
         redirect = Mock()
-        query = NonCallableMock(spec=RequestHandler,
-                                current_user=user,
-                                request=Mock(
-                                    method='GET', fullurl=Mock(return_value='/fullurl'), uri='/uri'),
-                                redirect=redirect,
-                                get_login_url=Mock(return_value='/login'),
-                                get_verify_url=Mock(
-                                    return_value='/verify'),
-                                )
+        query = NonCallableMock(
+            spec=RequestHandler,
+            current_user=user,
+            request=Mock(method='GET',
+                         fullurl=Mock(return_value='/fullurl'),
+                         uri='/uri'),
+            redirect=redirect,
+            get_login_url=Mock(return_value='/login'),
+            get_verify_url=Mock(return_value='/verify'),
+        )
         return query, redirect
 
     def test_unauthenticated1(self):
