@@ -42,12 +42,12 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
         datetime_now(), status, flag_auto_merged)
 
 
-async def get_pull_request_info(pull_id: int):
+async def get_pull_request_info(dstowner: str, dstrepo: str, pull_id: int):
     result = await fetchrow(
         '''
         SELECT * FROM pull_requests
-        WHERE pull_id=$1
-        ''', pull_id)
+        WHERE pull_id=$1 and dest_repo_id=$2
+        ''', pull_id, await get_repo_id(dstowner, dstrepo))
     return dict(result)
 
 
