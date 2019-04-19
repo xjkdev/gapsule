@@ -13,12 +13,14 @@ import PullCompare from "@/components/PullCompare"
 import PullCommits from "@/components/PullCommits"
 import FileContent from "@/components/FileContent"
 import NewRepo from "@/components/NewRepo"
+import NonExisting from "@/components/NonExisting"
 
 Vue.use(Router)
 
 export default new Router({
   mode: 'history',
   routes: [
+    { path: '/404', name: 'NonExisting', component: NonExisting, meta: { title: 'Page not found' } },
     { path: '/new', name: 'NewRepo', component: NewRepo, meta: { title: 'Create a New Repository' } },
     { path: '/signin', name: 'SignIn', component: SignIn, meta: { title: 'SignIn' } },
     { path: '/signup', name: 'SignUp', component: SignUp, meta: { title: 'Join Gapsule' } },
@@ -109,5 +111,9 @@ export default new Router({
       name: 'Repo',
       component: Repo,
       meta() { return this.params.owner + '/' + this.params.repo }
+    },
+    {
+      path: '*',
+      redirect: '/404'
     }]
 })
