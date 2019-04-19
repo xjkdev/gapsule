@@ -26,7 +26,9 @@ class SideBarHandler(BaseHandler):
                 "id": t['post_id'],
                 "title": t['title'],
             }
-            tmp['repo'] = "test/test"
+            repoid = topics['repo_id']
+            repoinfo = await repo.get_repo_info(repoid)
+            tmp['repo'] = '{}/{}'.format(username, repoinfo['reponame'])
             results.append(tmp)
         return results
 
