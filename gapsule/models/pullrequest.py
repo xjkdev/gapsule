@@ -4,8 +4,6 @@ import asyncio
 from dataclasses import dataclass
 from typing import Optional, Dict, Tuple, List
 from gapsule.models import git, repo, user
-from gapsule.models.git import git_branches
-from gapsule.models.repo import get_repo_id
 from gapsule.models.connection import execute, fetchrow
 from gapsule.utils.cookie_session import datetime_now
 from gapsule.models.post import create_new_attached_post
@@ -33,13 +31,13 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                               title: str, authorname: str,
                               status: str, visibility: bool) -> Tuple[int, bool, str]:
     authoremail = await user.get_user_mail_address(authorname)
-    dst_repo_id = await get_repo_id(dstowner, dstrepo)
-    src_repo_id = await get_repo_id(srcowner, srcrepo)
+    dst_repo_id = await repo.get_repo_id(dstowner, dstrepo)
+    src_repo_id = await repo.get_repo_id(srcowner, srcrepo)
 
-    branches = (await git_branches(dstowner, dstrepo))[1]
+    branches = (await git.git_branches(dstowner, dstrepo))[1]
     if not dstbranch in branches:
         raise BranchNotFoundException()
-    branches2 = (await git_branches(srcowner, srcrepo))[1]
+    branches2 = (await git.git_branches(srcowner, srcrepo))[1]
     if not srcbranch in branches2:
         raise BranchNotFoundException()
     current_id = await fetchrow(
@@ -71,35 +69,36 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
 
 async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                              pullid: int):
-    try:
-        merge_pull_request_git(dstowner, dstrepo, dstbranch, pullid)
-    except:
-        await execute(
-            '''
-            UPDATE pull_requests
-            SET auto_merge_status=$1
-            ''', False)
-    else:
-        await execute(
-            '''
-            UPDATE pull_requests
-            SET auto_merge_status=$1
-            ''', True)
+    merge_pull_request_git(dstowner, dstrepo, dstbranch, pullid)
+    await execute(
+        '''
+        UPDATE pull_requests
+        SET status=$1
+        ''', 'Merged')
 
 
 async def close_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                              pullid: int):
-    try:
-        merge_pull_request_git(dstowner, dstrepo, dstbranch, pullid)
-    except:
-        pass
-    else:
-        await execute(
-            '''
-            UPDATE pull_requests
-            SET status=$1
-            ''', 'Closed')
+    finish_working_dir(dstowner, dstrepo, pullid)
+    await execute(
+        '''
+        UPDATE pull_requests
+        SET status=$1
+        WHERE dest_repo
+        ''', 'Closed')
 
+
+async def get_pull_request_info(dstowner: str, dstrepo: str, pullid: int) -> Dict[str, ...]:
+    dst_repo_id = await repo.get_repo_id(dstowner, dstrepo)
+    result = await fetchrow(
+        '''
+        SELECT * FROM pull_requests WHERE dest_repo_id=$1 and pull_id=$2
+        ''', dst_repo_id, pullid
+    )
+    if result is None:
+        return None
+    else:
+        return dict(result)
 
 _working_dirs = {}
 
@@ -113,6 +112,10 @@ async def get_working_dir(owner, reponame, pullid):
         tmpdir = _working_dirs[(owner, reponame, pullid)]
     dstroot = '{}/{}'.format(tmpdir.name, reponame)
     return dstroot
+
+
+def has_working_dir(owner, reponame, pullid):
+    return (owner, reponame, pullid) in _working_dirs
 
 
 def finish_working_dir(owner, reponame, pullid):
@@ -149,6 +152,16 @@ async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, p
     return flag_auto_merged, output
 
 
+async def update_pull_request(dstowner: str, dstrepo: str, pullid: int):
+    info = await get_pull_request_info(dstowner, dstrepo, pullid)
+    dstbranch = info['dest_branch']
+    src_repo_id = info['src_repo_id']
+    src_owner_id = await repo.get_owner_id(src_repo_id)
+    srcowner = info['']
+    srcrepo = None
+    srcbranch = info['src_branch']
+
+
 async def merge_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,
                                  pullid: int):
     if (dstowner, dstrepo, pullid) not in _working_dirs:
@@ -175,3 +188,39 @@ async def merge_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,
 
 async def close_pull_request_git(dstowner: str, dstrepo: str, pullid: int):
     finish_working_dir(dstowner, dstrepo, pullid)
+
+
+async def pull_request_diff(dstowner: str, dstrepo: str,  pullid: int) -> List[Tuple[str, str]]:
+    info = await get_pull_request_info(dstowner, dstrepo, pullid)
+    if info is None:
+        raise ValueError('PullRequest Not Found')
+    dstbranch = info['dest_branch']
+    workingdir = await get_working_dir(dstowner, dstrepo, pullid)
+    pr_head_branch = 'refs/pull/{}/head'.format(pullid)
+    result = await git.git_diff(workingdir, dstbranch, pr_head_branch)
+    return result
+
+
+async def pull_request_log(dstowner: str, dstrepo: str,  pullid: int) -> List[Dict[str, str]]:
+    info = await get_pull_request_info(dstowner, dstrepo, pullid)
+    if info is None:
+        raise ValueError('PullRequest Not Found')
+    dstbranch = info['dest_branch']
+    pr_head_branch = 'refs/pull/{}/head'.format(pullid)
+    result = await git.git_commit_logs(dstowner, dstrepo, pr_head_branch,
+                                       pretty=git.MEDIUM, base=dstbranch)
+    return result
+
+
+async def pull_request_preview(dstowner: str, dstrepo: str, dstbranch: str,
+                               srcowner: str, srcrepo: str, srcbranch: str) -> Dict[str, ...]:
+    if dstowner != srcowner or dstrepo != srcrepo:
+        dstroot = git.get_repo_dirpath(dstowner, dstrepo)
+        srcroot = git.get_repo_dirpath(srcowner, srcrepo)
+        await git.git_fetch(dstroot, 'FETCH_HEAD', srcroot, srcbranch, fetch_head=True)
+        srcbranch = 'FETCH_HEAD'
+    result = {}
+    result['log'] = await git.git_commit_logs(dstowner, dstrepo, 'FETCH_HEAD',
+                                              pretty=git.MEDIUM, base=dstbranch)
+    result['diff'] = await git.git_diff(dstroot, dstbranch, srcbranch)
+    return result

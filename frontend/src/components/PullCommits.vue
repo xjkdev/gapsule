@@ -32,13 +32,14 @@
       <b-nav-item :active="$route.name=='PullCommits'" :to="fullPullName()+'/commits'">Commits</b-nav-item>
     </b-nav>
 
-    <div v-for="reply in replys" :key="reply">
+    <!-- <div v-for="reply in replys" :key="reply">
       <span>Commits on {{ reply.commitsDate }}</span>
       <div style="background-color: #f5fcff; margin-left: 1%; margin-top: 5px">
         <strong>{{ reply.title }}</strong>
         <p>{{ reply.user }} committed {{ reply.timeToNow }}</p>
       </div>
-    </div>
+    </div>-->
+    <div>{{log}}</div>
 
     <p v-if="replys==''">no pull commits</p>
   </b-container>
@@ -59,7 +60,8 @@ export default {
       pullFrom: "",
       replys: "",
       error: "",
-      hasError: false
+      hasError: false,
+      log: ""
     };
   },
   beforeRouteEnter(to, from, next) {
@@ -82,7 +84,46 @@ export default {
     },
     getData() {
       // let mock = new MockAdapter(axios);
-      // mock.onGet(this.fullPullName() + "/commits").reply(200, {
+      // mock.onGet(this.fullPullName()).reply(200, {
+      //   state: "ok",
+      //   error: "error",
+      //   title: "a title",
+      //   status: "Merged",
+      //   pullUser: "Alice",
+      //   commitsNumber: 2,
+      //   pullTo: "Alice:master",
+      //   pullFrom: "Bob:abc",
+      //   replys: [
+      //     {
+      //       commitsDate: "Apr 1, 2019",
+      //       title: "a pull",
+      //       user: "Alice",
+      //       timeToNow: "8 das ago"
+      //     }
+      //   ]
+      // });
+      axios({
+        method: "GET",
+        url: this.fullPullName(),
+        params: {
+          ajax: 1
+        }
+      }).then(response => {
+        if (response.data.state == "ok") {
+          this.title = response.data.title;
+          this.status = response.data.status;
+          this.pullUser = response.data.pullUser;
+          this.commitsNumber = response.data.log.length;
+          this.pullTo = response.data.pullTo;
+          this.pullFrom = response.data.pullFrom;
+          this.replys = response.data.log;
+        } else {
+          this.error = response.data.error;
+          this.hasError = true;
+        }
+      });
+      // let mock1 = new MockAdapter(axios);
+      // mock1.onGet(this.fullPullName()+'/commits').reply(200, {
       //   state: "ok",
       //   error: "error",
       //   title: "a title",
@@ -104,20 +145,11 @@ export default {
         method: "GET",
         url: this.fullPullName() + "/commits",
         params: {
-          ajax: 1,
-          owner: this.$route.params.owner,
-          repo: this.$route.params.repo,
-          id: this.$route.params.pullid
+          ajax: 1
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.title = response.data.title;
-          this.status = response.data.status;
-          this.pullUser = response.data.pullUser;
-          this.commitsNumber = response.data.commitsNumber;
-          this.pullTo = response.data.pullTo;
-          this.pullFrom = response.data.pullFrom;
-          this.replys = response.data.replys;
+          this.log = response.log;
         } else {
           this.error = response.data.error;
           this.hasError = true;

@@ -16,13 +16,13 @@ class RepoNotFoundException(FileNotFoundError):
 
 @log_call()
 async def create_new_repo(owner: str,
-                         reponame: str,
-                         introduction: str = None,
-                         star_num: int = 0,
-                         fork_num: int = 0,
-                         visibility: bool = False,
-                         forked_from: str = None,
-                         default_branch: str = None):
+                          reponame: str,
+                          introduction: str = None,
+                          star_num: int = 0,
+                          fork_num: int = 0,
+                          visibility: bool = False,
+                          forked_from: str = None,
+                          default_branch: str = None):
     # 创建一个新repo，必须提供owner名和repo名
     if not check_reponame_validity(reponame):
         raise NameError('Invalid reponame')
@@ -373,12 +373,12 @@ def _is_binary_string(bytes):
 
 
 @log_call()
-def get_file_content(owner, reponame, branch, path) -> Optional[str]:
+async def get_file_content(owner, reponame, branch, path) -> Optional[str]:
     """ 查询  对应路径下的某个文件的内容
         如果文件不存在或为目录，会抛出OSError
         如果为二进制文件或大文件，返回空
     """
-    data = git.git_cat_file(owner, reponame, branch, path)
+    data = await git.git_cat_file(owner, reponame, branch, path)
     if len(data) > 204800 or _is_binary_string(data[:20480]):  # big file
         return None
     det = chardet.detect(data)
@@ -456,10 +456,6 @@ async def get_repo_visibility(owner: str, reponame: str):
         return result['visibility']
     else:
         raise RepoNotFoundException()
-
-
-async def get_file_content(path: str, branch=None):
-    return 'content:...'
 
 
 async def get_all_files(owner: str, reponame: str,

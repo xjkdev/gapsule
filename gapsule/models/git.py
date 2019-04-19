@@ -1,6 +1,8 @@
 import os
 import functools
 import asyncio
+from concurrent.futures import ProcessPoolExecutor
+import chardet
 from typing import Union, Tuple, List, Dict
 
 from gapsule.settings import settings
@@ -116,12 +118,16 @@ def _read_medium_log(log: str) -> List[Dict[str, str]]:
 
 
 async def git_log(root: str,  branch: str, pretty=ONELINE,
-                  path=None, maxsize: int = None) \
+                  path=None, maxsize: int = None, *, base: str = None) \
         -> Union[List[Tuple[str, str]], List[Dict[str, str]], List[Tuple[str, str, str]]]:
     cmd = ['git', 'log', '--date=iso8601-strict']
     if isinstance(maxsize, int):
         cmd += ['-n', str(maxsize)]
-    cmd += [PRETTY_OPTION[pretty], branch]
+    cmd += [PRETTY_OPTION[pretty]]
+    if base is None:
+        cmd += [branch]
+    else:
+        cmd += ['{}..{}'.format(base, branch)]
     if path is not None:
         cmd += ['--', path]
     returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
@@ -144,11 +150,11 @@ async def git_log(root: str,  branch: str, pretty=ONELINE,
 
 
 async def git_commit_logs(owner: str, reponame: str, branch: str, pretty=ONELINE,
-                          path=None, maxsize: int = None) \
+                          path=None, maxsize: int = None, *, base: str = None) \
         -> Union[List[Tuple[str, str]], List[Dict[str, str]], List[Tuple[str, str, str]]]:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
-    return await git_log(root, branch, pretty, path, maxsize)
+    return await git_log(root, branch, pretty, path, maxsize, base=base)
 
 
 async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
@@ -205,9 +211,12 @@ async def git_cat_file(owner: str, reponame: str, branch: str, path: str) -> byt
     return out
 
 
-async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str):
+async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str, *, fetch_head=False):
     cmd = ['git', 'fetch', 'file://'+srcroot]
-    cmd += ['{}:{}'.format(srcrefs, dstrefs)]
+    if not fetch_head:
+        cmd += ['{}:{}'.format(srcrefs, dstrefs)]
+    else:
+        cmd += [srcrefs]
     returncode, _out, _err = await run(cmd, cwd=dstroot, stdout=DEVNULL, stderr=DEVNULL,
                                        timeout=10)
     if returncode != 0:
@@ -298,3 +307,44 @@ async def git_commit(workingdir: str, message: str):
                                        timeout=5)
     if returncode != 0:
         raise RuntimeError("git commit error")
+
+
+def git_diff_parsing(data):
+    result = []
+    i = 0
+    head = b'\ndiff --git '
+    len_head = len(head)-1
+    len_data = len(data)
+    while i < len_data:
+        next_lineend = data.find(b'\n', i)
+        nexti = data.find(head, next_lineend)
+        if nexti == -1:
+            nexti = len_data
+        else:
+            nexti = nexti + 1
+        title = data[i + len_head: next_lineend].decode()
+        body = data[next_lineend+1: nexti]
+        det = chardet.detect(body[:1024])
+        if det['encoding'] == 'ascii':
+            result.append((title, body.decode()))
+        else:
+            result.append((title, body.decode(det['encoding'])))
+        i = nexti
+    return result
+
+
+async def git_diff(workingdir: str, base_branch: str, compare_to: str) -> List[Tuple[str, str]]:
+    """ Return a List which items are tuples, containing title and body.
+        title are 'path_to_a_file path_to_b_file'
+        body are diff format
+    """
+    cmd = ['git', 'diff', base_branch, compare_to]
+    returncode, out, _err = await run(cmd, cwd=workingdir, stdout=PIPE, stderr=DEVNULL,
+                                      timeout=5)
+    if returncode != 0:
+        raise RuntimeError("git diff error")
+
+    loop = asyncio.get_event_loop()
+    with ProcessPoolExecutor() as pool:
+        result = await loop.run_in_executor(pool, git_diff_parsing, out)
+    return result
