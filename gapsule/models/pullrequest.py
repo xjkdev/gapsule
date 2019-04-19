@@ -2,11 +2,10 @@ import tempfile
 import asyncio
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Tuple, List
-from gapsule.models import git, repo, user
+from typing import Optional, Dict, Tuple, List, Any
+from gapsule.models import git, repo, user, post
 from gapsule.models.connection import execute, fetchrow
 from gapsule.utils.cookie_session import datetime_now
-from gapsule.models.post import create_new_attached_post
 
 
 class BranchNotFoundException(FileNotFoundError):
@@ -62,8 +61,8 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
         ''', dst_repo_id, dstbranch, this_id, src_repo_id, srcbranch,
         datetime_now(), status, flag_auto_merged)
 
-    postid = await create_new_attached_post(dst_repo_id, srcowner, title, status,
-                                            visibility, False)
+    postid = await post.create_new_attached_post(dst_repo_id, srcowner, title, status,
+                                                 visibility, False)
     return postid, flag_auto_merged, conflicts
 
 
@@ -78,7 +77,7 @@ async def merge_pull_request(dstowner: str, dstrepo: str, pullid: int):
 
 
 async def close_pull_request(dstowner: str, dstrepo: str, pullid: int):
-    finish_working_dir(dstowner, dstrepo, pullid)
+    close_pull_request_git(dstowner, dstrepo, pullid)
     await execute(
         '''
         UPDATE pull_requests
@@ -87,7 +86,7 @@ async def close_pull_request(dstowner: str, dstrepo: str, pullid: int):
         ''', 'Closed', repo.get_repo_id(dstowner, dstrepo), pullid)
 
 
-async def get_pull_request_info(dstowner: str, dstrepo: str, pullid: int) -> Dict[str, ...]:
+async def get_pull_request_info(dstowner: str, dstrepo: str, pullid: int) -> Dict[str, Any]:
     dst_repo_id = await repo.get_repo_id(dstowner, dstrepo)
     result = await fetchrow(
         '''
@@ -125,11 +124,14 @@ def finish_working_dir(owner, reponame, pullid):
 async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, pullid: int,
                                   srcowner: str, srcrepo: str, srcbranch: str,
                                   authorname: str, authoremail: str,
-                                  content: str = None):
+                                  content: str = None, *, is_update=False):
     dstroot = git.get_repo_dirpath(dstowner, dstrepo)
     srcroot = git.get_repo_dirpath(srcowner, srcrepo)
     pr_head_branch = 'refs/pull/{}/head'.format(pullid)
     pr_merge_branch = 'refs/pull/{}/merge'.format(pullid)
+    if is_update:
+        await git.git_rm_branch(dstroot, pr_head_branch, force=True)
+        await git.git_rm_branch(dstroot, pr_merge_branch, force=True)
     await git.git_fetch(dstroot, pr_head_branch, srcroot, srcbranch)
     workingdir = await get_working_dir(dstowner, dstrepo, pullid)
     await git.git_fetch(workingdir, pr_head_branch, dstroot, pr_head_branch)
@@ -152,19 +154,32 @@ async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, p
 
 
 async def update_pull_request(dstowner: str, dstrepo: str, pullid: int):
-    info = await get_pull_request_info(dstowner, dstrepo, pullid)
-    dstbranch = info['dest_branch']
-    src_repo_id = info['src_repo_id']
-    src_owner_id = await repo.get_owner_id(src_repo_id)
-    srcowner = info['']
-    srcrepo = None
-    srcbranch = info['src_branch']
+    prinfo = await get_pull_request_info(dstowner, dstrepo, pullid)
+    dstbranch = prinfo['dest_branch']
+    src_repo_id = prinfo['src_repo_id']
+    postinfo = await post.get_postername(src_repo_id, pullid)
+    authorname = await user.get_username(postinfo['postername'])
+    authoremail = await user.get_user_mail_address(authorname)
+    content = postinfo['title']
+    src_repo_info = await repo.get_repo_info(src_repo_id)
+    srcowner = src_repo_info['username']
+    srcrepo = src_repo_info['reponame']
+    srcbranch = prinfo['src_branch']
+    await create_pull_request_git(dstowner, dstrepo, dstbranch,
+                                  pullid,
+                                  srcowner, srcrepo, srcbranch,
+                                  authorname, authoremail,
+                                  content, is_update=True
+                                  )
 
 
 async def merge_pull_request_git(dstowner: str, dstrepo: str, pullid: int):
-    dstbranch = ""
-    if (dstowner, dstrepo, pullid) not in _working_dirs:
-        raise RuntimeError('merge pull request before create')
+    prinfo = await get_pull_request_info(dstowner, dstrepo, pullid)
+    if prinfo is None:
+        raise ValueError('PullRequest Not Found')
+    dstbranch = prinfo['dest_branch']
+    if not has_working_dir(dstowner, dstrepo, pullid):
+        await update_pull_request(dstowner, dstrepo, pullid)
     dstroot = git.get_repo_dirpath(dstowner, dstrepo)
     pr_merge_branch = 'refs/pull/{}/merge'.format(pullid)
     workingdir = await get_working_dir(dstowner, dstrepo, pullid)
@@ -193,6 +208,8 @@ async def pull_request_diff(dstowner: str, dstrepo: str,  pullid: int) -> List[T
     info = await get_pull_request_info(dstowner, dstrepo, pullid)
     if info is None:
         raise ValueError('PullRequest Not Found')
+    if not has_working_dir(dstowner, dstrepo, pullid):
+        await update_pull_request(dstowner, dstrepo, pullid)
     dstbranch = info['dest_branch']
     workingdir = await get_working_dir(dstowner, dstrepo, pullid)
     pr_head_branch = 'refs/pull/{}/head'.format(pullid)
@@ -204,6 +221,8 @@ async def pull_request_log(dstowner: str, dstrepo: str,  pullid: int) -> List[Di
     info = await get_pull_request_info(dstowner, dstrepo, pullid)
     if info is None:
         raise ValueError('PullRequest Not Found')
+    if not has_working_dir(dstowner, dstrepo, pullid):
+        await update_pull_request(dstowner, dstrepo, pullid)
     dstbranch = info['dest_branch']
     pr_head_branch = 'refs/pull/{}/head'.format(pullid)
     result = await git.git_commit_logs(dstowner, dstrepo, pr_head_branch,
@@ -212,7 +231,7 @@ async def pull_request_log(dstowner: str, dstrepo: str,  pullid: int) -> List[Di
 
 
 async def pull_request_preview(dstowner: str, dstrepo: str, dstbranch: str,
-                               srcowner: str, srcrepo: str, srcbranch: str) -> Dict[str, ...]:
+                               srcowner: str, srcrepo: str, srcbranch: str) -> Dict[str, Any]:
     if dstowner != srcowner or dstrepo != srcrepo:
         dstroot = git.get_repo_dirpath(dstowner, dstrepo)
         srcroot = git.get_repo_dirpath(srcowner, srcrepo)

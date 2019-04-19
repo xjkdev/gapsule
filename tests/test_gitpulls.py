@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest import TestCase, mock
 import tempfile
 import os
 from subprocess import Popen, PIPE, DEVNULL
@@ -40,6 +40,11 @@ class GitModelTestCase(TestCase):
             commit_file(self, tmpdir, 'test2.txt', 'testing file2',
                         'test commit')
 
+        async def _mock(*args):
+            return {'dest_branch': 'master'}
+
+        pullrequest.get_pull_request_info = _mock
+
     @async_test
     async def test_create_pr1(self):
         async with lock:
@@ -61,7 +66,7 @@ class GitModelTestCase(TestCase):
             self.assertEqual(pull_merge_log[0][1], merge_msg)
             before_merged_log = await git.git_commit_logs('abcd', 'efgh', 'master')
             self.assertEqual(before_merged_log[0][1], 'test commit')
-            await pullrequest.merge_pull_request_git('abcd', 'efgh', 'master', 1)
+            await pullrequest.merge_pull_request_git('abcd', 'efgh', 1)
             merged_log = await git.git_commit_logs('abcd', 'efgh', 'master')
             self.assertEqual(merged_log[0][1], merge_msg)
             self.assertEqual(merged_log[1][1], 'add commit')

@@ -289,6 +289,22 @@ async def git_create_branch(root: str, newbranch: str, frombranch: str):
         raise RuntimeError("git branch error")
 
 
+async def git_rm_branch(root: str, branch, *, force=False):
+    cmd = ['git', 'branch']
+    if force:
+        cmd += ['-D']
+    else:
+        cmd += ['-d']
+    cmd += [branch]
+    returncode, _out, _err = await run(cmd,
+                                       cwd=root,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
+                                       timeout=2)
+    if returncode != 0:
+        raise RuntimeError("git rm branch error")
+
+
 async def git_clone(workingdir: str,
                     owner: str,
                     reponame: str,

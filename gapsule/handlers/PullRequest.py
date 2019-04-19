@@ -9,7 +9,7 @@ from gapsule.handlers.Base import BaseHandler
 class CreatePullRequestHandler(BaseHandler):
     @ajaxquery
     async def get(self, owner, reponame, restpath):
-        compare_info = self.judgeBranch(owner, reponame, restpath)
+        compare_info = await self.judgeBranch(owner, reponame, restpath)
 
         preview = await pullrequest.pull_request_preview(
             compare_info['base_owner'], reponame, compare_info['base_branch'],
@@ -18,7 +18,7 @@ class CreatePullRequestHandler(BaseHandler):
         preview['state'] = 'ok'
         self.write(preview)
 
-    def judgeBranch(self, owner, reponame, statepath):
+    async def judgeBranch(self, owner, reponame, statepath):
         compare_dict = {
             'base_owner': owner,
             'compare_owner': owner,
@@ -61,7 +61,7 @@ class CreatePullRequestHandler(BaseHandler):
 
 class PullCommitsHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, postid):
+    async def get(self, owner, reponame, postid):
         pull_commits_dict = {
             "state": "ok",
             "log": await pullrequest.pull_request_log(owner, reponame, postid)
@@ -71,7 +71,7 @@ class PullCommitsHandler(BaseHandler):
 
 class PullChecksHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, postid):
+    async def get(self, owner, reponame, postid):
         pull_checks_dict = {
             "status": "ok",
             # TODO: 需要数据库提供接口
@@ -86,7 +86,7 @@ class PullChecksHandler(BaseHandler):
 
 class PullFilesHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, postid):
+    async def get(self, owner, reponame, postid):
         pull_files_dict = {
             "status": "ok",
             "diff": await pullrequest.pull_request_diff(owner, reponame, postid)

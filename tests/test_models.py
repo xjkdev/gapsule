@@ -1,15 +1,21 @@
 from unittest import TestCase
+from gapsule.settings import settings
 from gapsule.models import user, connection, repo, post, notification
 from gapsule.utils import async_test
 from gapsule.models.git import delete_repo
 
 
 class Test_TestModelsInterface(TestCase):
-    @async_test
-    async def setUp(self):
-        tables = ['users_info', 'profiles', 'repos']
-        for table in tables:
-            await connection.execute('delete from {};'.format(table))
+
+    def setUp(self):
+        settings['dbname'] = 'gapsule_test'
+        connection._connection = connection._create_instance()
+
+        async def _task():
+            tables = ['users_info', 'profiles', 'repos']
+            for table in tables:
+                await connection.execute('delete from {};'.format(table))
+        async_test(_task)()
 
     def test_add_user_pending_verifying(self):
         err_name_data = [['123', 'example@qq.cn', 'Qp123455'],

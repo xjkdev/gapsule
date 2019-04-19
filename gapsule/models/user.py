@@ -76,7 +76,7 @@ async def create_new_user(username: str, mail_address: str, password: str):
     if not check_password_validity(password):
         return False
     flag = await check_user_existing(username)
-    if (flag == True):
+    if flag:
         raise NameError('Username already existing')
 
     salt = username[random.randint(
@@ -326,3 +326,15 @@ async def get_last_login_time(username: str):
         WHERE username=$1
         ''', username)
     return temp['login_time']
+
+
+async def get_username(uid: int):
+    username = await fetchrow(
+        '''
+                SELECT username FROM users_info
+                WHERE uid =$1
+                ''', uid)
+    if username is None:
+        raise NameError()
+    else:
+        return uid['username']

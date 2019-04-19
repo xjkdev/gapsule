@@ -5,7 +5,7 @@ import chardet
 from gapsule.utils.log_call import log_call
 from gapsule.models import git
 from gapsule.utils.cookie_session import datetime_now
-from gapsule.models.connection import _connection, fetchrow, execute, fetch
+from gapsule.models.connection import fetchrow, execute, fetch
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 from gapsule.models.user import get_uid
 
