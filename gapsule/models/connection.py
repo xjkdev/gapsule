@@ -1,7 +1,7 @@
+from gapsule import settings
 import asyncio
 
 import asyncpg
-from gapsule import settings
 
 
 async def _make_connect_pool(config_info):

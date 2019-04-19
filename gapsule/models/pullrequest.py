@@ -31,7 +31,7 @@ def is_merge_message(message: str, pullid: int):
 async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                               srcowner: str, srcrepo: str, srcbranch: str,
                               title: str, authorname: str,
-                              status: str, visibility: bool):
+                              status: str, visibility: bool) -> Tuple[int, bool, str]:
     authoremail = await user.get_user_mail_address(authorname)
     dst_repo_id = await get_repo_id(dstowner, dstrepo)
     src_repo_id = await get_repo_id(srcowner, srcrepo)
@@ -51,20 +51,22 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     if current_id['max'] != None:
         this_id = current_id['max'] + 1
 
-    flag_auto_merged = await create_pull_request_git(dstowner, dstrepo, dstbranch,
-                                                     this_id,
-                                                     srcowner, srcrepo, srcbranch,
-                                                     authorname, authoremail,
-                                                     title)
+    flag_auto_merged, conflicts = await create_pull_request_git(dstowner, dstrepo, dstbranch,
+                                                                this_id,
+                                                                srcowner, srcrepo, srcbranch,
+                                                                authorname, authoremail,
+                                                                title)
     await execute(
         '''
-        INSERT INTO pull_requests(dest_repo_id,dest_branch,pull_id,src_repo_id,src_branch,created_time,status,auto_merge_status)
+        INSERT INTO pull_requests(dest_repo_id,dest_branch,pull_id,src_repo_id,src_branch,
+                                  created_time,status,auto_merge_status)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)
         ''', dst_repo_id, dstbranch, this_id, src_repo_id, srcbranch,
         datetime_now(), status, flag_auto_merged)
 
-    await create_new_attached_post(dst_repo_id, srcowner, title, status,
-                                   visibility, False)
+    postid = await create_new_attached_post(dst_repo_id, srcowner, title, status,
+                                            visibility, False)
+    return postid, flag_auto_merged, conflicts
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
@@ -130,19 +132,21 @@ async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, p
     workingdir = await get_working_dir(dstowner, dstrepo, pullid)
     await git.git_fetch(workingdir, pr_head_branch, dstroot, pr_head_branch)
     flag_auto_merged = True
+    output = ''
     try:
         await git.git_config(workingdir, 'user.name', authorname)
         await git.git_config(workingdir, 'user.email', authoremail)
         await git.git_merge(workingdir, dstbranch, pr_head_branch)
         msg = get_merge_message(pullid, srcowner, srcbranch, content)
         await git.git_commit(workingdir, msg)
-    except git.CanNotAutoMerge:
+    except git.CanNotAutoMerge as e:
         await git.git_merge_action(workingdir, 'abort')
         flag_auto_merged = False
+        output = e.args[0]
     except RuntimeError as e:
         raise e
     await git.git_fetch(dstroot, pr_merge_branch, workingdir, dstbranch)
-    return flag_auto_merged
+    return flag_auto_merged, output
 
 
 async def merge_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,

@@ -1,6 +1,6 @@
+import json
 from tornado.testing import AsyncHTTPTestCase
 from gapsule.app import make_app
-import json
 
 
 class SignInHandlerTestCase(AsyncHTTPTestCase):

@@ -9,9 +9,9 @@
       style="width: 40%; position: absolute; top: 0; left: 30%"
     >{{ error }}</b-alert>
 
-    <div style="padding: 0.2rem 1rem 0.2rem 1rem">descriptions</div>
+    <div v-if="isRepoRoot" style="padding: 0.2rem 1rem 0.2rem 1rem">descriptions</div>
 
-    <b-nav pills fill class="border rounded" style=" padding: 0.2rem 0">
+    <b-nav v-if="isRepoRoot" pills fill class="border rounded" style=" padding: 0.2rem 0">
       <b-nav-item>
         <router-link class="nav-link" to="#">{{ commitNumber }} commits</router-link>
       </b-nav-item>
@@ -63,13 +63,13 @@
     <b-card no-body class="filelist">
       <b-card-header>file list</b-card-header>
       <b-list-group flush>
-        <b-list-group-item v-if="allFiles==''">
+        <b-list-group-item v-if="allFiles.length==0">
           <p>no file</p>
         </b-list-group-item>
         <b-list-group-item v-for="folderData in folders" :key="folderData">
           <img src="../images/folder.png">
           <router-link
-            v-if="firstClick()"
+            v-if="isRepoRoot"
             :to="repoName()+'/tree/'+currentBranch+'/'+folderData"
             @click.native="handleFileList()"
           >{{ folderData }}</router-link>
@@ -136,9 +136,6 @@ export default {
     newPull() {
       this.$router.push(this.repoName() + "/compare");
     },
-    firstClick() {
-      return this.$route.path.indexOf("tree") == -1;
-    },
     nextURL(fileData) {
       if (this.$route.path.indexOf("tree") == -1) {
         return this.repoName() + "/blob/" + this.currentBranch + "/" + fileData;
@@ -149,7 +146,7 @@ export default {
     handleFileList() {
       let tmpFileList = [];
       let i;
-      if (this.$route.path.indexOf("tree") != -1) {
+      if (this.isRepoRoot) {
         let currentFileLocation = this.$route.path.replace(
           this.repoName() + "/tree/" + this.currentBranch + "/",
           ""
@@ -171,16 +168,16 @@ export default {
     changeFileList(files) {
       this.folders = [];
       this.files = [];
-      let i;
-      for (i in files) {
-        let file = files[i];
+      console.log(files);
+      for (let file of files) {
+        let name = file[0];
         if (
-          file.indexOf("/") != -1 &&
-          this.folders.indexOf(file.split("/")[0]) == -1
+          name.indexOf("/") != -1 &&
+          this.folders.indexOf(name.split("/")[0]) == -1
         ) {
-          this.folders.push(file.split("/")[0]);
-        } else if (file.indexOf("/") == -1) {
-          this.files.push(file);
+          this.folders.push(name.split("/")[0]);
+        } else if (name.indexOf("/") == -1) {
+          this.files.push(name);
         }
       }
     },
@@ -195,11 +192,11 @@ export default {
       //   contributorNumber: 4,
       //   readme: "readme",
       //   files: [
-      //     "folder1/folder2/folder3/a.py",
-      //     "folder4/folder5/b.vue",
-      //     "folder1/folder2/xx",
-      //     "folder1/c.txt",
-      //     "d.js"
+      //     // ["folder1/folder2/folder3/a.py", ""],
+      //     // ["folder4/folder5/b.vue", ""],
+      //     // ["folder1/folder2/xx", ""],
+      //     // ["folder1/c.txt", ""],
+      //     ["d.js", ""]
       //   ],
       //   branches: ["master", "develop"]
       // });
@@ -213,20 +210,24 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          console.log(response.data);
           this.commitNumber = response.data.commitNumber;
           this.branchNumber = response.data.branchNumber;
           this.releaseNumber = response.data.releaseNumber;
           this.contributorNumber = response.data.contributorNumber;
           this.readme = response.data.readme;
           this.branches = response.data.branches;
-          this.allFiles = response.data.files;
+          this.allFiles = response.data.allFiles;
           this.changeFileList(this.allFiles);
         } else {
           this.error = response.data.error;
           this.hasError = true;
         }
       });
+    }
+  },
+  computed: {
+    isRepoRoot() {
+      return this.$route.params.path == undefined;
     }
   },
   components: { RepoNav }

@@ -261,9 +261,11 @@ async def git_merge(workingdir: str, dstbranch: str, srcbranch: str):
     cmd = ['git', 'merge', '--no-commit', '--no-ff', srcbranch]
     returncode, out, err = await run(cmd, cwd=workingdir, stdout=PIPE, stderr=PIPE,
                                      timeout=5)
-    if returncode == 1:
-        raise CanNotAutoMerge('can not auto merge')
-    elif returncode != 0:
+    out = out.decode().split('\n')
+    conflicts = [line for line in out if line.startswith('CONFLICT')]
+    if len(conflicts) > 0:
+        raise CanNotAutoMerge('\n'.join(conflicts))
+    if returncode != 0:
         print(out, err)
         raise RuntimeError("git merge error")
 
@@ -295,4 +297,4 @@ async def git_commit(workingdir: str, message: str):
                                        stdout=DEVNULL, stderr=DEVNULL,
                                        timeout=5)
     if returncode != 0:
-        raise RuntimeError("git pull error")
+        raise RuntimeError("git commit error")

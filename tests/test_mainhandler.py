@@ -1,6 +1,7 @@
+import os
+
 from tornado.testing import AsyncHTTPTestCase
 from gapsule.app import make_app
-import os
 
 
 class MainHandlerTestCase(AsyncHTTPTestCase):
