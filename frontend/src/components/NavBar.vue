@@ -1,5 +1,5 @@
 <template>
-  <b-navbar toggleable="lg" type="dark" class="bg-dark">
+  <b-navbar v-if="showNavbar" toggleable="lg" type="dark" class="bg-dark">
     <b-navbar-brand to="/">Gapsule</b-navbar-brand>
     <b-navbar-toggle id="navbar-toggler" target="navbarSupportedContent">
       <span class="navbar-toggler-icon"></span>
@@ -60,6 +60,7 @@
 </template>
 
 <script>
+import { getCookie } from "@/utils/get_cookie";
 export default {
   name: "NavBar",
   mounted() {
@@ -67,8 +68,13 @@ export default {
     // let collapseinit = new Collapse(togglebtn);
   },
   created() {
-    this.username = this.getCookie("username");
-    this.icon = this.getCookie("icon");
+    this.username = getCookie("username");
+    this.icon = getCookie("icon");
+    // eslint-disable-next-line to ignore the next line.
+    this.$router.afterEach((to, _from) => {
+      this.showNavbar = to.name != "NonExisting";
+    });
+    this.showNavbar = this.$route.name != "NonExisting";
   },
   watch: {
     $route: "getData"
@@ -76,25 +82,11 @@ export default {
   data() {
     return {
       username: "",
-      icon: ""
+      icon: "",
+      showNavbar: true
     };
   },
-  methods: {
-    getCookie(name) {
-      var nameEQ = name + "=";
-      var ca = document.cookie.split(";");
-      for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) == " ") {
-          c = c.substring(1, c.length);
-        }
-        if (c.indexOf(nameEQ) == 0) {
-          return c.substring(nameEQ.length, c.length);
-        }
-      }
-      return "";
-    }
-  }
+  methods: {}
 };
 </script>
 

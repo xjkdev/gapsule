@@ -1,4 +1,5 @@
-import crypt
+import hashlib
+import random
 import re
 import secrets
 import asyncpg
@@ -30,6 +31,8 @@ def add_user_pending_verifying(username: str, mail_address: str,
             return pending_info['token']
         else:
             return None
+    else:
+        raise NameError()
 
 
 @log_call()
@@ -72,13 +75,22 @@ async def create_new_user(username: str, mail_address: str, password: str):
         return False
     if not check_password_validity(password):
         return False
-
     flag = await check_user_existing(username)
-    if flag:
+    if (flag == True):
         raise NameError('Username already existing')
 
-    salt = crypt.mksalt()
-    encrypted_password = crypt.crypt(password, salt)
+    salt = username[random.randint(
+        0,
+        len(username) - 1)] + username[random.randint(
+            0,
+            len(username) - 1)] + username[random.randint(
+                0,
+                len(username) - 1)]
+    sha512 = hashlib.sha512()
+    temp = password + salt
+    temp = temp.encode('utf-8')
+    sha512.update(temp)
+    encrypted_password = sha512.hexdigest()
     await execute(
         '''
     INSERT INTO users_info(username, mail_address, password, salt) VALUES($1, $2, $3, $4)''',
@@ -92,23 +104,30 @@ async def verify_user(username: str, password: str):
         return False
     if not check_password_validity(password):
         return False
-    flag = await check_user_existing(username)
-    if not flag:
-        raise NameError('User does not exist')
-
-    temp_salt = await fetchrow(
-        '''
-        SELECT salt FROM users_info
-        WHERE username =$1
-        ''', username)
-    temp_encrypted_pw = crypt.crypt(password, salt=temp_salt['salt'])
-    temp_password = await fetchrow(
-        '''
-        SELECT password FROM users_info
-        WHERE username =$1
-        ''', username)
-    if temp_encrypted_pw == temp_password['password']:
-        return True
+    if (check_password_validity(password) != False):
+        flag = await check_user_existing(username)
+        if (flag == False):
+            raise NameError('User does not exist')
+        else:
+            temp_salt = await fetchrow(
+                '''
+                SELECT salt FROM users_info
+                WHERE username =$1
+                ''', username)
+            sha5122 = hashlib.sha512()
+            temp = (password + temp_salt['salt']).strip()
+            temp = temp.encode('utf-8')
+            sha5122.update(temp)
+            temp_encrypted_pw = sha5122.hexdigest()
+            temp_password = await fetchrow(
+                '''
+                SELECT password FROM users_info
+                WHERE username =$1
+                ''', username)
+            if (temp_encrypted_pw == temp_password['password']):
+                return True
+            else:
+                return False
     else:
         return False
 
@@ -134,8 +153,8 @@ async def set_profile(username: str,
             await execute(
                 '''
                 INSERT INTO profiles(username, icon_url,firstname,lastname, introduction, company, location,public_email, website) VALUES($1, $2, $3, $4, $5, $6,$7,$8,$9)
-                ''', username, icon_path, firstname, lastname,
-                introduction, company, location, public_email, website)
+                ''', username, icon_path, firstname, lastname, introduction,
+                company, location, public_email, website)
         else:
             await execute(
                 '''

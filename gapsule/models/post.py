@@ -54,7 +54,7 @@ async def check_post_existing(repo_id: int, post_id: int):
         SELECT * FROM posts
         WHERE repo_id=$1 and post_id=$2
         ''', repo_id, post_id)
-    if temp:
+    if temp is not None:
         return True
     else:
         return False
@@ -183,9 +183,9 @@ async def check_comment_existing(repo_id: int, post_id: int, comment_id: int):
     temp = await fetchrow(
         '''
         SELECT FROM comments
-        WHERE repo_id=$1, post_id=$2, comment_id=$3
+        WHERE repo_id=$1 and post_id=$2 and comment_id=$3
         ''', repo_id, post_id, comment_id)
-    if temp:
+    if temp is not None:
         return True
     else:
         return False

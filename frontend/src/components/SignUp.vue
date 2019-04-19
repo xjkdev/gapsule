@@ -18,7 +18,7 @@
 
       <b-form @submit.prevent="onSubmit">
         <ul class="main">
-          <span style="color: red">{{ errormessage }}</span>
+          <span style="color: red">{{ error }}</span>
           <li class="username">
             <label for="username">Username</label>
             <span style="color: red">*</span>

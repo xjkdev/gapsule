@@ -26,7 +26,7 @@
         </router-link>
         <p
           class="card-text"
-        >{{'#'+issue.post_id+' opened on '+issue.post_time+' by '+issue.postername}}</p>
+        >{{'#'+issue.post_id+' opened on '+fromNowTime(issue.post_time)+' by '+issue.postername}}</p>
       </b-card-body>
     </b-card>
 
@@ -40,6 +40,7 @@
 <script>
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
+import moment from "moment";
 // import MockAdapter from "axios-mock-adapter";
 export default {
   props: {
@@ -72,6 +73,9 @@ export default {
         return "/" + param.owner + "/" + param.repo + "/pulls";
       }
     },
+    fromNowTime(time) {
+      return moment(time).fromNow();
+    },
     getIssues() {
       // let mock = new MockAdapter(axios);
       // mock.onGet(this.fullIssuesName()).reply(200, {
@@ -81,13 +85,13 @@ export default {
       //     {
       //       title: "a topic",
       //       post_id: "11",
-      //       post_time: "1 April",
+      //       post_time: "2019-04-17T11:20:29+08:00",
       //       postername: "Alice"
       //     },
       //     {
       //       title: "another topic",
       //       post_id: "12",
-      //       post_time: "2 April",
+      //       post_time: "2019-04-16T20:12:00+0800",
       //       postername: "Bob"
       //     }
       //   ]

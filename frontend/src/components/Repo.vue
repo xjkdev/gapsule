@@ -152,12 +152,12 @@ export default {
           ""
         );
         for (i = 0; i < this.allFiles.length; i++) {
-          if (this.allFiles[i].indexOf(currentFileLocation + "/") == 0) {
+          if (this.allFiles[i][0].indexOf(currentFileLocation + "/") == 0) {
             let tmpStr = this.allFiles[i].replace(
               currentFileLocation + "/",
               ""
             );
-            tmpFileList.push(tmpStr);
+            tmpFileList.push([tmpStr, this.allFiles[i][1]]);
           }
         }
       } else {
@@ -192,11 +192,11 @@ export default {
       //   contributorNumber: 4,
       //   readme: "readme",
       //   files: [
-      //     // ["folder1/folder2/folder3/a.py", ""],
-      //     // ["folder4/folder5/b.vue", ""],
-      //     // ["folder1/folder2/xx", ""],
-      //     // ["folder1/c.txt", ""],
-      //     ["d.js", ""]
+      //     ["folder1/folder2/folder3/a.py", " "],
+      //     ["folder4/folder5/b.vue", " "],
+      //     ["folder1/folder2/xx", " "],
+      //     ["folder1/c.txt", " "],
+      //     ["d.js", " "]
       //   ],
       //   branches: ["master", "develop"]
       // });
@@ -210,13 +210,14 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
+          // console.log(response.data);
           this.commitNumber = response.data.commitNumber;
           this.branchNumber = response.data.branchNumber;
           this.releaseNumber = response.data.releaseNumber;
           this.contributorNumber = response.data.contributorNumber;
           this.readme = response.data.readme;
           this.branches = response.data.branches;
-          this.allFiles = response.data.allFiles;
+          this.allFiles = response.data.files;
           this.changeFileList(this.allFiles);
         } else {
           this.error = response.data.error;
