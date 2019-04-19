@@ -1,4 +1,5 @@
-import crypt
+import hashlib
+import random
 import re
 import secrets
 import asyncpg
@@ -30,6 +31,8 @@ def add_user_pending_verifying(username: str, mail_address: str,
             return pending_info['token']
         else:
             return None
+    else:
+        raise NameError()
 
 
 @log_call()
@@ -43,6 +46,18 @@ async def check_user_existing(username: str):
         return True
     else:
         return False
+
+
+async def get_user_mail_address(username: str):
+    if check_user_existing(username):
+        result = await fetchrow(
+            '''
+            SELECT mail_address FROM users_info
+            WHERE username = $1
+            ''', username)
+        return result['mail_address']
+    else:
+        raise NameError("user does not exist")
 
 
 @log_call()
@@ -68,8 +83,18 @@ async def create_new_user(username: str, mail_address: str, password: str):
         if (flag == True):
             raise NameError('Username already existing')
         else:
-            salt = crypt.mksalt()
-            encrypted_password = crypt.crypt(password, salt)
+            salt = username[random.randint(
+                0,
+                len(username) - 1)] + username[random.randint(
+                    0,
+                    len(username) - 1)] + username[random.randint(
+                        0,
+                        len(username) - 1)]
+            sha512 = hashlib.sha512()
+            temp = password + salt
+            temp = temp.encode('utf-8')
+            sha512.update(temp)
+            encrypted_password = sha512.hexdigest()
             await execute(
                 '''
             INSERT INTO users_info(username, mail_address, password, salt) VALUES($1, $2, $3, $4)''',
@@ -93,7 +118,11 @@ async def verify_user(username: str, password: str):
                 SELECT salt FROM users_info
                 WHERE username =$1
                 ''', username)
-            temp_encrypted_pw = crypt.crypt(password, salt=temp_salt['salt'])
+            sha5122 = hashlib.sha512()
+            temp = (password + temp_salt['salt']).strip()
+            temp = temp.encode('utf-8')
+            sha5122.update(temp)
+            temp_encrypted_pw = sha5122.hexdigest()
             temp_password = await fetchrow(
                 '''
                 SELECT password FROM users_info
@@ -103,6 +132,8 @@ async def verify_user(username: str, password: str):
                 return True
             else:
                 return False
+    else:
+        return False
 
 
 @log_call()

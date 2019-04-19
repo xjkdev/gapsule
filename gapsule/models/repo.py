@@ -14,14 +14,14 @@ class RepoNotFoundException(FileNotFoundError):
 
 
 @log_call()
-async def creat_new_repo(owner: str,
-                         reponame: str,
-                         introduction: str = None,
-                         star_num: int = 0,
-                         fork_num: int = 0,
-                         visibility: bool = False,
-                         forked_from: str = None,
-                         default_branch: str = None):
+async def create_new_repo(owner: str,
+                          reponame: str,
+                          introduction: str = None,
+                          star_num: int = 0,
+                          fork_num: int = 0,
+                          visibility: bool = False,
+                          forked_from: str = None,
+                          default_branch: str = None):
     # 创建一个新repo，必须提供owner名和repo名
     if not check_reponame_validity(reponame):
         raise NameError('Invalid reponame')
@@ -34,6 +34,7 @@ async def creat_new_repo(owner: str,
             ''', owner, reponame, introduction, datetime_now(), star_num,
             fork_num, visibility, forked_from, default_branch)
         await git.init_git_repo(owner, reponame)
+        return True
     else:
         raise NameError('Repo already exists')
 
@@ -199,6 +200,7 @@ async def delete_repo(owner: str, reponame: str):
                 DELETE FROM repos
                 WHERE username=$1 and reponame=$2
             ''', owner, reponame)
+        git.delete_repo(owner, reponame)
     else:
         raise RepoNotFoundException()
 
