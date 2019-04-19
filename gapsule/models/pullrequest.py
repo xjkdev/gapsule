@@ -32,24 +32,15 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     authoremail = await user.get_user_mail_address(authorname)
     dst_repo_id = await repo.get_repo_id(dstowner, dstrepo)
     src_repo_id = await repo.get_repo_id(srcowner, srcrepo)
+    pull_id = await post.create_new_attached_post(dst_repo_id, srcowner, title,
+                                                  status, visibility, False)
 
     branches = (await git.git_branches(dstowner, dstrepo))[1]
     if not dstbranch in branches:
         raise BranchNotFoundException()
-    branches2 = (await git.git_branches(srcowner, srcrepo))[1]
-    if not srcbranch in branches2:
-        raise BranchNotFoundException()
-    current_id = await fetchrow(
-        '''
-        SELECT max(pull_id) FROM pull_requests
-        WHERE dest_repo_id=$1
-        ''', dst_repo_id)
-    this_id = 1
-    if current_id['max'] != None:
-        this_id = current_id['max'] + 1
 
     flag_auto_merged, conflicts = await create_pull_request_git(dstowner, dstrepo, dstbranch,
-                                                                this_id,
+                                                                pull_id,
                                                                 srcowner, srcrepo, srcbranch,
                                                                 authorname, authoremail,
                                                                 title)
@@ -58,12 +49,10 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
         INSERT INTO pull_requests(dest_repo_id,dest_branch,pull_id,src_repo_id,src_branch,
                                   created_time,status,auto_merge_status)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-        ''', dst_repo_id, dstbranch, this_id, src_repo_id, srcbranch,
+        ''', dst_repo_id, dstbranch, pull_id, src_repo_id, srcbranch,
         datetime_now(), status, flag_auto_merged)
 
-    postid = await post.create_new_attached_post(dst_repo_id, srcowner, title, status,
-                                                 visibility, False)
-    return postid, flag_auto_merged, conflicts
+    return pull_id, flag_auto_merged, conflicts
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, pullid: int):

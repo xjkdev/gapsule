@@ -98,6 +98,15 @@ async def create_new_user(username: str, mail_address: str, password: str):
     return True
 
 
+async def get_user_info(username: str):
+    result = await fetchrow(
+        '''
+        SELECT * FROM users_info
+        WHERE username=$1
+        ''', username)
+    return dict(result)
+
+
 @log_call()
 async def verify_user(username: str, password: str):
     if not check_username_validity(username):

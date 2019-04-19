@@ -204,7 +204,7 @@ async def delete_comment(repo_id: int, post_id: int, comment_id: int):
 
 
 async def get_all_attached_posts(repo_id: int):
-    # 查询一个repo下所有的帖子id
+    # 查询一个repo下所有的帖子信息
     temps = await fetch(
         '''
             SELECT * FROM posts
