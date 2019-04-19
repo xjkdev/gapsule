@@ -15,10 +15,13 @@ class BranchNotFoundException(FileNotFoundError):
 
 async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                               srcowner: str, srcrepo: str, srcbranch: str,
-                              title, status, visibility):
+                              title: str, status: str, visibility: bool):
 
     dst_repo_id = await get_repo_id(dstowner, dstrepo)
     src_repo_id = await get_repo_id(srcowner, srcrepo)
+
+    this_id = await create_new_attached_post(dst_repo_id, srcowner, title,
+                                             status, visibility, False)
 
     branches = (await git_branches(dstowner, dstrepo))[1]
     if not dstbranch in branches:
@@ -26,14 +29,6 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     branches2 = (await git_branches(srcowner, srcrepo))[1]
     if not srcbranch in branches2:
         raise BranchNotFoundException()
-    current_id = await fetchrow(
-        '''
-        SELECT max(pull_id) FROM pull_requests
-        WHERE dest_repo_id=$1
-        ''', dst_repo_id)
-    this_id = 1
-    if current_id['max'] != None:
-        this_id = current_id['max'] + 1
 
     flag_auto_merged = await create_pull_request_git(dstowner, dstrepo,
                                                      dstbranch, this_id,
@@ -46,8 +41,14 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
         ''', dst_repo_id, dstbranch, this_id, src_repo_id, srcbranch,
         datetime_now(), status, flag_auto_merged)
 
-    await create_new_attached_post(dst_repo_id, srcowner, title, status,
-                                   visibility, False)
+
+async def get_pull_request_info(pull_id: int):
+    result = await fetchrow(
+        '''
+        SELECT * FROM pull_requests
+        WHERE pull_id=$1
+        ''', pull_id)
+    return dict(result)
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
