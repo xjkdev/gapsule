@@ -59,13 +59,15 @@ async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
             '''
             UPDATE pull_requests
             SET auto_merge_status=$1
-            ''', False)
+            WHERE dest_repo_id=$2 and pullid=$3
+            ''', False, get_repo_id(dstowner, dstrepo), pullid)
     else:
         await execute(
             '''
             UPDATE pull_requests
             SET auto_merge_status=$1
-            ''', True)
+            WHERE dest_repo_id=$2 and pullid=$3
+            ''', True, get_repo_id(dstowner, dstrepo), pullid)
 
 
 async def close_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
@@ -79,7 +81,8 @@ async def close_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
             '''
             UPDATE pull_requests
             SET status=$1
-            ''', 'Closed')
+            WHERE dest_repo_id=$2 and pullid=$3
+            ''', 'Closed', get_repo_id(dstowner, dstrepo), pullid)
 
 
 _working_dirs = {}

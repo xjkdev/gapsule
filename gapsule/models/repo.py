@@ -53,6 +53,15 @@ async def check_repo_existing(owner: str, reponame: str):
         return False
 
 
+async def get_repo_info(repo_id: int):
+    result = await fetchrow(
+        '''
+        SELECT * FROM repos
+        WHERE repo_id=$1
+        ''', repo_id)
+    return dict(result)
+
+
 @log_call()
 async def endow_read_permission(owner: str, reponame: str,
                                 username_permitted: str):
@@ -302,7 +311,8 @@ async def set_default_branch(owner: str, reponame: str,
             '''
                 UPDATE repos
                 SET    default_branch=$1
-            ''', new_default_branch)
+                WHERE username=$2
+            ''', new_default_branch, owner)
     else:
         raise RepoNotFoundException()
 

@@ -64,7 +64,9 @@ class Test_TestModelsInterface(TestCase):
             await repo.create_new_repo('Player',
                                        'examplerepo',
                                        default_branch='ppobranch')
-        delete_repo('Player', 'examplerepo')
+
+        self.assertTrue((await repo.get_repo_info(await repo.get_repo_id(
+            'Player', 'examplerepo')))['default_branch'] == 'ppobranch')
 
         with self.assertRaises(NameError):
             await repo.create_new_repo('Player',
