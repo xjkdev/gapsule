@@ -1,30 +1,44 @@
 <template>
-  <div id="login">
-    <h3 style="text-align: center">Vertify your password</h3>
+  <div>
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
 
-    <b-form @submit.prevent="onSubmit">
-      <ul class="main">
-        <li class="username">
-          <label for="username">Username</label>
-          <b-form-input id="username" type="text" disabled v-model="username"/>
-        </li>
+    <el-steps :active="1" finish-status="success" align-center style="margin: 0 auto">
+      <el-step title="Sign Up"></el-step>
+      <el-step title="Verify Your Password"></el-step>
+      <el-step title="Fill In Your Information"></el-step>
+    </el-steps>
+    <div id="login">
+      <h3 style="text-align: center">Verify your password</h3>
 
-        <li class="password">
-          <label for="password">Password</label>
-          <b-form-input
-            id="password"
-            type="password"
-            v-model="password"
-            required
-            placeholder="Enter password"
-          />
-        </li>
+      <b-form @submit.prevent="onSubmit">
+        <ul class="main">
+          <li class="username">
+            <label for="username">Username</label>
+            <b-form-input id="username" type="text" disabled v-model="username"/>
+          </li>
 
-        <li class="operation">
-          <b-button type="submit" variant="primary" class="submit">Submit</b-button>
-        </li>
-      </ul>
-    </b-form>
+          <li class="password">
+            <label for="password">Password</label>
+            <b-form-input
+              id="password"
+              type="password"
+              v-model="password"
+              required
+              placeholder="Enter password"
+            />
+          </li>
+
+          <li class="operation">
+            <b-button type="submit" variant="primary" class="submit">Submit</b-button>
+          </li>
+        </ul>
+      </b-form>
+    </div>
   </div>
 </template>
 
@@ -37,7 +51,9 @@ export default {
     return {
       username: "",
       password: "",
-      token: ""
+      token: "",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -63,6 +79,9 @@ export default {
           globals.cache.username = this.username;
           globals.cache.token = this.token;
           this.$router.replace("/signup/finishing");
+        } else {
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }
@@ -75,6 +94,7 @@ export default {
   width: 320px;
   height: 100%;
   margin: 0 auto;
+  margin-top: 10px;
 }
 ul {
   list-style: none;

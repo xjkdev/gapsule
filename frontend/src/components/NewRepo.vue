@@ -1,5 +1,12 @@
 <template>
   <div style="width: 60%; margin: 0 auto; margin-bottom: 30px;">
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <div class="head">
       <h2>Create a new repository</h2>
       <p style="color: #586069">
@@ -59,7 +66,9 @@ export default {
       reponame: "",
       description: "",
       options: [],
-      repoPropertySelect: "Public"
+      repoPropertySelect: "Public",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -79,7 +88,8 @@ export default {
           this.options = response.data.options;
           this.creator = this.options[0];
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     },
@@ -97,7 +107,8 @@ export default {
         if (response.data.state == "ok") {
           this.$router.push("/" + this.creator + "/" + this.reponame);
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

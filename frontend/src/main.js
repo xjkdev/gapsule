@@ -5,10 +5,11 @@ import NavBar from '@/components/NavBar.vue';
 import BootstrapVue from 'bootstrap-vue';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue/dist/bootstrap-vue.css';
-import { Steps } from 'element-ui';
+import { Steps, Step } from 'element-ui';
 
 Vue.use(BootstrapVue);
 Vue.use(Steps);
+Vue.use(Step);
 
 Vue.config.productionTip = false
 

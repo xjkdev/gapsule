@@ -8,13 +8,16 @@
       </h4>
       <b-nav tabs>
         <b-nav-item
-          :active="$route.name=='Repo'||$route.name=='PullCompare'||$route.name=='FileContent'"
+          :active="$route.name.match(/(Repo|PullCompare|FileContent)/)"
           :to="'/'+fullRepoName()"
         >Code</b-nav-item>
-        <b-nav-item :active="$route.name=='Issues'" :to="'/'+fullRepoName()+'/issues'">Issues</b-nav-item>
         <b-nav-item
-          :active="$route.name=='PullRequest'||$route.name=='PullConversion'||$route.name=='PullCommits'"
-          :to="'/'+fullRepoName()+'/pull'"
+          :active="$route.name.match(/Issues(List)?/)"
+          :to="'/'+fullRepoName()+'/issues'"
+        >Issues</b-nav-item>
+        <b-nav-item
+          :active="$route.name.match(/Pull(Request|RequestList|Conversion|Commits)/)"
+          :to="'/'+fullRepoName()+'/pulls'"
         >Pull request</b-nav-item>
       </b-nav>
     </div>

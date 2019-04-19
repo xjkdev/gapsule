@@ -27,11 +27,11 @@ class GitServiceTestCase(AsyncHTTPTestCase):
     @async_test
     async def _before_setUp(self):
         global root
+        if root is not None:
+            return
         git.get_repo_dirpath.cache_clear()
         settings['repository_path'] = repopath.name
         print('repository_path:', repopath.name)
-        if root is not None:
-            return
         await git.init_git_repo('abcd', 'efgh')
         root = git.get_repo_dirpath('abcd', 'efgh')
         self.assertTrue(os.path.exists(root))

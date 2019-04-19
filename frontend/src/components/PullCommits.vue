@@ -2,14 +2,25 @@
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <div>
-      <span style="font-weight: 400; font-size: 32px;">{{ topic }}</span> &nbsp;
+      <span style="font-weight: 400; font-size: 32px;">{{ title }}</span> &nbsp;
       <span
         style="font-weight: 300; font-size: 32px; color: #a3aab1"
       >#{{ $route.params.pullid }}</span>
       <div>
-        <div v-if="pullState=='open'">
+        <div v-if="status=='Open'">
           <b-badge variant="success">Open</b-badge>
+          <span>{{ pullUser }} wants to merge {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
+        </div>
+        <div v-else-if="status=='Closed'">
+          <b-badge variant="danger">Closed</b-badge>
           <span>{{ pullUser }} wants to merge {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
         </div>
         <div v-else>
@@ -25,10 +36,10 @@
     </b-nav>
 
     <div v-for="reply in replys" :key="reply">
-      <span>Commits on {{ reply.commitsDate }}</span>
+      <span>Commits on {{ commitTime(reply.commitsTime) }}</span>
       <div style="background-color: #f5fcff; margin-left: 1%; margin-top: 5px">
         <strong>{{ reply.title }}</strong>
-        <p>{{ reply.user }} committed {{ reply.timeToNow }}</p>
+        <p>{{ reply.user }} committed {{ fromNowTime(reply.commitsTime) }}</p>
       </div>
     </div>
 
@@ -39,17 +50,20 @@
 <script>
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
+import moment from "moment";
 // import MockAdapter from "axios-mock-adapter";
 export default {
   data() {
     return {
-      topic: "",
-      pullState: "",
+      title: "",
+      status: "",
       pullUser: "",
       commitsNumber: "",
       pullTo: "",
       pullFrom: "",
-      replys: ""
+      replys: "",
+      error: "",
+      hasError: false
     };
   },
   beforeRouteEnter(to, from, next) {
@@ -70,25 +84,30 @@ export default {
       let param = this.$route.params;
       return "/" + param.owner + "/" + param.repo + "/pull/" + param.pullid;
     },
+    fromNowTime(time) {
+      return moment(time).fromNow();
+    },
+    commitTime(time) {
+      return moment(time).format("MMMM Do YYYY");
+    },
     getData() {
       // let mock = new MockAdapter(axios);
       // mock.onGet(this.fullPullName() + "/commits").reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   topic: "a topic",
-      //   pullState: "Merged",
+      //   title: "a title",
+      //   status: "Merged",
       //   pullUser: "Alice",
       //   commitsNumber: 2,
       //   pullTo: "Alice:master",
       //   pullFrom: "Bob:abc",
-      //   replys: {
-      //     reply1: {
-      //       commitsDate: "Apr 1, 2019",
+      //   replys: [
+      //     {
+      //       commitsTime: "2019-04-16T11:20:29+08:00",
       //       title: "a pull",
       //       user: "Alice",
-      //       timeToNow: "8 das ago"
       //     }
-      //   }
+      //   ]
       // });
       axios({
         method: "GET",
@@ -101,15 +120,16 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.topic = response.data.topic;
-          this.pullState = response.data.pullState;
+          this.title = response.data.title;
+          this.status = response.data.status;
           this.pullUser = response.data.pullUser;
           this.commitsNumber = response.data.commitsNumber;
           this.pullTo = response.data.pullTo;
           this.pullFrom = response.data.pullFrom;
           this.replys = response.data.replys;
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }

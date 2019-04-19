@@ -1,72 +1,86 @@
 <template>
-  <div id="userinfo">
-    <h4 style="text-align: center; padding: 10px 0">Fill in your information</h4>
+  <div>
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
 
-    <b-form @submit.prevent="onSubmit">
-      <ul class="main">
-        <li class="icon">
-          <label for="icon">Choose an image as your icon</label>
-          <img :src="icon" alt="User Icon" id="icon">
-          <input
-            id="choose"
-            type="file"
-            name="icon"
-            accept="image/*"
-            @change="changeImg($event)"
-            ref="icon"
-          >
-        </li>
+    <el-steps :active="2" finish-status="success" align-center style="margin: 0 auto">
+      <el-step title="Sign Up"></el-step>
+      <el-step title="Verify Your Password"></el-step>
+      <el-step title="Fill In Your Information"></el-step>
+    </el-steps>
+    <div id="userinfo">
+      <h4 style="text-align: center; padding: 10px 0">Fill in your information</h4>
 
-        <li class="name">
-          <b-form-group class="fullname" label="Name" label-for="firstname" horizontal>
-            <b-row>
-              <b-col cols="6">
-                <b-form-input
-                  id="firstname"
-                  type="text"
-                  v-model="firstname"
-                  placeholder="firstname"
-                  required
-                />
-              </b-col>
-              <b-col cols="6">
-                <b-form-input
-                  id="secondname"
-                  type="text"
-                  v-model="secondname"
-                  placeholder="secondname"
-                  required
-                />
-              </b-col>
-            </b-row>
-          </b-form-group>
-        </li>
+      <b-form @submit.prevent="onSubmit">
+        <ul class="main">
+          <li class="icon">
+            <label for="icon">Choose an image as your icon</label>
+            <img :src="icon" alt="User Icon" id="icon">
+            <input
+              id="choose"
+              type="file"
+              name="icon"
+              accept="image/*"
+              @change="changeImg($event)"
+              ref="icon"
+            >
+          </li>
 
-        <li class="biography">
-          <label for="biography">Biography</label>
-          <b-form-input id="biography" type="text" v-model="biography"/>
-        </li>
+          <li class="name">
+            <b-form-group class="fullname" label="Name" label-for="firstname" horizontal>
+              <b-row>
+                <b-col cols="6">
+                  <b-form-input
+                    id="firstname"
+                    type="text"
+                    v-model="firstname"
+                    placeholder="firstname"
+                    required
+                  />
+                </b-col>
+                <b-col cols="6">
+                  <b-form-input
+                    id="secondname"
+                    type="text"
+                    v-model="secondname"
+                    placeholder="secondname"
+                    required
+                  />
+                </b-col>
+              </b-row>
+            </b-form-group>
+          </li>
 
-        <li class="company">
-          <label for="company">Company</label>
-          <b-form-input id="company" type="text" v-model="company"/>
-        </li>
+          <li class="biography">
+            <label for="biography">Biography</label>
+            <b-form-input id="biography" type="text" v-model="biography"/>
+          </li>
 
-        <li class="location">
-          <label for="location">Location</label>
-          <b-form-input id="location" type="text" v-model="location"/>
-        </li>
+          <li class="company">
+            <label for="company">Company</label>
+            <b-form-input id="company" type="text" v-model="company"/>
+          </li>
 
-        <li class="website">
-          <label for="website">Website</label>
-          <b-form-input id="website" type="text" v-model="website"/>
-        </li>
+          <li class="location">
+            <label for="location">Location</label>
+            <b-form-input id="location" type="text" v-model="location"/>
+          </li>
 
-        <li class="operation">
-          <b-button type="submit" variant="primary" class="submit">Submit</b-button>
-        </li>
-      </ul>
-    </b-form>
+          <li class="website">
+            <label for="website">Website</label>
+            <b-form-input id="website" type="text" v-model="website"/>
+          </li>
+
+          <li class="operation">
+            <b-button type="submit" variant="primary" class="submit">Submit</b-button>
+          </li>
+        </ul>
+      </b-form>
+    </div>
   </div>
 </template>
 
@@ -90,7 +104,9 @@ export default {
       biography: "",
       company: "",
       location: "",
-      website: ""
+      website: "",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -111,7 +127,6 @@ export default {
         reader.readAsDataURL(file);
         reader.onload = function() {
           that.icon = this.result;
-          console.log(that.icon);
         };
       } else {
         e.target.value = "";
@@ -145,18 +160,15 @@ export default {
           location: this.location,
           website: this.website
         }
-      })
-        .then(response => {
-          if (response.data.state == "ok") {
-            globals.cache.password = null;
-            this.$router.replace("/signin");
-          } else {
-            console.log(response.data.error);
-          }
-        })
-        .catch(error => {
-          console.log(error);
-        });
+      }).then(response => {
+        if (response.data.state == "ok") {
+          globals.cache.password = null;
+          this.$router.replace("/signin");
+        } else {
+          this.error = response.data.error;
+          this.hasError = true;
+        }
+      });
     }
   }
 };
@@ -167,6 +179,7 @@ export default {
   width: 640px;
   height: 100%;
   margin: 0 auto;
+  margin-top: 10px;
 }
 ul {
   list-style: none;

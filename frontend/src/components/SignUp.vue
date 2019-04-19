@@ -1,48 +1,69 @@
 <template>
-  <div id="signup">
-    <h2 style="text-align: center">Join Gapsule</h2>
+  <div>
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
 
-    <b-form @submit.prevent="onSubmit">
-      <ul class="main">
-        <span style="color: red">{{ errormessage }}</span>
-        <li class="username">
-          <label for="username">Username</label>
-          <span style="color: red">*</span>
-          <b-form-input
-            id="username"
-            type="text"
-            v-model="username"
-            required
-            placeholder="Enter Username"
-          />
-        </li>
+    <el-steps :active="0" finish-status="success" align-center style="margin: 0 auto">
+      <el-step title="Sign Up"></el-step>
+      <el-step title="Verify Your Password"></el-step>
+      <el-step title="Fill In Your Information"></el-step>
+    </el-steps>
 
-        <li class="email">
-          <label for="email">Email</label>
-          <span style="color: red">*</span>
-          <b-form-input id="email" type="email" v-model="email" required placeholder="Enter Email"/>
-        </li>
+    <div id="signup">
+      <h2 style="text-align: center">Join Gapsule</h2>
 
-        <li class="password">
-          <label for="password">Password</label>
-          <span style="color: red">*</span>
-          <b-input
-            v-model="password"
-            id="password"
-            required
-            :state="validation"
-            type="password"
-            placeholder="Enter Password"
-          />
-          <b-form-invalid-feedback :state="validation">Your password must be 6-18 characters long</b-form-invalid-feedback>
-          <b-form-valid-feedback :state="validation">Looks good</b-form-valid-feedback>
-        </li>
+      <b-form @submit.prevent="onSubmit">
+        <ul class="main">
+          <span style="color: red">{{ error }}</span>
+          <li class="username">
+            <label for="username">Username</label>
+            <span style="color: red">*</span>
+            <b-form-input
+              id="username"
+              type="text"
+              v-model="username"
+              required
+              placeholder="Enter Username"
+            />
+          </li>
 
-        <li class="operation">
-          <b-button block type="submit" variant="primary" class="submit">Next</b-button>
-        </li>
-      </ul>
-    </b-form>
+          <li class="email">
+            <label for="email">Email</label>
+            <span style="color: red">*</span>
+            <b-form-input
+              id="email"
+              type="email"
+              v-model="email"
+              required
+              placeholder="Enter Email"
+            />
+          </li>
+
+          <li class="password">
+            <label for="password">Password</label>
+            <span style="color: red">*</span>
+            <b-input
+              v-model="password"
+              id="password"
+              required
+              :state="validation"
+              type="password"
+              placeholder="Enter Password"
+            />
+            <b-form-invalid-feedback :state="validation">Your password must be 6-18 characters long</b-form-invalid-feedback>
+            <b-form-valid-feedback :state="validation">Looks good</b-form-valid-feedback>
+          </li>
+
+          <li class="operation">
+            <b-button block type="submit" variant="primary" class="submit">Next</b-button>
+          </li>
+        </ul>
+      </b-form>
+    </div>
   </div>
 </template>
 
@@ -56,7 +77,8 @@ export default {
       email: "",
       password: "",
       password_entered: false,
-      errormessage: ""
+      error: "",
+      hasError: false
     };
   },
   methods: {
@@ -83,7 +105,8 @@ export default {
               );
             }
           } else {
-            this.errormessage = response.data.error;
+            this.error = response.data.error;
+            this.hasError = true;
           }
         })
         .catch(error => {
@@ -106,6 +129,7 @@ export default {
   width: 320px;
   height: 100%;
   margin: 0 auto;
+  margin-top: 10px;
 }
 ul {
   list-style: none;

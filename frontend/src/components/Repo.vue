@@ -2,6 +2,13 @@
   <div class="dashboard">
     <RepoNav/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <div style="padding: 0.2rem 1rem 0.2rem 1rem">descriptions</div>
 
     <b-nav pills fill class="border rounded" style=" padding: 0.2rem 0">
@@ -22,15 +29,9 @@
       </b-nav-item>
     </b-nav>
 
-    <b-row style="white-space: nowrap;overflow-x: hidden;">
-      <div>
-        <b-dropdown
-          class="col-2"
-          variant="info"
-          boundary="window"
-          size="sm"
-          :text="'Branch: ' + currentBranch"
-        >
+    <div style="white-space: nowrap; overflow-x: hidden;">
+      <div style="display: inline-block">
+        <b-dropdown variant="info" boundary="window" size="sm" :text="'Branch: ' + currentBranch">
           <b-dropdown-item
             v-for="branch in branches"
             :key="branch"
@@ -38,37 +39,26 @@
           >{{ branch }}</b-dropdown-item>
         </b-dropdown>
       </div>
-      <b-col cols="2">
-        <button
-          type="button"
-          class="d-none d-md-inline-block btn btn-sm btn-secondary"
-          @click.prevent="newPull"
-        >New pull request</button>
-      </b-col>
-      <!-- FIXME: 改变大小时显示错误 -->
-      <b-col cols="3" offset="3" style="overflow: hidden">
-        <b-btn-group class="-md-inline-flex">
-          <b-button variant="secondary" size="sm">Create new file</b-button>
-          <b-button variant="secondary" size="sm">Upload files</b-button>
-          <b-button variant="secondary" size="sm">Find file</b-button>
-        </b-btn-group>&nbsp;
-      </b-col>
-      <div class="clone">
-        <b-dropdown
-          class="col-2"
-          variant="success"
-          boundary="window"
-          right
-          size="sm"
-          text="Clone or download"
-        >
+      <button
+        type="button"
+        class="d-none d-md-inline-block btn btn-sm btn-secondary"
+        @click.prevent="newPull"
+        style="display: inline-block; margin-left: 5px;"
+      >New pull request</button>
+      <div class="clone" style="float: right">
+        <b-dropdown variant="success" boundary="window" size="sm" text="Clone or download">
           <b-dropdown-item
             @click.prevent="clone"
           >Clone: http://gapsule.com/{{$route.params.owner}}/{{$route.params.repo}}.git</b-dropdown-item>
           <b-dropdown-item @click.prevent="download">Download Zip</b-dropdown-item>
         </b-dropdown>
       </div>
-    </b-row>
+      <b-btn-group class="-md-inline-flex file-button" style="float: right; margin-right: 5px;">
+        <b-button variant="secondary" size="sm">Create new file</b-button>
+        <b-button variant="secondary" size="sm">Upload files</b-button>
+        <b-button variant="secondary" size="sm">Find file</b-button>
+      </b-btn-group>&nbsp;
+    </div>
 
     <b-card no-body class="filelist">
       <b-card-header>file list</b-card-header>
@@ -122,7 +112,8 @@ export default {
       files: [],
       allFiles: [],
       readme: "",
-      msg: "Welcome to Your Vue.js App"
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -204,11 +195,11 @@ export default {
       //   contributorNumber: 4,
       //   readme: "readme",
       //   files: [
-      //     "folder1/folder2/folder3/a.py",
-      //     "folder4/folder5/b.vue",
-      //     "folder1/folder2/xx",
-      //     "folder1/c.txt",
-      //     "d.js"
+      //     ["folder1/folder2/folder3/a.py", " "],
+      //     ["folder4/folder5/b.vue", " "],
+      //     ["folder1/folder2/xx", " "],
+      //     ["folder1/c.txt", " "],
+      //     ["d.js", " "]
       //   ],
       //   branches: ["master", "develop"]
       // });
@@ -222,17 +213,21 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          console.log(response.data);
+          // console.log(response.data);
           this.commitNumber = response.data.commitNumber;
           this.branchNumber = response.data.branchNumber;
           this.releaseNumber = response.data.releaseNumber;
           this.contributorNumber = response.data.contributorNumber;
           this.readme = response.data.readme;
           this.branches = response.data.branches;
-          this.allFiles = response.data.files;
+          for (let i = 0; i < response.data.files.length; i++) {
+            this.allFiles.push(response.data.files[i][0]);
+          }
+          // this.allFiles = response.data.files;
           this.changeFileList(this.allFiles);
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     }
@@ -252,9 +247,9 @@ export default {
 .card-header {
   padding: 0.3rem 1rem;
 }
-/* .clone {
-  position: absolute;
-  right: 0;
-  z-index: 90;
-} */
+@media (max-width: 1000px) {
+  .file-button {
+    display: none;
+  }
+}
 </style>

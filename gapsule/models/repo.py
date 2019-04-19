@@ -1,6 +1,7 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 import os
 from logging import warning
+import chardet
 from gapsule.utils.log_call import log_call
 from gapsule.models import git
 from gapsule.utils.cookie_session import datetime_now
@@ -68,7 +69,7 @@ async def endow_read_permission(owner: str, reponame: str,
 @log_call()
 async def remove_read_permission(owner: str, reponame: str,
                                  username_to_remove: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 delete from read_permission
@@ -81,7 +82,7 @@ async def remove_read_permission(owner: str, reponame: str,
 @log_call()
 async def endow_admin_permission(owner: str, reponame: str,
                                  username_permitted: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 INSERT INTO admin_permission(repo_id,username)
@@ -94,7 +95,7 @@ async def endow_admin_permission(owner: str, reponame: str,
 @log_call()
 async def remove_admin_permission(owner: str, reponame: str,
                                   username_to_remove: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 delete from admin_permission
@@ -110,7 +111,7 @@ async def check_read_permission(owner: str,
                                 username: str = None):
     if username == owner:
         return True
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         if await get_repo_visibility(owner, reponame):
             return True
         else:
@@ -151,7 +152,7 @@ async def get_branches_num(owner: str, repo: str):
 async def check_write_permission(owner: str, reponame: str, username: str):
     if username == owner:
         return True
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         temp = await fetchrow(
             '''
         SELECT username FROM admin_permission
@@ -177,7 +178,7 @@ async def check_write_permission(owner: str, reponame: str, username: str):
 async def check_admin_permission(owner: str, reponame: str, username: str):
     if username == owner:
         return True
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         temp = await fetchrow(
             '''
                     SELECT username FROM admin_permission
@@ -296,7 +297,7 @@ async def get_owner_id(repo_id: int):
 
 async def set_default_branch(owner: str, reponame: str,
                              new_default_branch: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 UPDATE repos
@@ -307,7 +308,7 @@ async def set_default_branch(owner: str, reponame: str,
 
 
 async def get_default_branch(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await fetchrow(
             '''
                 SELECT default_branch FROM repos
@@ -319,7 +320,7 @@ async def get_default_branch(owner: str, reponame: str):
 
 
 async def get_forked_from(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await fetchrow(
             '''
                 SELECT forked_from FROM repos
@@ -346,7 +347,7 @@ async def get_repo_introduction(owner: str, reponame: str):
 @log_call()
 async def set_repo_introduction(owner: str, reponame: str,
                                 new_introduction: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         await execute(
             '''
                 UPDATE  repos
@@ -365,6 +366,29 @@ async def get_specified_path(owner: str, reponame: str, branch: str,
     return await git.git_ls_files(owner, reponame, branch, path=path)
 
 
+_TEXTCHARS = bytearray({7, 8, 9, 10, 12, 13, 27}
+                       | set(range(0x20, 0x100)) - {0x7f})
+
+
+def _is_binary_string(bytes):
+    return bool(bytes.translate(None, _TEXTCHARS))
+
+
+@log_call()
+def get_file_content(owner, reponame, branch, path) -> Optional[str]:
+    """ 查询  对应路径下的某个文件的内容
+        如果文件不存在或为目录，会抛出OSError
+        如果为二进制文件或大文件，返回空
+    """
+    data = git.git_cat_file(owner, reponame, branch, path)
+    if len(data) > 204800 or _is_binary_string(data[:20480]):  # big file
+        return None
+    det = chardet.detect(data)
+    if det['confidence'] < 0.5:
+        return None
+    return data.decode(det['encoding'])
+
+
 @log_call()
 async def get_repo_star_num(owner: str, reponame: str):
     # 根据owner名和repo名查该repo的star数
@@ -381,7 +405,7 @@ async def get_repo_star_num(owner: str, reponame: str):
 
 @log_call()
 async def inc_repo_star_num(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         new_num = await get_repo_star_num(owner, reponame) + 1
         await execute(
             '''
@@ -409,7 +433,7 @@ async def get_repo_fork_num(owner: str, reponame: str):
 
 @log_call()
 async def inc_repo_fork_num(owner: str, reponame: str):
-    if (await check_repo_existing(owner, reponame) == True):
+    if await check_repo_existing(owner, reponame):
         new_num = await get_repo_fork_num(owner, reponame) + 1
         await execute(
             '''

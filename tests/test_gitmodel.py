@@ -66,11 +66,11 @@ class GitModelTestCase(TestCase):
     @async_test
     async def setUp(self):
         global root
+        if root is not None:
+            return
         git.get_repo_dirpath.cache_clear()
         settings['repository_path'] = repopath.name
         print('repository_path:', repopath.name)
-        if root is not None:
-            return
         await git.init_git_repo('abcd', 'efgh')
         root = git.get_repo_dirpath('abcd', 'efgh')
         self.assertTrue(os.path.exists(root))
@@ -147,3 +147,16 @@ class GitModelTestCase(TestCase):
         self.assertEqual(len(branches), 2)
         self.assertIn('master', branches)
         self.assertIn('test-branch', branches)
+
+    @async_test
+    async def test_all_files_latest_commit(self):
+        logs = await git.get_all_files_latest_commit('abcd', 'efgh', 'master')
+        for name, _, _, msg in logs:
+            self.assertTrue(('test1.txt', 'init message') == (name, msg) or
+                            ('test2.txt', 'test commit') == (name, msg)
+                            )
+
+    @async_test
+    async def test_cat_file(self):
+        content = await git.git_cat_file('abcd', 'efgh', 'master', 'test2.txt')
+        self.assertTrue(content.decode(), 'testing file2')

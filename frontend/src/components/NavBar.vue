@@ -60,18 +60,27 @@
 </template>
 
 <script>
+import { getCookie } from "@/utils/get_cookie";
 export default {
   name: "NavBar",
   mounted() {
     // let togglebtn = document.getElementById("navbar-toggler");
     // let collapseinit = new Collapse(togglebtn);
   },
+  created() {
+    this.username = getCookie("username");
+    this.icon = getCookie("icon");
+  },
+  watch: {
+    $route: "getData"
+  },
   data() {
     return {
-      username: document.cookie.username,
-      icon: document.cookie.icon
+      username: "",
+      icon: ""
     };
-  }
+  },
+  methods: {}
 };
 </script>
 

@@ -2,9 +2,16 @@
   <b-container class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
+    <b-alert
+      variant="danger"
+      v-model="hasError"
+      dismissible
+      style="width: 40%; position: absolute; top: 0; left: 30%"
+    >{{ error }}</b-alert>
+
     <b-row>
       <b-col cols="4">
-        <b-form-input v-if="isIssuePage" placeholder="Search issues" @keyup.enter="getSearchDatas"></b-form-input>
+        <b-form-input v-if="isIssuePage" placeholder="Search Issues" @keyup.enter="getSearchDatas"></b-form-input>
         <b-form-input v-else placeholder="Search Pulls" @keyup.enter="getSearchDatas"></b-form-input>
       </b-col>
       <b-col cols="2" offset="6">
@@ -14,10 +21,12 @@
 
     <b-card no-body v-for="issue in issues" :key="issue">
       <b-card-body>
-        <router-link :to="fullIssuesName()+'/'+issue.id">
-          <h5 class="card-title">{{ issue.topic }}</h5>
+        <router-link :to="fullIssuesName()+'/'+issue.post_id">
+          <h5 class="card-title">{{ issue.title }}</h5>
         </router-link>
-        <p class="card-text">{{'#'+issue.id+' opened on '+issue.date+' by '+issue.user}}</p>
+        <p
+          class="card-text"
+        >{{'#'+issue.post_id+' opened on '+fromNowTime(issue.post_time)+' by '+issue.postername}}</p>
       </b-card-body>
     </b-card>
 
@@ -31,12 +40,10 @@
 <script>
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
+import moment from "moment";
 // import MockAdapter from "axios-mock-adapter";
 export default {
   props: {
-    isIssuePage: {
-      type: Boolean
-    },
     operateType: {
       // type: String
       validator: function(value) {
@@ -46,7 +53,9 @@ export default {
   },
   data() {
     return {
-      issues: ""
+      issues: "",
+      error: "",
+      hasError: false
     };
   },
   created() {
@@ -58,27 +67,34 @@ export default {
   methods: {
     fullIssuesName() {
       let param = this.$route.params;
-      return "/" + param.owner + "/" + param.repo + "/" + this.operateType;
+      if (this.operateType == "issues") {
+        return "/" + param.owner + "/" + param.repo + "/issues";
+      } else {
+        return "/" + param.owner + "/" + param.repo + "/pulls";
+      }
+    },
+    fromNowTime(time) {
+      return moment(time).fromNow();
     },
     getIssues() {
       // let mock = new MockAdapter(axios);
       // mock.onGet(this.fullIssuesName()).reply(200, {
       //   state: "ok",
       //   error: "error",
-      //   issues: {
-      //     issue1: {
-      //       topic: "a topic",
-      //       id: "11",
-      //       date: "1 April",
-      //       user: "Alice"
+      //   issues: [
+      //     {
+      //       title: "a topic",
+      //       post_id: "11",
+      //       post_time: "2019-04-17T11:20:29+08:00",
+      //       postername: "Alice"
       //     },
-      //     issue2: {
-      //       topic: "another topic",
-      //       id: "12",
-      //       date: "2 April",
-      //       user: "Bob"
+      //     {
+      //       title: "another topic",
+      //       post_id: "12",
+      //       post_time: "2019-04-16T20:12:00+0800",
+      //       postername: "Bob"
       //     }
-      //   }
+      //   ]
       // });
       axios({
         method: "GET",
@@ -92,7 +108,8 @@ export default {
         if (response.data.state == "ok") {
           this.issues = response.data.issues;
         } else {
-          console.log(response.data.error);
+          this.error = response.data.error;
+          this.hasError = true;
         }
       });
     },
@@ -100,12 +117,17 @@ export default {
       this.getIssues();
     },
     newIssue() {
-      if (this.isIssuePage) {
+      if (this.operateType == "issues") {
         this.$router.push(this.fullIssuesName() + "/new");
       } else {
         let param = this.$route.params;
         this.$router.push("/" + param.owner + "/" + param.repo + "/compare");
       }
+    }
+  },
+  computed: {
+    isIssuePage() {
+      return this.operateType == "issues";
     }
   },
   components: { RepoNav }
