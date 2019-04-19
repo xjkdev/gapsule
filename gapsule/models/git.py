@@ -1,4 +1,5 @@
 import os
+import shutil
 import functools
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
@@ -18,11 +19,22 @@ def _check_exists(root: str):
 
 @functools.lru_cache(maxsize=32)
 def get_repo_dirpath(owner: str, reponame: str) -> str:
-    if not check_reponame_validity(reponame) or not check_username_validity(owner):
+    if not check_reponame_validity(reponame) or not check_username_validity(
+            owner):
         raise ValueError('invalid reponame or username')
-    dirpath = os.path.join(
-        settings['repository_path'], '{}/{}'.format(owner, reponame))
+    dirpath = os.path.join(settings['repository_path'],
+                           '{}/{}'.format(owner, reponame))
     return dirpath
+
+
+def delete_repo(owner: str, reponame: str):
+    path = get_repo_dirpath(owner, reponame)
+    try:
+        _check_exists(path)
+        print('path', path)
+        shutil.rmtree(path)
+    except FileNotFoundError:
+        pass
 
 
 async def init_git_repo(owner: str, reponame: str) -> None:
@@ -30,8 +42,11 @@ async def init_git_repo(owner: str, reponame: str) -> None:
     if os.path.exists(root):
         raise FileExistsError("Repo Already Existed")
     os.makedirs(root)
-    code1, _out, _err = await run(['git', 'init', '--bare'], cwd=root,
-                                  stdout=DEVNULL, stderr=DEVNULL, timeout=2)
+    code1, _out, _err = await run(['git', 'init', '--bare'],
+                                  cwd=root,
+                                  stdout=DEVNULL,
+                                  stderr=DEVNULL,
+                                  timeout=2)
     if code1 != 0:
         raise RuntimeError("Repo Init failed")
     try:
@@ -47,8 +62,15 @@ async def git_config(workingdir: str, key: str, value: str):
         raise RuntimeError("Repo Config failed")
 
 
-async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = None, show_tree=False,
-                       recursive=True) -> Union[List[Tuple[str, str]], List[Tuple[str, str, bool]]]:
+async def git_ls_files(
+        owner: str,
+        reponame: str,
+        branch: str,
+        *,
+        path: str = None,
+        show_tree=False,
+        recursive=True
+) -> Union[List[Tuple[str, str]], List[Tuple[str, str, bool]]]:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
     cmd = ['git', 'ls-tree']
@@ -59,27 +81,35 @@ async def git_ls_files(owner: str, reponame: str, branch: str, *, path: str = No
     cmd += [branch]
     if path is not None:
         cmd.append(path)
-    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
+    returncode, out, err = await run(cmd,
+                                     cwd=root,
+                                     stdout=PIPE,
+                                     stderr=PIPE,
+                                     timeout=2)
     if returncode != 0:
         err = err.decode()
         if 'fatal: Not a valid object name master' in err:
             return []
         raise RuntimeError("git ls-tree error")
-    filelines = map(lambda line: line.split(
-        maxsplit=3), out.decode().split('\n'))
+    filelines = map(lambda line: line.split(maxsplit=3),
+                    out.decode().split('\n'))
     if not show_tree:
         result = [(info[3], info[2]) for info in filelines if len(info) != 0]
     else:
-        result = [(info[3], info[2], info[1] == 'tree')
-                  for info in filelines if len(info) != 0]
+        result = [(info[3], info[2], info[1] == 'tree') for info in filelines
+                  if len(info) != 0]
     return result
+
 
 ONELINE = 0
 MEDIUM = 1
 HASH_DATE_AND_MESSAGE = 2
 
-PRETTY_OPTION = {ONELINE: "--pretty=oneline", MEDIUM: "--pretty=medium",
-                 HASH_DATE_AND_MESSAGE: "--pretty=format:%H\t%cI\t%s"}
+PRETTY_OPTION = {
+    ONELINE: "--pretty=oneline",
+    MEDIUM: "--pretty=medium",
+    HASH_DATE_AND_MESSAGE: "--pretty=format:%H\t%cI\t%s"
+}
 
 
 def _read_medium_log(log: str) -> List[Dict[str, str]]:
@@ -106,7 +136,7 @@ def _read_medium_log(log: str) -> List[Dict[str, str]]:
                 else:
                     tmp['message'] += '\n' + line[4:]
             elif line == '':
-                if i+1 == len(lines) or lines[i+1].startswith('commit'):
+                if i + 1 == len(lines) or lines[i + 1].startswith('commit'):
                     result.append(tmp)
                     tmp = {}
                     state = 0
@@ -130,7 +160,11 @@ async def git_log(root: str,  branch: str, pretty=ONELINE,
         cmd += ['{}..{}'.format(base, branch)]
     if path is not None:
         cmd += ['--', path]
-    returncode, out, err = await run(cmd, cwd=root, stdout=PIPE, stderr=PIPE, timeout=2)
+    returncode, out, err = await run(cmd,
+                                     cwd=root,
+                                     stdout=PIPE,
+                                     stderr=PIPE,
+                                     timeout=2)
     if returncode != 0:
         err = err.decode()
         if ('does not have any commits yet' in err or
@@ -139,13 +173,11 @@ async def git_log(root: str,  branch: str, pretty=ONELINE,
         raise RuntimeError("git log error " + str(returncode), repr(err))
     out = out.decode()
     if pretty == ONELINE:
-        result = [line.split(' ', 1)
-                  for line in out.split('\n')[:-1]]
+        result = [line.split(' ', 1) for line in out.split('\n')[:-1]]
     elif pretty == MEDIUM:
         result = _read_medium_log(out)
     elif pretty == HASH_DATE_AND_MESSAGE:
-        result = [line.split('\t', 2)
-                  for line in out.split('\n')]
+        result = [line.split('\t', 2) for line in out.split('\n')]
     return result
 
 
@@ -161,7 +193,11 @@ async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
     cmd = ['git', 'branch']
-    returncode, out, _err = await run(cmd, cwd=root, stdout=PIPE, stderr=DEVNULL, timeout=2)
+    returncode, out, _err = await run(cmd,
+                                      cwd=root,
+                                      stdout=PIPE,
+                                      stderr=DEVNULL,
+                                      timeout=2)
     if returncode != 0:
         raise RuntimeError("git branch error")
     out = out.decode().split('\n')
@@ -174,16 +210,25 @@ async def git_branches(owner: str, reponame: str) -> Tuple[str, List[str]]:
     return (current, branches)
 
 
-async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
+async def get_all_files_latest_commit(owner: str,
+                                      reponame: str,
+                                      branch: str,
                                       files: List[str] = None) -> List[str]:
     if files is None:
-        files = [x[0] for x in await git_ls_files(owner, reponame, branch,
-                                                  recursive=False)]
+        files = [
+            x[0] for x in await git_ls_files(
+                owner, reponame, branch, recursive=False)
+        ]
 
     async def _task(f):
-        r = await git_commit_logs(owner, reponame, branch, path=f,
-                                  pretty=HASH_DATE_AND_MESSAGE, maxsize=1)
+        r = await git_commit_logs(owner,
+                                  reponame,
+                                  branch,
+                                  path=f,
+                                  pretty=HASH_DATE_AND_MESSAGE,
+                                  maxsize=1)
         return [f] + r[0]
+
     tasklist = (_task(f) for f in files)
     done = await asyncio.gather(*tasklist, return_exceptions=True)
     if len(done) < len(files):
@@ -191,19 +236,29 @@ async def get_all_files_latest_commit(owner: str, reponame: str, branch: str,
     return done
 
 
-async def git_cat_file(owner: str, reponame: str, branch: str, path: str) -> bytes:
+async def git_cat_file(owner: str, reponame: str, branch: str,
+                       path: str) -> bytes:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
 
-    files = await git_ls_files(owner, reponame, branch, path=path, show_tree=True,
+    files = await git_ls_files(owner,
+                               reponame,
+                               branch,
+                               path=path,
+                               show_tree=True,
                                recursive=False)
     if len(files) != 1:
         raise FileNotFoundError(path)
     _name, objhash, isdir = files[0]
     if isdir:
         raise OSError("trying to read content of directory")
-    proc = await asyncio.create_subprocess_exec('git', 'cat-file', 'blob', objhash,
-                                                cwd=root, stdout=PIPE, stderr=PIPE)
+    proc = await asyncio.create_subprocess_exec('git',
+                                                'cat-file',
+                                                'blob',
+                                                objhash,
+                                                cwd=root,
+                                                stdout=PIPE,
+                                                stderr=PIPE)
     out, err = await asyncio.wait_for(proc.communicate(), 5)
     if await asyncio.wait_for(proc.wait(), 1) != 0:
         print(err.decode())
@@ -225,19 +280,28 @@ async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str, *, f
 
 async def git_create_branch(root: str, newbranch: str, frombranch: str):
     cmd = ['git', 'branch', newbranch, frombranch]
-    returncode, _out, _err = await run(cmd, cwd=root, stdout=DEVNULL, stderr=DEVNULL,
+    returncode, _out, _err = await run(cmd,
+                                       cwd=root,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
                                        timeout=2)
     if returncode != 0:
         raise RuntimeError("git branch error")
 
 
-async def git_clone(workingdir: str, owner: str, reponame: str, branch: str = None):
+async def git_clone(workingdir: str,
+                    owner: str,
+                    reponame: str,
+                    branch: str = None):
     root = get_repo_dirpath(owner, reponame)
     cmd = ['git', 'clone']
     if branch is not None:
         cmd += ['-b', branch]
     cmd += ['file://' + root]
-    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+    returncode, _out, _err = await run(cmd,
+                                       cwd=workingdir,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
                                        timeout=10)
     if returncode != 0:
         raise RuntimeError("git branch error")
@@ -245,7 +309,10 @@ async def git_clone(workingdir: str, owner: str, reponame: str, branch: str = No
 
 async def git_checkout(workingdir: str, branch: str):
     cmd = ['git', 'checkout', branch]
-    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+    returncode, _out, _err = await run(cmd,
+                                       cwd=workingdir,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
                                        timeout=5)
     if returncode != 0:
         raise RuntimeError("git checkout error")
@@ -254,8 +321,11 @@ async def git_checkout(workingdir: str, branch: str):
 async def git_merge_action(workingdir: str, action: str):
     if action not in ('abort', 'continue'):
         raise ValueError('action must be abort or continue')
-    cmd = ['git', 'merge', '--'+action]
-    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+    cmd = ['git', 'merge', '--' + action]
+    returncode, _out, _err = await run(cmd,
+                                       cwd=workingdir,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
                                        timeout=5)
     if returncode != 0:
         raise RuntimeError("git merge error")
@@ -283,7 +353,10 @@ async def git_push(workingdir: str, dstbranch: str, dstremote: str = None):
     if dstremote is None:
         dstremote = 'origin'
     cmd = ['git', 'push', dstremote, dstbranch]
-    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+    returncode, _out, _err = await run(cmd,
+                                       cwd=workingdir,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
                                        timeout=5)
     if returncode != 0:
         raise RuntimeError("git push error")
@@ -293,7 +366,10 @@ async def git_pull(workingdir: str, dstremote: str = None):
     if dstremote is None:
         dstremote = 'origin'
     cmd = ['git', 'pull', dstremote]
-    returncode, _out, _err = await run(cmd, cwd=workingdir, stdout=DEVNULL, stderr=DEVNULL,
+    returncode, _out, _err = await run(cmd,
+                                       cwd=workingdir,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
                                        timeout=5)
     if returncode != 0:
         raise RuntimeError("git pull error")

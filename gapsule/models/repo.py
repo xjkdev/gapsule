@@ -35,6 +35,7 @@ async def create_new_repo(owner: str,
             ''', owner, reponame, introduction, datetime_now(), star_num,
             fork_num, visibility, forked_from, default_branch)
         await git.init_git_repo(owner, reponame)
+        return True
     else:
         raise NameError('Repo already exists')
 
@@ -50,6 +51,15 @@ async def check_repo_existing(owner: str, reponame: str):
         return True
     else:
         return False
+
+
+async def get_repo_info(repo_id: int):
+    result = await fetchrow(
+        '''
+        SELECT * FROM repos
+        WHERE repo_id=$1
+        ''', repo_id)
+    return dict(result)
 
 
 @log_call()
@@ -200,6 +210,7 @@ async def delete_repo(owner: str, reponame: str):
                 DELETE FROM repos
                 WHERE username=$1 and reponame=$2
             ''', owner, reponame)
+        git.delete_repo(owner, reponame)
     else:
         raise RepoNotFoundException()
 
@@ -300,7 +311,8 @@ async def set_default_branch(owner: str, reponame: str,
             '''
                 UPDATE repos
                 SET    default_branch=$1
-            ''', new_default_branch)
+                WHERE username=$2
+            ''', new_default_branch, owner)
     else:
         raise RepoNotFoundException()
 
@@ -364,8 +376,8 @@ async def get_specified_path(owner: str, reponame: str, branch: str,
     return await git.git_ls_files(owner, reponame, branch, path=path)
 
 
-_TEXTCHARS = bytearray({7, 8, 9, 10, 12, 13, 27} |
-                       set(range(0x20, 0x100)) - {0x7f})
+_TEXTCHARS = bytearray({7, 8, 9, 10, 12, 13, 27}
+                       | set(range(0x20, 0x100)) - {0x7f})
 
 
 def _is_binary_string(bytes):

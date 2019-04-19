@@ -19,7 +19,10 @@
           <b-badge variant="success">Open</b-badge>
           <span>{{ pullUser }} wants to merge {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
         </div>
-        <!-- FIXME: 这里差了 Closed -->
+        <div v-else-if="status=='Closed'">
+          <b-badge variant="danger">Closed</b-badge>
+          <span>{{ pullUser }} wants to merge {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
+        </div>
         <div v-else>
           <b-badge variant="info">Merged</b-badge>
           <span>{{ pullUser }} merged {{ commitsNumber }} commits into {{ pullTo }} from {{ pullFrom }}</span>
@@ -36,7 +39,7 @@
       <span>Commits on {{ reply.commitsDate }}</span>
       <div style="background-color: #f5fcff; margin-left: 1%; margin-top: 5px">
         <strong>{{ reply.title }}</strong>
-        <p>{{ reply.user }} committed {{ reply.timeToNow }}</p>
+        <p>{{ reply.user }} committed {{ fromNowTime(reply.commitsTime) }}</p>
       </div>
     </div>-->
     <div>{{log}}</div>
@@ -48,6 +51,7 @@
 <script>
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
+import moment from "moment";
 // import MockAdapter from "axios-mock-adapter";
 export default {
   data() {
@@ -82,6 +86,12 @@ export default {
       let param = this.$route.params;
       return "/" + param.owner + "/" + param.repo + "/pull/" + param.pullid;
     },
+    fromNowTime(time) {
+      return moment(time).fromNow();
+    },
+    commitTime(time) {
+      return moment(time).format("MMMM Do YYYY");
+    },
     getData() {
       // let mock = new MockAdapter(axios);
       // mock.onGet(this.fullPullName()).reply(200, {
@@ -95,10 +105,9 @@ export default {
       //   pullFrom: "Bob:abc",
       //   replys: [
       //     {
-      //       commitsDate: "Apr 1, 2019",
+      //       commitsTime: "2019-04-16T11:20:29+08:00",
       //       title: "a pull",
       //       user: "Alice",
-      //       timeToNow: "8 das ago"
       //     }
       //   ]
       // });

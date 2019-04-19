@@ -67,25 +67,24 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     return postid, flag_auto_merged, conflicts
 
 
-async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
-                             pullid: int):
-    merge_pull_request_git(dstowner, dstrepo, dstbranch, pullid)
+async def merge_pull_request(dstowner: str, dstrepo: str, pullid: int):
+    merge_pull_request_git(dstowner, dstrepo, pullid)
     await execute(
         '''
         UPDATE pull_requests
         SET status=$1
-        ''', 'Merged')
+        WHERE dest_repo_id=$2 and pullid=$3
+        ''', 'Merged', repo.get_repo_id(dstowner, dstrepo), pullid)
 
 
-async def close_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
-                             pullid: int):
+async def close_pull_request(dstowner: str, dstrepo: str, pullid: int):
     finish_working_dir(dstowner, dstrepo, pullid)
     await execute(
         '''
         UPDATE pull_requests
         SET status=$1
-        WHERE dest_repo
-        ''', 'Closed')
+        WHERE dest_repo_id=$2 and pullid=$3
+        ''', 'Closed', repo.get_repo_id(dstowner, dstrepo), pullid)
 
 
 async def get_pull_request_info(dstowner: str, dstrepo: str, pullid: int) -> Dict[str, ...]:
@@ -162,8 +161,8 @@ async def update_pull_request(dstowner: str, dstrepo: str, pullid: int):
     srcbranch = info['src_branch']
 
 
-async def merge_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str,
-                                 pullid: int):
+async def merge_pull_request_git(dstowner: str, dstrepo: str, pullid: int):
+    dstbranch = ""
     if (dstowner, dstrepo, pullid) not in _working_dirs:
         raise RuntimeError('merge pull request before create')
     dstroot = git.get_repo_dirpath(dstowner, dstrepo)

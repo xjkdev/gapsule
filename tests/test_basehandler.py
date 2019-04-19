@@ -22,15 +22,15 @@ class BaseHandlerTestCase(unittest.TestCase):
                 return_value=session_encode(session_cookie))
         else:
             get_secure_cookie = Mock(return_value=None)
-        base_handler = NonCallableMock(
-            spec=BaseHandler, get_secure_cookie=get_secure_cookie,
-            prepare=BaseHandler.prepare
-        )
+        base_handler = NonCallableMock(spec=BaseHandler,
+                                       get_secure_cookie=get_secure_cookie,
+                                       prepare=BaseHandler.prepare)
         return base_handler, get_secure_cookie, check_session_status
 
     @async_test
     async def test_get_current_user1(self):
-        cookie = dict(user="test-user", session="test-session",
+        cookie = dict(user="test-user",
+                      session="test-session",
                       logged_time=test_time)
         b, g, c = self.create_query(True, cookie)
         await BaseHandler.prepare(b)
@@ -41,7 +41,8 @@ class BaseHandlerTestCase(unittest.TestCase):
 
     @async_test
     async def test_get_current_user2(self):
-        cookie = dict(user="test-user", session="test-session",
+        cookie = dict(user="test-user",
+                      session="test-session",
                       logged_time=test_time)
         b, g, c = self.create_query(False, cookie)
         await BaseHandler.prepare(b)

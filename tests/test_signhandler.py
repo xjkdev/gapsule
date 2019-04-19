@@ -21,7 +21,11 @@ class SignUpHandlerTestCase(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
 
     def test_post_signup(self):
-        response = self.fetch('/signup', method="POST",
-                              body=json.dumps(dict(username='abcd', email="abc@ab.com", password="feafajkljkljL0")))
+        response = self.fetch('/signup',
+                              method="POST",
+                              body=json.dumps(
+                                  dict(username='abcd',
+                                       email="abc@ab.com",
+                                       password="feafajkljkljL0")))
         # self.assertEqual(response.body, b'{"state": "ok", "token": "Token"}')
         self.assertEqual(response.code, 200)
