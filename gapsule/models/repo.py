@@ -30,7 +30,9 @@ async def create_new_repo(owner: str,
     if not flag:
         await execute(
             '''
-                INSERT INTO repos(username,reponame,introduction,create_time,star_num,fork_num,visibility,forked_from,default_branch)
+                INSERT INTO repos(username,reponame,introduction,
+                                  create_time,star_num,fork_num,
+                                  visibility,forked_from,default_branch)
                 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
             ''', owner, reponame, introduction, datetime_now(), star_num,
             fork_num, visibility, forked_from, default_branch)
@@ -311,8 +313,8 @@ async def set_default_branch(owner: str, reponame: str,
             '''
                 UPDATE repos
                 SET    default_branch=$1
-                WHERE username=$2
-            ''', new_default_branch, owner)
+                WHERE username=$1 and reponame=$2
+            ''', new_default_branch, owner, reponame)
     else:
         raise RepoNotFoundException()
 
@@ -495,3 +497,27 @@ async def get_history(owner: str, reponame: str,
 
 async def get_contributors_info():
     return 0
+
+
+async def fork_repo(dstowner, owner, reponame):
+    flag = await check_repo_existing(owner, reponame)
+    if not flag:
+        raise RepoNotFoundException()
+    flag = await check_repo_existing(dstowner, reponame)
+    if flag:
+        raise NameError('Repo already exists')
+    src_repoid = await get_repo_id(owner, reponame)
+    srcinfo = await get_repo_info(src_repoid)
+    await execute(
+        '''
+                INSERT INTO repos(username,reponame,introduction,
+                                  create_time,star_num,fork_num,
+                                  visibility,forked_from,default_branch)
+                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            ''', dstowner, reponame, srcinfo['introduction'], datetime_now(), 0,
+        0, srcinfo['visibility'], owner, srcinfo['default_branch'])
+    await inc_repo_fork_num(owner, reponame)
+    dstroot = git.get_repo_dirpath(dstowner, reponame)
+    if os.path.exists(dstroot):
+        raise FileExistsError("Repo Already Existed")
+    await git.git_clone(os.path.dirname(dstroot), owner, reponame)

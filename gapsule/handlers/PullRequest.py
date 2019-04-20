@@ -24,6 +24,8 @@ class CreatePullRequestHandler(BaseHandler):
             compare_info['compare_owner'], reponame, compare_info['compare_branch'])
 
         preview['state'] = 'ok'
+        preview['base_branches'] = (await git.git_branches(compare_info['base_owner'], reponame))[1]
+        preview['compare_branches'] = (await git.git_branches(compare_info['compare_owner'], reponame))[1]
         self.write(preview)
 
     @authenticated
@@ -41,8 +43,9 @@ class CreatePullRequestHandler(BaseHandler):
         self.write(dict(state='ok', id=pullid))
 
     async def judgeBranch(self, owner, reponame, statepath):
+        base_owner = await repo.get_forked_from(owner, reponame)
         compare_dict = {
-            'base_owner': owner,
+            'base_owner': base_owner,
             'compare_owner': owner,
         }
         state = 0

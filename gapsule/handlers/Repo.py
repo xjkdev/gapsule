@@ -3,10 +3,11 @@ import asyncio
 from tornado.escape import json_decode
 import tornado.web
 from gapsule.handlers.Base import BaseHandler
-from gapsule.utils import ajaxquery
+from gapsule.utils import ajaxquery, authenticated
 from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
+from gapsule.models import repo, git
 from gapsule.models.repo import (get_commits_num, get_branches_num, get_releases_num,
-                                 get_contributors_info, get_specified_path,
+                                 get_contributors_info, get_specified_path, fork_repo,
                                  get_file_content, create_new_repo, get_default_branch)
 
 
@@ -60,6 +61,20 @@ class CodeListHandler(BaseHandler):
             currentBranch=default_branch
         )
         self.write(state_dict)
+
+    @authenticated
+    async def post(self, owner, reponame):
+        data = dict(json_decode(self.request.body))
+        if data['action'] == 'fork':
+            dstowner = self.current_user.user
+            try:
+                await fork_repo(dstowner, owner, reponame)
+                self.write(dict(state='ok'))
+            except Exception as e:
+                print(e)
+                self.write(dict(state='error', error='fork error'))
+        else:
+            raise tornado.web.HTTPError(404)
 
 
 class FolderListHandler(BaseHandler):
