@@ -90,11 +90,11 @@ async def _make_connect_pool(config_info):
             foreign key (post_id, repo_id) references posts(post_id, repo_id)
             );
             CREATE TABLE notifications(
-            user_id     integer,
+            username   varchar(20) references users_info(username) on delete cascade,
             notification_id     integer,
             created_time    timestamptz,
             content         varchar,
-            primary key(user_id,notification_id)
+            primary key(username,notification_id)
             );
             CREATE TABLE pull_requests(
             dest_repo_id     integer,

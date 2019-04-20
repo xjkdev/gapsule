@@ -133,7 +133,6 @@ async def verify_user(username: str, password: str):
         SELECT password FROM users_info
         WHERE username =$1
         ''', username)
-    print(temp_encrypted_pw)
     if (temp_encrypted_pw == temp_password['password']):
         return True
     else:

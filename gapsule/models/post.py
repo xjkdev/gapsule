@@ -1,6 +1,6 @@
 from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
-from gapsule.models.repo import get_repo_id, check_repo_existing
+from gapsule.models.repo import get_repo_id, check_repo_existing, get_repo_info
 from gapsule.models.connection import fetch, fetchrow, execute
 from gapsule.models.notification import create_new_notification
 from gapsule.models.user import get_uid
@@ -36,6 +36,11 @@ async def create_new_attached_post(repo_id: int,
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)
         ''', this_id, repo_id, is_issue, postername, title, status, visibility,
         datetime_now())
+    posttype = 'issue' if is_issue else 'pull request'
+    info = await get_repo_info(repo_id)
+    await create_new_notification(info['username'], "{} add an new {} '{}' to {}/{}#{}".format(
+        postername, posttype, title, info['username'], info['reponame'], this_id)
+    )
     return this_id
 
 
@@ -124,58 +129,29 @@ async def get_visibility(repo_id: int, post_id: int):
 @log_call()
 async def create_new_comment(repo_id: int, post_id: int, type: str,
                              content: str, commenter_name: str):
-    if await check_post_existing(repo_id, post_id):
-        current_id = await fetchrow(
-            '''
-        SELECT max(comment_id) FROM comments
-        WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id)
-        this_id = 1
-        if current_id['max'] != None:
-            this_id = current_id['max'] + 1
-        await execute(
-            '''
-                INSERT INTO comments(post_id,repo_id,comment_id,is_reply,reply_to_id,address_time,type,content,commenter)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-                ''', post_id, repo_id, this_id, False, None, datetime_now(),
-            type, content, commenter_name)
-
-        notification = commenter_name+' commented your post (id: ' + \
-            str(repo_id)+'_'+str(post_id)+')'
-        poster = await get_postername(repo_id, post_id)
-        poster_id = await get_uid(poster)
-        await create_new_notification(poster_id, notification)
-
-        return this_id
-    else:
+    if not await check_post_existing(repo_id, post_id):
         raise PostNotFoundException()
-
-
-@log_call()
-async def create_new_reply(repo_id: int, post_id: int, reply_to_id: int,
-                           type: str, content: str, replier_name: str):
-    if await check_post_existing(repo_id, post_id):
-        current_id = await fetchrow(
-            '''
-        SELECT max(comment_id) FROM comments
-        WHERE repo_id=$1 and post_id=$2
-        ''', repo_id, post_id)
-        this_id = 1
-        if current_id['max'] != None:
-            this_id = current_id['max'] + 1
-        await execute(
-            '''
-            INSERT INTO comments(post_id,repo_id,comment_id, is_reply,reply_to_id,address_time,type,content,commenter)
+    current_id = await fetchrow(
+        '''
+    SELECT max(comment_id) FROM comments
+    WHERE repo_id=$1 and post_id=$2
+    ''', repo_id, post_id)
+    this_id = 1
+    if current_id['max'] != None:
+        this_id = current_id['max'] + 1
+    await execute(
+        '''
+            INSERT INTO comments(post_id,repo_id,comment_id,is_reply,reply_to_id,address_time,type,content,commenter)
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-            ''', post_id, repo_id, this_id, True, reply_to_id, datetime_now(),
-            type, content, replier_name)
-
-        notification = replier_name + ' replied to you'
-        await create_new_notification(reply_to_id, notification)
-
-        return this_id
-    else:
-        raise PostNotFoundException()
+            ''', post_id, repo_id, this_id, False, None, datetime_now(),
+        type, content, commenter_name)
+    if this_id > 1:
+        repoinfo = await get_repo_info(repo_id)
+        notification = "{} commented '{}' your post {}/{}#{} ".format(
+            commenter_name, content, repoinfo['username'], repoinfo['reponame'], post_id)
+        poster = await get_postername(repo_id, post_id)
+        await create_new_notification(poster, notification)
+    return this_id
 
 
 @log_call()

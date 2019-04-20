@@ -13,9 +13,13 @@
       <span slot="header">{{ fileName() }}</span>
       <b-card-body v-if="filetext!=''">
         <table>
-          <tr v-for="line in lines()" :key="line[0]">
+          <tr
+            v-for="line in lines()"
+            :key="line[0]"
+            v-bind:class="{'active-line': $route.hash == '#L'+line[0]}"
+          >
             <td class="linenumber bg-light">
-              <a :href="'#'+line[0]" :id="'#'+line[0]">
+              <a :href="'#L'+line[0]" :id="'#L'+line[0]">
                 <pre>{{line[0]}}</pre>
               </a>
             </td>
@@ -60,7 +64,7 @@ export default {
       if (this.filetext == "") return [];
       let result = this.filetext.split("\n");
       for (let i in result) {
-        result[i] = [i, result[i]];
+        result[i] = [1 + parseInt(i), result[i]];
       }
       return result;
     },
@@ -114,6 +118,10 @@ export default {
 }
 .code {
   padding: 0;
+  width: 100%;
+}
+.active-line {
+  background-color: lightblue;
 }
 .code pre {
   margin: 0;
