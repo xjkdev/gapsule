@@ -128,6 +128,9 @@ export default {
   destroyed() {
     window.removeEventListener("popstate", this.goBack, false);
   },
+  watch: {
+    $route: "getData"
+  },
   methods: {
     repoName() {
       let tmp = this.$route.path.split("/");
