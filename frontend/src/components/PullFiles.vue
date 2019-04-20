@@ -37,12 +37,18 @@
     </b-nav>
 
     <div v-for="d in diff" :key="d" style="width: 80%">
-      <b-button v-b-toggle="d[0]" variant="light">{{ d[0] }}</b-button>
-      <b-collapse visible :id="d[0]">
-        <b-card>
-          <pre>{{ d[1] }}</pre>
-        </b-card>
-      </b-collapse>
+      <b-card no-body class="mb-1">
+        <b-card-header header-tag="header" class="p-1" role="tab">
+          <b-button v-b-toggle="d[0]" variant="light">{{ d[0] }}</b-button>
+        </b-card-header>
+        <b-collapse :id="d[0]" accordion="my-accordion" role="tabpanel">
+          <b-card-body>
+            <b-card-text>
+              <pre>{{ d[1] }}</pre>
+            </b-card-text>
+          </b-card-body>
+        </b-collapse>
+      </b-card>
     </div>
   </b-container>
 </template>
@@ -50,7 +56,6 @@
 <script>
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
-import moment from "moment";
 // import MockAdapter from "axios-mock-adapter";
 export default {
   data() {
