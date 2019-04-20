@@ -5,7 +5,7 @@ import chardet
 from gapsule.utils.log_call import log_call
 from gapsule.models import git
 from gapsule.utils.cookie_session import datetime_now
-from gapsule.models.connection import _connection, fetchrow, execute, fetch
+from gapsule.models.connection import fetchrow, execute, fetch
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 from gapsule.models.user import get_uid
 
@@ -16,13 +16,13 @@ class RepoNotFoundException(FileNotFoundError):
 
 @log_call()
 async def create_new_repo(owner: str,
-                         reponame: str,
-                         introduction: str = None,
-                         star_num: int = 0,
-                         fork_num: int = 0,
-                         visibility: bool = False,
-                         forked_from: str = None,
-                         default_branch: str = None):
+                          reponame: str,
+                          introduction: str = None,
+                          star_num: int = 0,
+                          fork_num: int = 0,
+                          visibility: bool = False,
+                          forked_from: str = None,
+                          default_branch: str = None):
     # 创建一个新repo，必须提供owner名和repo名
     if not check_reponame_validity(reponame):
         raise NameError('Invalid reponame')
@@ -35,6 +35,7 @@ async def create_new_repo(owner: str,
             ''', owner, reponame, introduction, datetime_now(), star_num,
             fork_num, visibility, forked_from, default_branch)
         await git.init_git_repo(owner, reponame)
+        return True
     else:
         raise NameError('Repo already exists')
 
@@ -50,6 +51,15 @@ async def check_repo_existing(owner: str, reponame: str):
         return True
     else:
         return False
+
+
+async def get_repo_info(repo_id: int):
+    result = await fetchrow(
+        '''
+        SELECT * FROM repos
+        WHERE repo_id=$1
+        ''', repo_id)
+    return dict(result)
 
 
 @log_call()
@@ -200,6 +210,7 @@ async def delete_repo(owner: str, reponame: str):
                 DELETE FROM repos
                 WHERE username=$1 and reponame=$2
             ''', owner, reponame)
+        git.delete_repo(owner, reponame)
     else:
         raise RepoNotFoundException()
 
@@ -300,7 +311,8 @@ async def set_default_branch(owner: str, reponame: str,
             '''
                 UPDATE repos
                 SET    default_branch=$1
-            ''', new_default_branch)
+                WHERE username=$2
+            ''', new_default_branch, owner)
     else:
         raise RepoNotFoundException()
 
@@ -364,8 +376,8 @@ async def get_specified_path(owner: str, reponame: str, branch: str,
     return await git.git_ls_files(owner, reponame, branch, path=path)
 
 
-_TEXTCHARS = bytearray({7, 8, 9, 10, 12, 13, 27} |
-                       set(range(0x20, 0x100)) - {0x7f})
+_TEXTCHARS = bytearray({7, 8, 9, 10, 12, 13, 27}
+                       | set(range(0x20, 0x100)) - {0x7f})
 
 
 def _is_binary_string(bytes):
@@ -373,12 +385,12 @@ def _is_binary_string(bytes):
 
 
 @log_call()
-def get_file_content(owner, reponame, branch, path) -> Optional[str]:
+async def get_file_content(owner, reponame, branch, path) -> Optional[str]:
     """ 查询  对应路径下的某个文件的内容
         如果文件不存在或为目录，会抛出OSError
         如果为二进制文件或大文件，返回空
     """
-    data = git.git_cat_file(owner, reponame, branch, path)
+    data = await git.git_cat_file(owner, reponame, branch, path)
     if len(data) > 204800 or _is_binary_string(data[:20480]):  # big file
         return None
     det = chardet.detect(data)
@@ -456,10 +468,6 @@ async def get_repo_visibility(owner: str, reponame: str):
         return result['visibility']
     else:
         raise RepoNotFoundException()
-
-
-async def get_file_content(path: str, branch=None):
-    return 'content:...'
 
 
 async def get_all_files(owner: str, reponame: str,

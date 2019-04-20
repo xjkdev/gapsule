@@ -1,5 +1,5 @@
 <template>
-  <b-container class="dashboard">
+  <div class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
     <b-alert
@@ -23,7 +23,7 @@
         <b-button variant="success" type="submit" style="float: right">Submit new issue</b-button>
       </b-form>
     </b-card>
-  </b-container>
+  </div>
 </template>
 
 <script>

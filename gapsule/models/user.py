@@ -1,4 +1,5 @@
-import crypt
+import hashlib
+import random
 import re
 import secrets
 import asyncpg
@@ -30,6 +31,8 @@ def add_user_pending_verifying(username: str, mail_address: str,
             return pending_info['token']
         else:
             return None
+    else:
+        raise NameError()
 
 
 @log_call()
@@ -52,6 +55,19 @@ async def check_profile_existing(username: str):
 
 
 @log_call()
+async def get_user_mail_address(username: str):
+    if check_user_existing(username):
+        result = await fetchrow(
+            '''
+            SELECT mail_address FROM users_info
+            WHERE username = $1
+            ''', username)
+        return result['mail_address']
+    else:
+        raise NameError("user does not exist")
+
+
+@log_call()
 async def create_new_user(username: str, mail_address: str, password: str):
     if not check_username_validity(username):
         return False
@@ -59,18 +75,36 @@ async def create_new_user(username: str, mail_address: str, password: str):
         return False
     if not check_password_validity(password):
         return False
-     
     flag = await check_user_existing(username)
     if flag:
         raise NameError('Username already existing')
 
-    salt = crypt.mksalt()
-    encrypted_password = crypt.crypt(password, salt)
+    salt = username[random.randint(
+        0,
+        len(username) - 1)] + username[random.randint(
+            0,
+            len(username) - 1)] + username[random.randint(
+                0,
+                len(username) - 1)]
+    sha512 = hashlib.sha512()
+    temp = password + salt
+    temp = temp.encode('utf-8')
+    sha512.update(temp)
+    encrypted_password = sha512.hexdigest()
     await execute(
         '''
     INSERT INTO users_info(username, mail_address, password, salt) VALUES($1, $2, $3, $4)''',
         username, mail_address, encrypted_password, salt)
     return True
+
+
+async def get_user_info(username: str):
+    result = await fetchrow(
+        '''
+        SELECT * FROM users_info
+        WHERE username=$1
+        ''', username)
+    return dict(result)
 
 
 @log_call()
@@ -79,22 +113,27 @@ async def verify_user(username: str, password: str):
         return False
     if not check_password_validity(password):
         return False
+    if not check_password_validity(password):
+        return False
     flag = await check_user_existing(username)
-    if not flag:
-        raise NameError('User does not exist')
-
+    if (flag == False):
+        return False
     temp_salt = await fetchrow(
         '''
         SELECT salt FROM users_info
         WHERE username =$1
         ''', username)
-    temp_encrypted_pw = crypt.crypt(password, salt=temp_salt['salt'])
+    sha5122 = hashlib.sha512()
+    temp = (password + temp_salt['salt']).strip()
+    temp = temp.encode('utf-8')
+    sha5122.update(temp)
+    temp_encrypted_pw = sha5122.hexdigest()
     temp_password = await fetchrow(
         '''
         SELECT password FROM users_info
         WHERE username =$1
         ''', username)
-    if temp_encrypted_pw == temp_password['password']:
+    if (temp_encrypted_pw == temp_password['password']):
         return True
     else:
         return False
@@ -121,8 +160,8 @@ async def set_profile(username: str,
             await execute(
                 '''
                 INSERT INTO profiles(username, icon_url,firstname,lastname, introduction, company, location,public_email, website) VALUES($1, $2, $3, $4, $5, $6,$7,$8,$9)
-                ''', username, icon_path, firstname, lastname,
-                introduction, company, location, public_email, website)
+                ''', username, icon_path, firstname, lastname, introduction,
+                company, location, public_email, website)
         else:
             await execute(
                 '''
@@ -249,7 +288,7 @@ async def alter_username(old_username: str, new_username: str):
 async def user_login(username: str, password: str):
     flag = await verify_user(username, password)
     if not flag:
-        return False
+        return None
     temp = await fetchrow(
         '''
     SELECT username FROM log_info
@@ -294,3 +333,15 @@ async def get_last_login_time(username: str):
         WHERE username=$1
         ''', username)
     return temp['login_time']
+
+
+async def get_username(uid: int):
+    username = await fetchrow(
+        '''
+                SELECT username FROM users_info
+                WHERE uid =$1
+                ''', uid)
+    if username is None:
+        raise NameError()
+    else:
+        return uid['username']

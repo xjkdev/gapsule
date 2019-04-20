@@ -1,5 +1,5 @@
 <template>
-  <b-container class="dashboard">
+  <div class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
     <b-alert
       variant="danger"
@@ -86,7 +86,7 @@
         </div>
       </b-form>
     </b-card>
-  </b-container>
+  </div>
 </template>
 
 <script>
@@ -121,11 +121,7 @@ export default {
     };
   },
   created() {
-    if (this.operateType == "topic" || this.operateType == "issues") {
-      this.getIssuesData();
-    } else {
-      this.getPullData();
-    }
+    this.getData();
   },
   watch: {
     $route: "getData"
@@ -211,6 +207,13 @@ export default {
           this.hasError = true;
         }
       });
+    },
+    getData() {
+      if (this.operateType == "topic" || this.operateType == "issues") {
+        this.getIssuesData();
+      } else {
+        this.getPullData();
+      }
     },
     getPullData() {
       // let mock = new MockAdapter(axios);

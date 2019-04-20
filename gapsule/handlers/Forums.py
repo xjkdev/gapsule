@@ -48,8 +48,6 @@ class ForumHandler(BaseHandler):
             if 'address_time' in comment:
                 comment['address_time'] = format_log_time(
                     comment['address_time'])
-            if 'conmmenter' in comment:  # FIXME
-                comment['commenter'] = comment['conmmenter']
         if posttype == 'issues':
             self.write(ForumGetResult(state='ok', title=title, poster=poster, status=status,
                                       comments=comments))
@@ -95,6 +93,7 @@ class PostListHandler(BaseHandler):
             allposts = await post.get_all_issues(repoid)
         else:
             allposts = await post.get_all_pull_requests(repoid)
+        print(allposts)
         for ipost in allposts:
             if 'post_time' in ipost:
                 ipost['post_time'] = format_log_time(ipost['post_time'])

@@ -9,9 +9,9 @@
       style="width: 40%; position: absolute; top: 0; left: 30%"
     >{{ error }}</b-alert>
 
-    <div style="padding: 0.2rem 1rem 0.2rem 1rem">descriptions</div>
+    <div v-if="isRepoRoot" style="padding: 0.2rem 1rem 0.2rem 1rem">descriptions</div>
 
-    <b-nav pills fill class="border rounded" style=" padding: 0.2rem 0">
+    <b-nav v-if="isRepoRoot" pills fill class="border rounded" style=" padding: 0.2rem 0">
       <b-nav-item>
         <router-link class="nav-link" to="#">{{ commitNumber }} commits</router-link>
       </b-nav-item>
@@ -63,13 +63,13 @@
     <b-card no-body class="filelist">
       <b-card-header>file list</b-card-header>
       <b-list-group flush>
-        <b-list-group-item v-if="allFiles==''">
+        <b-list-group-item v-if="allFiles.length==0">
           <p>no file</p>
         </b-list-group-item>
         <b-list-group-item v-for="folderData in folders" :key="folderData">
           <img src="../images/folder.png">
           <router-link
-            v-if="firstClick()"
+            v-if="isRepoRoot"
             :to="repoName()+'/tree/'+currentBranch+'/'+folderData"
             @click.native="handleFileList()"
           >{{ folderData }}</router-link>
@@ -128,6 +128,9 @@ export default {
   destroyed() {
     window.removeEventListener("popstate", this.goBack, false);
   },
+  watch: {
+    $route: "getData"
+  },
   methods: {
     repoName() {
       let tmp = this.$route.path.split("/");
@@ -135,9 +138,6 @@ export default {
     },
     newPull() {
       this.$router.push(this.repoName() + "/compare");
-    },
-    firstClick() {
-      return this.$route.path.indexOf("tree") == -1;
     },
     nextURL(fileData) {
       if (this.$route.path.indexOf("tree") == -1) {
@@ -149,18 +149,18 @@ export default {
     handleFileList() {
       let tmpFileList = [];
       let i;
-      if (this.$route.path.indexOf("tree") != -1) {
+      if (this.isRepoRoot) {
         let currentFileLocation = this.$route.path.replace(
           this.repoName() + "/tree/" + this.currentBranch + "/",
           ""
         );
         for (i = 0; i < this.allFiles.length; i++) {
-          if (this.allFiles[i].indexOf(currentFileLocation + "/") == 0) {
+          if (this.allFiles[i][0].indexOf(currentFileLocation + "/") == 0) {
             let tmpStr = this.allFiles[i].replace(
               currentFileLocation + "/",
               ""
             );
-            tmpFileList.push(tmpStr);
+            tmpFileList.push([tmpStr, this.allFiles[i][1]]);
           }
         }
       } else {
@@ -171,16 +171,16 @@ export default {
     changeFileList(files) {
       this.folders = [];
       this.files = [];
-      let i;
-      for (i in files) {
-        let file = files[i];
+      console.log(files);
+      for (let file of files) {
+        let name = file[0];
         if (
-          file.indexOf("/") != -1 &&
-          this.folders.indexOf(file.split("/")[0]) == -1
+          name.indexOf("/") != -1 &&
+          this.folders.indexOf(name.split("/")[0]) == -1
         ) {
-          this.folders.push(file.split("/")[0]);
-        } else if (file.indexOf("/") == -1) {
-          this.files.push(file);
+          this.folders.push(name.split("/")[0]);
+        } else if (name.indexOf("/") == -1) {
+          this.files.push(name);
         }
       }
     },
@@ -220,16 +220,18 @@ export default {
           this.contributorNumber = response.data.contributorNumber;
           this.readme = response.data.readme;
           this.branches = response.data.branches;
-          for (let i = 0; i < response.data.files.length; i++) {
-            this.allFiles.push(response.data.files[i][0]);
-          }
-          // this.allFiles = response.data.files;
+          this.allFiles = response.data.files;
           this.changeFileList(this.allFiles);
         } else {
           this.error = response.data.error;
           this.hasError = true;
         }
       });
+    }
+  },
+  computed: {
+    isRepoRoot() {
+      return this.$route.params.path == undefined;
     }
   },
   components: { RepoNav }
