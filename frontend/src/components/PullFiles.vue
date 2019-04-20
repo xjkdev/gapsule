@@ -31,21 +31,19 @@
     </div>
 
     <b-nav tabs>
-      <b-nav-item :active="$route.name=='PullConversion'" :to="fullPullName()">Conversion</b-nav-item>
+      <b-nav-item
+        :active="$route.name.match(/PullConversion|PullFiles/)"
+        :to="fullPullName()"
+      >Conversion</b-nav-item>
       <b-nav-item :active="$route.name=='PullCommits'" :to="fullPullName()+'/commits'">Commits</b-nav-item>
     </b-nav>
 
-    <b-card no-body v-for="l in log" :key="l" header="logInfo" header-tag="header">
-      <router-link :to="'/'+l.Author" slot="header" style="color: #656d74">
-        <strong>{{ l.Author }}</strong>&nbsp;
-      </router-link>
-      <span slot="header">{{fromNowTime(l.Date)}}</span>
-      <b-card-body>
-        <p class="card-text">{{ l.message }}</p>
-      </b-card-body>
-    </b-card>
-
-    <p v-if="replys==''">no pull commits</p>
+    <div v-for="d in diff" :key="d" style="width: 80%">
+      <b-button v-b-toggle="d[0]" variant="light">{{ d[0] }}</b-button>
+      <b-collapse visible :id="d[0]">
+        <b-card>{{ d[1] }}</b-card>
+      </b-collapse>
+    </div>
   </b-container>
 </template>
 
@@ -63,9 +61,7 @@ export default {
       commitsNumber: "",
       pullTo: "",
       pullFrom: "",
-      log: "",
-      error: "",
-      hasError: false
+      diff: []
     };
   },
   beforeRouteEnter(to, from, next) {
@@ -86,33 +82,16 @@ export default {
       let param = this.$route.params;
       return "/" + param.owner + "/" + param.repo + "/pull/" + param.pullid;
     },
-    fromNowTime(time) {
-      return moment(time).fromNow();
-    },
-    commitTime(time) {
-      return moment(time).format("MMMM Do YYYY");
-    },
     getData() {
       // let mock = new MockAdapter(axios);
-      // mock.onGet(this.fullPullName() + "/commits").reply(200, {
+      // mock.onGet(this.fullPullName() + "files").reply(200, {
       //   state: "ok",
-      //   error: "",
-      //   log: [
-      //     {
-      //       Author: "Bob",
-      //       Date: "2019-04-17T11:20:29+08:00",
-      //       message: "Merge Pull request"
-      //     },
-      //     {
-      //       Author: "Alice",
-      //       Date: "2019-04-16T20:12:00+0800",
-      //       message: "Merge branch"
-      //     }
-      //   ]
+      //   error: "error",
+      //   diff: [["a.vue", "x"], ["b.js", "y"]]
       // });
       axios({
         method: "GET",
-        url: this.fullPullName() + "/commits",
+        url: this.fullPullName() + "files",
         params: {
           ajax: 1,
           owner: this.$route.params.owner,
@@ -121,7 +100,7 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.log = response.data.log;
+          this.diff = response.data.diff;
         } else {
           this.error = response.data.error;
           this.hasError = true;

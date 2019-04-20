@@ -11,6 +11,5 @@ class NotificationHandler(BaseHandler):
     @ajaxquery
     async def get(self):
         username = self.current_user.user
-        userid = await get_uid(username)
-        results = await get_all_notifications(userid)
-        self.write(json.dumps(results))
+        results = await get_all_notifications(username)
+        self.write(dict(state='ok', notifications=results))
