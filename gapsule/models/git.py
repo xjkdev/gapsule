@@ -7,6 +7,7 @@ import chardet
 from typing import Union, Tuple, List, Dict
 
 from gapsule.settings import settings
+from gapsule.utils.log_call import log_call
 from gapsule.utils.subprocess import run, PIPE, DEVNULL
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 
@@ -240,16 +241,20 @@ async def git_cat_file(owner: str, reponame: str, branch: str,
                        path: str) -> bytes:
     root = get_repo_dirpath(owner, reponame)
     _check_exists(root)
-
+    print('244 line')
     files = await git_ls_files(owner,
                                reponame,
                                branch,
                                path=path,
                                show_tree=True,
                                recursive=False)
-    if len(files) != 1:
+    for f in files:
+        name, objhash, isdir = f
+        if name == path:
+            break
+    else:
         raise FileNotFoundError(path)
-    _name, objhash, isdir = files[0]
+
     if isdir:
         raise OSError("trying to read content of directory")
     proc = await asyncio.create_subprocess_exec('git',
@@ -261,20 +266,22 @@ async def git_cat_file(owner: str, reponame: str, branch: str,
                                                 stderr=PIPE)
     out, err = await asyncio.wait_for(proc.communicate(), 5)
     if await asyncio.wait_for(proc.wait(), 1) != 0:
-        print(err.decode())
+        print('a', out, err.decode())
         raise OSError("git cat file error")
     return out
 
 
+@log_call()
 async def git_fetch(dstroot: str, dstrefs: str, srcroot: str, srcrefs: str, *, fetch_head=False):
     cmd = ['git', 'fetch', 'file://'+srcroot]
     if not fetch_head:
         cmd += ['{}:{}'.format(srcrefs, dstrefs)]
     else:
         cmd += [srcrefs]
-    returncode, _out, _err = await run(cmd, cwd=dstroot, stdout=DEVNULL, stderr=DEVNULL,
-                                       timeout=10)
+    returncode, _out, err = await run(cmd, cwd=dstroot, stdout=DEVNULL, stderr=PIPE,
+                                      timeout=10)
     if returncode != 0:
+        print(err)
         raise RuntimeError("git fetch error")
 
 
@@ -299,18 +306,21 @@ async def git_rm_branch(root: str, branch, *, force=False):
     returncode, _out, _err = await run(cmd,
                                        cwd=root,
                                        stdout=DEVNULL,
-                                       stderr=DEVNULL,
+                                       stderr=PIPE,
                                        timeout=2)
     if returncode != 0:
+        print(_err)
         raise RuntimeError("git rm branch error")
 
 
 async def git_clone(workingdir: str,
                     owner: str,
                     reponame: str,
-                    branch: str = None):
+                    branch: str = None, *, bare=False):
     root = get_repo_dirpath(owner, reponame)
     cmd = ['git', 'clone']
+    if bare:
+        cmd += ['--bare']
     if branch is not None:
         cmd += ['-b', branch]
     cmd += ['file://' + root]

@@ -22,13 +22,14 @@ class SideBarHandler(BaseHandler):
         results = []
         for t in topics:
             tmp = {
-                "type": "issues",
                 "id": t['post_id'],
                 "title": t['title'],
             }
             repoid = t['repo_id']
             repoinfo = await repo.get_repo_info(repoid)
-            tmp['repo'] = '{}/{}'.format(username, repoinfo['reponame'])
+            tmp['type'] = 'issues' if t['is_issue'] else 'pull'
+            tmp['repo'] = '{}/{}'.format(repoinfo['username'],
+                                         repoinfo['reponame'])
             results.append(tmp)
         return results
 

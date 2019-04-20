@@ -81,7 +81,7 @@ export default new Router({
       meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo }
     },
     {
-      path: '/:owner/:repo/compare',
+      path: '/:owner/:repo/compare/(.*)',
       name: 'PullCompare',
       component: PullCompare,
       meta() { return 'Compare · ' + this.params.owner + '/' + this.params.repo }

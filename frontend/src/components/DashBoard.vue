@@ -1,5 +1,8 @@
 <template>
   <div class="dashboard">
+    <b-card v-if="notifications.length == 0">
+      <b-card-text>No Notifications</b-card-text>
+    </b-card>
     <b-card v-for="noti of notifications" :key="noti.notification_id" :title="noti.content">
       <b-card-text>{{'@' + noti.user + ' on ' + fromNowTime(noti.created_time)}}</b-card-text>
       <router-link

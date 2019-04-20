@@ -20,13 +20,15 @@ async def create_new_repo(owner: str,
                           introduction: str = None,
                           star_num: int = 0,
                           fork_num: int = 0,
-                          visibility: bool = False,
+                          visibility: bool = True,
                           forked_from: str = None,
                           default_branch: str = None):
     # 创建一个新repo，必须提供owner名和repo名
     if not check_reponame_validity(reponame):
         raise NameError('Invalid reponame')
     flag = await check_repo_existing(owner, reponame)
+    if default_branch is None:
+        default_branch = 'master'
     if not flag:
         await execute(
             '''
@@ -175,7 +177,7 @@ async def check_write_permission(owner: str, reponame: str, username: str):
             temp2 = await fetchrow(
                 '''
                 SELECT collaborator FROM collaborate
-                WHERE repo_id=$1 and username=$2
+                WHERE repo_id=$1 and collaborator=$2
                 ''', await get_repo_id(owner, reponame), username)
             if temp2 is not None:
                 return True
@@ -321,23 +323,24 @@ async def set_default_branch(owner: str, reponame: str,
 
 async def get_default_branch(owner: str, reponame: str):
     if await check_repo_existing(owner, reponame):
-        await fetchrow(
+        result = await fetchrow(
             '''
                 SELECT default_branch FROM repos
                  WHERE  username=$1 and reponame=$2
             ''', owner, reponame)
-        return 'master'
+        return result['default_branch']
     else:
         raise RepoNotFoundException()
 
 
 async def get_forked_from(owner: str, reponame: str):
     if await check_repo_existing(owner, reponame):
-        await fetchrow(
+        result = await fetchrow(
             '''
                 SELECT forked_from FROM repos
                  WHERE  username=$1 and reponame=$2
             ''', owner, reponame)
+        return result['forked_from']
     else:
         raise RepoNotFoundException()
 
@@ -398,6 +401,8 @@ async def get_file_content(owner, reponame, branch, path) -> Optional[str]:
     det = chardet.detect(data)
     if det['confidence'] < 0.5:
         return None
+    if det['encoding'] == 'ascii':
+        det['encoding'] = 'utf8'
     return data.decode(det['encoding'])
 
 
@@ -518,6 +523,11 @@ async def fork_repo(dstowner, owner, reponame):
         0, srcinfo['visibility'], owner, srcinfo['default_branch'])
     await inc_repo_fork_num(owner, reponame)
     dstroot = git.get_repo_dirpath(dstowner, reponame)
+
     if os.path.exists(dstroot):
         raise FileExistsError("Repo Already Existed")
-    await git.git_clone(os.path.dirname(dstroot), owner, reponame)
+    if not os.path.exists(os.path.dirname(dstroot)):
+        os.makedirs(os.path.dirname(dstroot))
+    await git.git_clone(os.path.dirname(dstroot), owner, reponame, bare=True)
+    os.rename(dstroot+'.git', dstroot)
+    await git.git_config(dstroot, 'http.receivepack', 'true')

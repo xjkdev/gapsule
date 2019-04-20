@@ -21,7 +21,7 @@
 
     <b-card no-body v-for="issue in issues" :key="issue">
       <b-card-body>
-        <router-link :to="fullIssuesName()+'/'+issue.post_id">
+        <router-link :to="fullIssuesName(issue.post_id)">
           <h5 class="card-title">{{ issue.title }}</h5>
         </router-link>
         <p
@@ -65,11 +65,13 @@ export default {
     $route: "getIssues"
   },
   methods: {
-    fullIssuesName() {
+    fullIssuesName(id) {
       let param = this.$route.params;
       if (this.operateType == "issues") {
+        if (id) return "/" + param.owner + "/" + param.repo + "/issues/" + id;
         return "/" + param.owner + "/" + param.repo + "/issues";
       } else {
+        if (id) return "/" + param.owner + "/" + param.repo + "/pull/" + id;
         return "/" + param.owner + "/" + param.repo + "/pulls";
       }
     },
@@ -121,7 +123,7 @@ export default {
         this.$router.push(this.fullIssuesName() + "/new");
       } else {
         let param = this.$route.params;
-        this.$router.push("/" + param.owner + "/" + param.repo + "/compare");
+        this.$router.push("/" + param.owner + "/" + param.repo + "/compare/");
       }
     }
   },

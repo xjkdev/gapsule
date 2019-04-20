@@ -2,6 +2,7 @@ from typing import List, Tuple, Optional
 import asyncio
 from tornado.escape import json_decode
 import tornado.web
+import os.path
 from gapsule.handlers.Base import BaseHandler
 from gapsule.utils import ajaxquery, authenticated
 from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
@@ -82,7 +83,8 @@ class FolderListHandler(BaseHandler):
     async def get(self, owner, reponame, branch, restpath):
         files = await get_specified_path(owner,
                                          reponame, branch, restpath)
-        folder_dict = FolderListResult(files=files)
+        files = [(os.path.relpath(f[0], restpath), f[1]) for f in files]
+        folder_dict = FolderListResult(state='ok', files=files)
         self.write(folder_dict)
 
 
@@ -93,7 +95,7 @@ class FileContentHandler(BaseHandler):
             data = await get_file_content(owner, reponame, branch, restpath)
             self.write(dict(state="ok", content=data))
         except OSError as e:
-            print(e)
+            print('98', e)
             self.write(dict(state="error", content=None,
                             error='os error occurs.'))
 

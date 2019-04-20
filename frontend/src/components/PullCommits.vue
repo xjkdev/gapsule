@@ -1,5 +1,5 @@
 <template>
-  <b-container class="dashboard">
+  <div class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
     <b-alert
@@ -33,6 +33,7 @@
     <b-nav tabs>
       <b-nav-item :active="$route.name=='PullConversion'" :to="fullPullName()">Conversion</b-nav-item>
       <b-nav-item :active="$route.name=='PullCommits'" :to="fullPullName()+'/commits'">Commits</b-nav-item>
+      <b-nav-item :active="$route.name=='PullFiles'" :to="fullPullName()+'/files'">Files</b-nav-item>
     </b-nav>
 
     <b-card no-body v-for="l in log" :key="l" header="logInfo" header-tag="header">
@@ -46,7 +47,7 @@
     </b-card>
 
     <p v-if="replys==''">no pull commits</p>
-  </b-container>
+  </div>
 </template>
 
 <script>
