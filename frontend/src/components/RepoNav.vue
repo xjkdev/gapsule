@@ -12,7 +12,7 @@
         <router-link :to="'/'+$route.params.owner">{{$route.params.owner}}</router-link>
         <strong>/</strong>
         <router-link :to="'/'+fullRepoName()">{{ repoName() }}</router-link>
-        <b-button variant="success" @click="fork" class="fork" v-if="showFork">fork</b-button>
+        <b-button variant="outline-info" @click="fork" class="fork" v-if="showFork">fork</b-button>
       </h4>
       <b-nav tabs>
         <b-nav-item
@@ -65,7 +65,7 @@ export default {
         }
       }).then(response => {
         if (response.status == 200 && response.data.state == "ok") {
-          this.$router.push("/");
+          this.$router.push(this.fullRepoName());
         } else {
           this.error = response.data.error;
           this.hasError = true;

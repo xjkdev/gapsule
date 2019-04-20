@@ -53,7 +53,7 @@
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
 import moment from "moment";
-import MockAdapter from "axios-mock-adapter";
+// import MockAdapter from "axios-mock-adapter";
 export default {
   data() {
     return {
@@ -93,32 +93,54 @@ export default {
       return moment(time).format("MMMM Do YYYY");
     },
     getData() {
-      let mock = new MockAdapter(axios);
-      mock.onGet(this.fullPullName() + "/commits").reply(200, {
-        state: "ok",
-        error: "error",
-        title: "a title",
-        status: "Merged",
-        pullUser: "Alice",
-        commitsNumber: 2,
-        pullTo: "Alice:master",
-        pullFrom: "Bob:abc",
-        log: [
-          {
-            Author: "Bob",
-            Date: "2019-04-17T11:20:29+08:00",
-            message: "Merge Pull request"
-          },
-          {
-            Author: "Alice",
-            Date: "2019-04-16T20:12:00+0800",
-            message: "Merge branch"
-          }
-        ]
-      });
+      // let mock = new MockAdapter(axios);
+      // mock.onGet(this.fullPullName() + "/commits").reply(200, {
+      //   state: "ok",
+      //   error: "",
+      //   log: [
+      //     {
+      //       Author: "Bob",
+      //       Date: "2019-04-17T11:20:29+08:00",
+      //       message: "Merge Pull request"
+      //     },
+      //     {
+      //       Author: "Alice",
+      //       Date: "2019-04-16T20:12:00+0800",
+      //       message: "Merge branch"
+      //     }
+      //   ]
+      // });
       axios({
         method: "GET",
         url: this.fullPullName() + "/commits",
+        params: {
+          ajax: 1,
+          owner: this.$route.params.owner,
+          repo: this.$route.params.repo,
+          id: this.$route.params.pullid
+        }
+      }).then(response => {
+        if (response.data.state == "ok") {
+          this.log = response.data.log;
+        } else {
+          this.error = response.data.error;
+          this.hasError = true;
+        }
+      });
+      // mock = new MockAdapter(axios);
+      // mock.onGet(this.fullPullName()).reply(200, {
+      //   state: "ok",
+      //   error: "error",
+      //   title: "a title",
+      //   status: "Merged",
+      //   pullUser: "Alice",
+      //   commitsNumber: 2,
+      //   pullTo: "Alice:master",
+      //   pullFrom: "Bob:abc"
+      // });
+      axios({
+        method: "GET",
+        url: this.fullPullName(),
         params: {
           ajax: 1,
           owner: this.$route.params.owner,
@@ -133,7 +155,6 @@ export default {
           this.commitsNumber = response.data.commitsNumber;
           this.pullTo = response.data.pullTo;
           this.pullFrom = response.data.pullFrom;
-          this.log = response.data.log;
         } else {
           this.error = response.data.error;
           this.hasError = true;
