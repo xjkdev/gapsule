@@ -1,13 +1,21 @@
 import asyncio
 import tornado.web
+from tornado.escape import json_decode
 
-from gapsule.models import git, pullrequest, repo
-from gapsule.utils.decorators import ajaxquery
+from gapsule.models import git, pullrequest, repo, post
+from gapsule.utils import ajaxquery, authenticated
+from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.handlers.Base import BaseHandler
+
+
+class CreatePullRequestInput(ViewModelDict):
+    title: str = ViewModelField(required=True, nullable=False)
+    comment: str = ViewModelField(required=True, nullable=False)
 
 
 class CreatePullRequestHandler(BaseHandler):
     @ajaxquery
+    @authenticated
     async def get(self, owner, reponame, restpath):
         compare_info = await self.judgeBranch(owner, reponame, restpath)
 
@@ -17,6 +25,20 @@ class CreatePullRequestHandler(BaseHandler):
 
         preview['state'] = 'ok'
         self.write(preview)
+
+    @authenticated
+    async def post(self, owner, reponame, restpath):
+        data = CreatePullRequestInput(json_decode(self.request.body))
+        compare_info = await self.judgeBranch(owner, reponame, restpath)
+        pullid, _flag, _conflict = await pullrequest.create_pull_request(
+            compare_info['base_owner'], reponame, compare_info['base_branch'],
+            compare_info['compare_owner'], reponame, compare_info['compare_branch'],
+            data['title'], self.current_user.user,
+            True,
+        )
+        repoid = await repo.get_repo_id(compare_info['base_owner'], reponame)
+        await post.create_new_comment(repoid, pullid, 'text', data['comment'], self.current_user.user)
+        self.write(dict(state='ok', id=pullid))
 
     async def judgeBranch(self, owner, reponame, statepath):
         compare_dict = {

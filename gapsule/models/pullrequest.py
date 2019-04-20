@@ -28,7 +28,8 @@ def is_merge_message(message: str, pullid: int):
 async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
                               srcowner: str, srcrepo: str, srcbranch: str,
                               title: str, authorname: str,
-                              status: str, visibility: bool) -> Tuple[int, bool, str]:
+                              visibility: bool) -> Tuple[int, bool, str]:
+    status = "Open"
     authoremail = await user.get_user_mail_address(authorname)
     dst_repo_id = await repo.get_repo_id(dstowner, dstrepo)
     src_repo_id = await repo.get_repo_id(srcowner, srcrepo)

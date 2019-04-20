@@ -1,5 +1,5 @@
 <template>
-  <b-container class="dashboard">
+  <div class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
     <b-alert
       variant="danger"
@@ -86,7 +86,7 @@
         </div>
       </b-form>
     </b-card>
-  </b-container>
+  </div>
 </template>
 
 <script>

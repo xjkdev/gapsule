@@ -1,5 +1,5 @@
 <template>
-  <b-container class="dashboard">
+  <div class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
     <b-alert
@@ -45,7 +45,7 @@
     <div>{{log}}</div>
 
     <p v-if="replys==''">no pull commits</p>
-  </b-container>
+  </div>
 </template>
 
 <script>

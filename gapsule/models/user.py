@@ -113,30 +113,29 @@ async def verify_user(username: str, password: str):
         return False
     if not check_password_validity(password):
         return False
-    if (check_password_validity(password) != False):
-        flag = await check_user_existing(username)
-        if (flag == False):
-            raise NameError('User does not exist')
-        else:
-            temp_salt = await fetchrow(
-                '''
-                SELECT salt FROM users_info
-                WHERE username =$1
-                ''', username)
-            sha5122 = hashlib.sha512()
-            temp = (password + temp_salt['salt']).strip()
-            temp = temp.encode('utf-8')
-            sha5122.update(temp)
-            temp_encrypted_pw = sha5122.hexdigest()
-            temp_password = await fetchrow(
-                '''
-                SELECT password FROM users_info
-                WHERE username =$1
-                ''', username)
-            if (temp_encrypted_pw == temp_password['password']):
-                return True
-            else:
-                return False
+    if not check_password_validity(password):
+        return False
+    flag = await check_user_existing(username)
+    if (flag == False):
+        return False
+    temp_salt = await fetchrow(
+        '''
+        SELECT salt FROM users_info
+        WHERE username =$1
+        ''', username)
+    sha5122 = hashlib.sha512()
+    temp = (password + temp_salt['salt']).strip()
+    temp = temp.encode('utf-8')
+    sha5122.update(temp)
+    temp_encrypted_pw = sha5122.hexdigest()
+    temp_password = await fetchrow(
+        '''
+        SELECT password FROM users_info
+        WHERE username =$1
+        ''', username)
+    print(temp_encrypted_pw)
+    if (temp_encrypted_pw == temp_password['password']):
+        return True
     else:
         return False
 
@@ -290,7 +289,7 @@ async def alter_username(old_username: str, new_username: str):
 async def user_login(username: str, password: str):
     flag = await verify_user(username, password)
     if not flag:
-        return False
+        return None
     temp = await fetchrow(
         '''
     SELECT username FROM log_info

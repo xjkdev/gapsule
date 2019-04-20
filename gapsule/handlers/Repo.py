@@ -55,7 +55,7 @@ class CodeListHandler(BaseHandler):
             branchNumber=branch,
             releaseNumber=release,
             contributorNumber=contributor,
-            allFiles=files,
+            files=files,
             readme='',
             currentBranch=default_branch
         )
