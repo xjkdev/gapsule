@@ -36,20 +36,15 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     dst_repo_id = await get_repo_id(dstowner, dstrepo)
     src_repo_id = await get_repo_id(srcowner, srcrepo)
 
+    this_id = await create_new_attached_post(dst_repo_id, srcowner, title,
+                                             status, visibility, False)
+
     branches = (await git_branches(dstowner, dstrepo))[1]
     if not dstbranch in branches:
         raise BranchNotFoundException()
     branches2 = (await git_branches(srcowner, srcrepo))[1]
     if not srcbranch in branches2:
         raise BranchNotFoundException()
-    current_id = await fetchrow(
-        '''
-        SELECT max(pull_id) FROM pull_requests
-        WHERE dest_repo_id=$1
-        ''', dst_repo_id)
-    this_id = 1
-    if current_id['max'] != None:
-        this_id = current_id['max'] + 1
 
     flag_auto_merged, conflicts = await create_pull_request_git(dstowner, dstrepo, dstbranch,
                                                                 this_id,
@@ -67,6 +62,15 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
     postid = await create_new_attached_post(dst_repo_id, srcowner, title, status,
                                             visibility, False)
     return postid, flag_auto_merged, conflicts
+
+
+async def get_pull_request_info(dstowner: str, dstrepo: str, pull_id: int):
+    result = await fetchrow(
+        '''
+        SELECT * FROM pull_requests
+        WHERE pull_id=$1 and dest_repo_id=$2
+        ''', pull_id, await get_repo_id(dstowner, dstrepo))
+    return dict(result)
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
