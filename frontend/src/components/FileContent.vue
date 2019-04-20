@@ -66,6 +66,9 @@ export default {
       for (let i in result) {
         result[i] = [1 + parseInt(i), result[i]];
       }
+      if (this.filetext[this.filetext.length - 1] == "\n") {
+        result.pop();
+      }
       return result;
     },
     getData() {
