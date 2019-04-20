@@ -11,6 +11,7 @@ import IssuesPullsList from "@/components/IssuesPullsList"
 import NewIssue from "@/components/NewIssue"
 import PullCompare from "@/components/PullCompare"
 import PullCommits from "@/components/PullCommits"
+import PullFiles from "@/components/PullFiles"
 import FileContent from "@/components/FileContent"
 import NewRepo from "@/components/NewRepo"
 import NonExisting from "@/components/NonExisting"
@@ -99,6 +100,12 @@ export default new Router({
       name: 'PullCommits',
       component: PullCommits,
       meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo + '/' + this.params.pullid + '/commits' }
+    },
+    {
+      path: '/:owner/:repo/pull/:pullid(\\d+)/files',
+      name: 'PullFiles',
+      component: PullFiles,
+      meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo + '/' + this.params.pullid + '/files' }
     },
     {
       path: '/:owner/:repo/blob/:branch/:path(.*)',
