@@ -53,7 +53,9 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
         ''', dst_repo_id, dstbranch, pull_id, src_repo_id, srcbranch,
         datetime_now(), status, flag_auto_merged)
 
-    return pull_id, flag_auto_merged, conflicts
+    postid = await post.create_new_attached_post(dst_repo_id, srcowner, title, status,
+                                                 visibility, False)
+    return postid, flag_auto_merged, conflicts
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, pullid: int):

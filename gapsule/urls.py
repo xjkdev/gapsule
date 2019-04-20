@@ -3,12 +3,13 @@ import tornado.web
 from gapsule.handlers.Main import MainHandler
 from gapsule.handlers.User import Signin, Signup, Signout
 from gapsule.handlers.GitHTTP import GitHTTPHandler, GIT_URL_PATTERNS_REGEX
-from gapsule.handlers import Repo, Notification, Forums, PullRequest
+from gapsule.handlers import Repo, Notification, Forums, PullRequest, Sidebar
 from gapsule.settings import settings
 
 routes = [
     (r"/", MainHandler),
     (r"/new", Repo.NewRepoHandler),
+    (r"/sidebar", Sidebar.SideBarHandler),
     (r"/signout", Signout.SignOutHandler),
     (r"/signin/?", Signin.SignInHandler),
     (r"/signup(/verify|/finishing)?/?", Signup.SignUpHandler),
