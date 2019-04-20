@@ -35,13 +35,15 @@
       <b-nav-item :active="$route.name=='PullCommits'" :to="fullPullName()+'/commits'">Commits</b-nav-item>
     </b-nav>
 
-    <div v-for="reply in replys" :key="reply">
-      <span>Commits on {{ commitTime(reply.commitsTime) }}</span>
-      <div style="background-color: #f5fcff; margin-left: 1%; margin-top: 5px">
-        <strong>{{ reply.title }}</strong>
-        <p>{{ reply.user }} committed {{ fromNowTime(reply.commitsTime) }}</p>
-      </div>
-    </div>
+    <b-card no-body v-for="l in log" :key="l" header="logInfo" header-tag="header">
+      <router-link :to="'/'+l.Author" slot="header" style="color: #656d74">
+        <strong>{{ l.Author }}</strong>&nbsp;
+      </router-link>
+      <span slot="header">{{fromNowTime(l.Date)}}</span>
+      <b-card-body>
+        <p class="card-text">{{ l.message }}</p>
+      </b-card-body>
+    </b-card>
 
     <p v-if="replys==''">no pull commits</p>
   </b-container>
@@ -51,7 +53,7 @@
 import RepoNav from "@/components/RepoNav";
 import axios from "axios";
 import moment from "moment";
-// import MockAdapter from "axios-mock-adapter";
+import MockAdapter from "axios-mock-adapter";
 export default {
   data() {
     return {
@@ -61,7 +63,7 @@ export default {
       commitsNumber: "",
       pullTo: "",
       pullFrom: "",
-      replys: "",
+      log: "",
       error: "",
       hasError: false
     };
@@ -91,24 +93,29 @@ export default {
       return moment(time).format("MMMM Do YYYY");
     },
     getData() {
-      // let mock = new MockAdapter(axios);
-      // mock.onGet(this.fullPullName() + "/commits").reply(200, {
-      //   state: "ok",
-      //   error: "error",
-      //   title: "a title",
-      //   status: "Merged",
-      //   pullUser: "Alice",
-      //   commitsNumber: 2,
-      //   pullTo: "Alice:master",
-      //   pullFrom: "Bob:abc",
-      //   replys: [
-      //     {
-      //       commitsTime: "2019-04-16T11:20:29+08:00",
-      //       title: "a pull",
-      //       user: "Alice",
-      //     }
-      //   ]
-      // });
+      let mock = new MockAdapter(axios);
+      mock.onGet(this.fullPullName() + "/commits").reply(200, {
+        state: "ok",
+        error: "error",
+        title: "a title",
+        status: "Merged",
+        pullUser: "Alice",
+        commitsNumber: 2,
+        pullTo: "Alice:master",
+        pullFrom: "Bob:abc",
+        log: [
+          {
+            Author: "Bob",
+            Date: "2019-04-17T11:20:29+08:00",
+            message: "Merge Pull request"
+          },
+          {
+            Author: "Alice",
+            Date: "2019-04-16T20:12:00+0800",
+            message: "Merge branch"
+          }
+        ]
+      });
       axios({
         method: "GET",
         url: this.fullPullName() + "/commits",
@@ -126,7 +133,7 @@ export default {
           this.commitsNumber = response.data.commitsNumber;
           this.pullTo = response.data.pullTo;
           this.pullFrom = response.data.pullFrom;
-          this.replys = response.data.replys;
+          this.log = response.data.log;
         } else {
           this.error = response.data.error;
           this.hasError = true;
