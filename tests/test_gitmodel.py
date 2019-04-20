@@ -25,7 +25,9 @@ def clone(testCase, tmpdir, path):
     testCase.assertEqual(p1.wait(), 0)
 
 
-def commit_file(testCase, tmpdir, filename, content, msg, set_branch=False):
+def commit_file(testCase, tmpdir, filename, content, msg, set_branch=False, branch=None):
+    if branch is None:
+        branch = 'test-branch'
     newrepo = os.path.join(tmpdir, 'efgh')
     with open(os.path.join(newrepo, filename), 'w') as f:
         f.write(content)
@@ -46,19 +48,17 @@ def commit_file(testCase, tmpdir, filename, content, msg, set_branch=False):
                    stdout=DEVNULL,
                    stderr=DEVNULL)
     else:
-        p4 = Popen(['git', 'push', '--set-upstream', 'origin', 'test-branch'],
-                   cwd=newrepo,
-                   stdout=DEVNULL,
-                   stderr=DEVNULL)
+        p4 = Popen(['git', 'push', '--set-upstream', 'origin', branch], cwd=newrepo,
+                   stdout=DEVNULL, stderr=DEVNULL)
     testCase.assertEqual(p4.wait(), 0)
 
 
-def create_branch(testCase, tmpdir):
+def create_branch(testCase, tmpdir, name=None):
+    if name is None:
+        name = "test-branch"
     newrepo = os.path.join(tmpdir, 'efgh')
-    p2 = Popen(['git', 'checkout', '-btest-branch'],
-               cwd=newrepo,
-               stdout=DEVNULL,
-               stderr=DEVNULL)
+    p2 = Popen(['git', 'checkout', '-b'+name], cwd=newrepo,
+               stdout=DEVNULL, stderr=DEVNULL)
     testCase.assertEqual(p2.wait(), 0)
 
 
@@ -74,7 +74,7 @@ class GitModelTestCase(TestCase):
         await git.init_git_repo('abcd', 'efgh')
         root = git.get_repo_dirpath('abcd', 'efgh')
         self.assertTrue(os.path.exists(root))
-        print('testing recpo', root)
+        print('testing repo', root)
         git._check_exists(root)
         with tempfile.TemporaryDirectory() as tmpdir:
             clone(self, tmpdir, root)

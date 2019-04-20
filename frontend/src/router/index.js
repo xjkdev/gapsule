@@ -101,16 +101,22 @@ export default new Router({
       meta() { return 'PullRequest · ' + this.params.owner + '/' + this.params.repo + '/' + this.params.pullid + '/commits' }
     },
     {
-      path: '/:owner/:repo/blob/(.*)',
+      path: '/:owner/:repo/blob/:branch/:path(.*)',
       name: 'FileContent',
       component: FileContent,
       meta() { return this.params.owner + '/' + this.params.repo }
     },
     {
-      path: '/:owner/:repo(.*)',
+      path: '/:owner/:repo',
       name: 'Repo',
       component: Repo,
       meta() { return this.params.owner + '/' + this.params.repo }
+    },
+    {
+      path: '/:owner/:repo/tree/:branch/:path(.*)',
+      name: 'RepoTree',
+      component: Repo,
+      meta() { return this.params.owner + '/' + this.params.repo + ' ' + this.params.path }
     },
     {
       path: '*',
