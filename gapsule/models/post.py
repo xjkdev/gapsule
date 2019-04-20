@@ -1,8 +1,8 @@
 from gapsule.utils.cookie_session import datetime_now
 from gapsule.utils.log_call import log_call
+from gapsule.models import notification
 from gapsule.models.repo import get_repo_id, check_repo_existing, get_repo_info
 from gapsule.models.connection import fetch, fetchrow, execute
-from gapsule.models.notification import create_new_notification
 from gapsule.models.user import get_uid
 
 
@@ -36,11 +36,10 @@ async def create_new_attached_post(repo_id: int,
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)
         ''', this_id, repo_id, is_issue, postername, title, status, visibility,
         datetime_now())
-    posttype = 'issue' if is_issue else 'pull request'
-    info = await get_repo_info(repo_id)
-    await create_new_notification(info['username'], "{} add an new {} '{}' to {}/{}#{}".format(
-        postername, posttype, title, info['username'], info['reponame'], this_id)
-    )
+    if is_issue:
+        await notification.create_issue_notification(postername, repo_id, this_id, title)
+    elif repo_id != 0:
+        await notification.create_pullrequest_notification(postername, repo_id, this_id, title)
     return this_id
 
 
@@ -128,9 +127,10 @@ async def get_visibility(repo_id: int, post_id: int):
 
 @log_call()
 async def create_new_comment(repo_id: int, post_id: int, type: str,
-                             content: str, commenter_name: str):
+                             content: str, commenter_name: str, reply_to_id: int = None):
     if not await check_post_existing(repo_id, post_id):
         raise PostNotFoundException()
+
     current_id = await fetchrow(
         '''
     SELECT max(comment_id) FROM comments
@@ -139,18 +139,21 @@ async def create_new_comment(repo_id: int, post_id: int, type: str,
     this_id = 1
     if current_id['max'] != None:
         this_id = current_id['max'] + 1
+
+    if reply_to_id is not None and this_id > reply_to_id:
+        is_reply = True
+    else:
+        is_reply = False
+
     await execute(
         '''
             INSERT INTO comments(post_id,repo_id,comment_id,is_reply,reply_to_id,address_time,type,content,commenter)
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-            ''', post_id, repo_id, this_id, False, None, datetime_now(),
+            ''', post_id, repo_id, this_id, is_reply, reply_to_id, datetime_now(),
         type, content, commenter_name)
     if this_id > 1:
-        repoinfo = await get_repo_info(repo_id)
-        notification = "{} commented '{}' your post {}/{}#{} ".format(
-            commenter_name, content, repoinfo['username'], repoinfo['reponame'], post_id)
-        poster = await get_postername(repo_id, post_id)
-        await create_new_notification(poster, notification)
+        await notification.create_comment_notification(
+            commenter_name, content, repo_id, post_id)
     return this_id
 
 
