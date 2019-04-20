@@ -86,7 +86,7 @@
       </b-list-group>
     </b-card>
 
-    <b-card no-body>
+    <b-card v-if="isRepoRoot" no-body>
       <b-card-header>readme</b-card-header>
       <b-card-body v-if="readme">{{ readme }}</b-card-body>
       <b-card-body v-else>no readme text</b-card-body>

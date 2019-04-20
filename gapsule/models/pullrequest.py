@@ -1,5 +1,6 @@
 import tempfile
 import asyncio
+import os
 
 from dataclasses import dataclass
 from typing import Optional, Dict, Tuple, List, Any
@@ -53,9 +54,7 @@ async def create_pull_request(dstowner: str, dstrepo: str, dstbranch: str,
         ''', dst_repo_id, dstbranch, pull_id, src_repo_id, srcbranch,
         datetime_now(), status, flag_auto_merged)
 
-    postid = await post.create_new_attached_post(dst_repo_id, srcowner, title, status,
-                                                 visibility, False)
-    return postid, flag_auto_merged, conflicts
+    return pull_id, flag_auto_merged, conflicts
 
 
 async def merge_pull_request(dstowner: str, dstrepo: str, pullid: int):
@@ -121,9 +120,10 @@ async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, p
     srcroot = git.get_repo_dirpath(srcowner, srcrepo)
     pr_head_branch = 'refs/pull/{}/head'.format(pullid)
     pr_merge_branch = 'refs/pull/{}/merge'.format(pullid)
-    if is_update:
-        await git.git_rm_branch(dstroot, pr_head_branch, force=True)
-        await git.git_rm_branch(dstroot, pr_merge_branch, force=True)
+    if os.path.exists(os.path.join(dstroot, pr_head_branch)):
+        os.remove(os.path.join(dstroot, pr_head_branch))
+    if os.path.exists(os.path.join(dstroot, pr_merge_branch)):
+        os.remove(os.path.join(dstroot, pr_merge_branch))
     await git.git_fetch(dstroot, pr_head_branch, srcroot, srcbranch)
     workingdir = await get_working_dir(dstowner, dstrepo, pullid)
     await git.git_fetch(workingdir, pr_head_branch, dstroot, pr_head_branch)
@@ -147,12 +147,12 @@ async def create_pull_request_git(dstowner: str, dstrepo: str, dstbranch: str, p
 
 async def update_pull_request(dstowner: str, dstrepo: str, pullid: int):
     prinfo = await get_pull_request_info(dstowner, dstrepo, pullid)
+    dst_repo_id = await repo.get_repo_id(dstowner, dstrepo)
     dstbranch = prinfo['dest_branch']
     src_repo_id = prinfo['src_repo_id']
-    postinfo = await post.get_postername(src_repo_id, pullid)
-    authorname = await user.get_username(postinfo['postername'])
+    authorname = await post.get_postername(dst_repo_id, pullid)
     authoremail = await user.get_user_mail_address(authorname)
-    content = postinfo['title']
+    content = await post.get_title(dst_repo_id, pullid)
     src_repo_info = await repo.get_repo_info(src_repo_id)
     srcowner = src_repo_info['username']
     srcrepo = src_repo_info['reponame']
@@ -200,10 +200,8 @@ async def pull_request_diff(dstowner: str, dstrepo: str,  pullid: int) -> List[T
     info = await get_pull_request_info(dstowner, dstrepo, pullid)
     if info is None:
         raise ValueError('PullRequest Not Found')
-    if not has_working_dir(dstowner, dstrepo, pullid):
-        await update_pull_request(dstowner, dstrepo, pullid)
     dstbranch = info['dest_branch']
-    workingdir = await get_working_dir(dstowner, dstrepo, pullid)
+    workingdir = git.get_repo_dirpath(dstowner, dstrepo)
     pr_head_branch = 'refs/pull/{}/head'.format(pullid)
     result = await git.git_diff(workingdir, dstbranch, pr_head_branch)
     return result
@@ -227,6 +225,8 @@ async def pull_request_preview(dstowner: str, dstrepo: str, dstbranch: str,
     if dstowner != srcowner or dstrepo != srcrepo:
         dstroot = git.get_repo_dirpath(dstowner, dstrepo)
         srcroot = git.get_repo_dirpath(srcowner, srcrepo)
+        if os.path.exists(os.path.join(dstroot, 'FETCH_HEAD')):
+            os.remove(os.path.join(dstroot, 'FETCH_HEAD'))
         await git.git_fetch(dstroot, 'FETCH_HEAD', srcroot, srcbranch, fetch_head=True)
         srcbranch = 'FETCH_HEAD'
     result = {}

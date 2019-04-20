@@ -15,16 +15,13 @@
         <b-button variant="outline-info" @click="fork" class="fork" v-if="showFork">fork</b-button>
       </h4>
       <b-nav tabs>
-        <b-nav-item
-          :active="$route.name.match(/(Repo|PullCompare|FileContent|PullFiles)/)"
-          :to="'/'+fullRepoName()"
-        >Code</b-nav-item>
+        <b-nav-item :active="$route.name.match(/(Repo|FileContent)/)" :to="'/'+fullRepoName()">Code</b-nav-item>
         <b-nav-item
           :active="$route.name.match(/Issues(List)?/)"
           :to="'/'+fullRepoName()+'/issues'"
         >Issues</b-nav-item>
         <b-nav-item
-          :active="$route.name.match(/Pull(Request|RequestList|Conversion|Commits)/)"
+          :active="$route.name.match(/Pull(Compare|Request|RequestList|Conversion|Commits|Files)/)"
           :to="'/'+fullRepoName()+'/pulls'"
         >Pull request</b-nav-item>
       </b-nav>
@@ -33,6 +30,8 @@
 </template>
 
 <script>
+import axios from "axios";
+import { getCookie } from "@/utils/get_cookie";
 export default {
   name: "Profile",
   data() {
@@ -57,20 +56,28 @@ export default {
       return this.$route.params.repo.split("/")[0];
     },
     fork() {
-      axios({
-        method: "POST",
-        url: this.fullRepoName(),
-        data: {
-          action: "fork"
-        }
-      }).then(response => {
-        if (response.status == 200 && response.data.state == "ok") {
-          this.$router.push(this.fullRepoName());
-        } else {
-          this.error = response.data.error;
-          this.hasError = true;
-        }
-      });
+      let current_user = getCookie("username");
+      if (current_user == null) {
+        this.$router.push(
+          "/signin?next=" + encodeURIComponent(this.$router.fullPath)
+        );
+      } else {
+        axios({
+          method: "POST",
+          url: "/" + this.fullRepoName(),
+          data: {
+            action: "fork"
+          }
+        }).then(response => {
+          if (response.status == 200 && response.data.state == "ok") {
+            console.log(this.repoName());
+            this.$router.push("/" + current_user + "/" + this.repoName());
+          } else {
+            this.error = response.data.error;
+            this.hasError = true;
+          }
+        });
+      }
     }
   }
 };

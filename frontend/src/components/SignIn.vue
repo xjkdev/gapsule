@@ -74,7 +74,11 @@ export default {
         }
       }).then(response => {
         if (response.status == 200 && response.data.state == "ok") {
-          this.$router.push("/");
+          if (this.$route.params.next == undefined) {
+            this.$router.push("/");
+          } else {
+            this.$router.push(this.$route.params.next);
+          }
         } else {
           this.error = response.data.error;
           this.hasError = true;

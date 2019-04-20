@@ -104,7 +104,7 @@ async def _make_connect_pool(config_info):
             src_branch      varchar,
             created_time    timestamptz,
             status          varchar,
-            auto_merge_status   varchar,
+            auto_merge_status   boolean,
             primary key(dest_repo_id,pull_id)
             );
             ''')

@@ -41,6 +41,7 @@
     <b-nav v-if="this.operateType == 'pull'" tabs>
       <b-nav-item :active="$route.name=='PullConversion'" :to="fullPullName()">Conversion</b-nav-item>
       <b-nav-item :active="$route.name=='PullCommits'" :to="fullPullName()+'/commits'">Commits</b-nav-item>
+      <b-nav-item :active="$route.name=='PullFiles'" :to="fullPullName()+'/files'">Files</b-nav-item>
     </b-nav>
 
     <b-card

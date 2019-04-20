@@ -29,12 +29,14 @@
         </b-card-header>
         <b-collapse :id="d[0]" accordion="my-accordion" role="tabpanel">
           <b-card-body>
-            <b-card-text>{{ d[1] }}</b-card-text>
+            <b-card-text>
+              <pre>{{ d[1] }}</pre>
+            </b-card-text>
           </b-card-body>
         </b-collapse>
       </b-card>
     </div>
-
+    <div height="2em">&nbsp;</div>
     <b-card
       no-body
       v-for="l in log"
@@ -51,7 +53,7 @@
         <p class="card-text">{{ l.message }}</p>
       </b-card-body>
     </b-card>
-
+    <div height="2em">&nbsp;</div>
     <b-card style="width: 60%">
       <b-form @submit.prevent="onSubmit">
         <b-form-input v-model="title" placeholder="Title" required style="margin-bottom: 10px"></b-form-input>
@@ -153,7 +155,7 @@ export default {
     onSubmit() {
       axios({
         method: "POST",
-        url: this.fullRepoName() + "/compare",
+        url: this.$route.path,
         data: {
           owner: this.$route.params.owner,
           repo: this.$route.params.repo,
@@ -162,7 +164,14 @@ export default {
         }
       }).then(response => {
         if (response.data.state == "ok") {
-          this.$router.push(this.fullRepoName());
+          this.$router.push(
+            "/" +
+              response.data.owner +
+              "/" +
+              response.data.reponame +
+              "/pull/" +
+              response.data.id
+          );
         } else {
           this.error = response.data.error;
           this.hasError = true;

@@ -31,25 +31,21 @@
     </div>
 
     <b-nav tabs>
-      <b-nav-item
-        :active="$route.name.match(/PullConversion|PullFiles/)"
-        :to="fullPullName()"
-      >Conversion</b-nav-item>
+      <b-nav-item :active="$route.name == 'PullConversion'" :to="fullPullName()">Conversion</b-nav-item>
       <b-nav-item :active="$route.name=='PullCommits'" :to="fullPullName()+'/commits'">Commits</b-nav-item>
+      <b-nav-item :active="$route.name=='PullFiles'" :to="fullPullName()+'/files'">Files</b-nav-item>
     </b-nav>
 
     <div v-for="d in diff" :key="d" style="width: 80%">
-      <!-- <b-button v-b-toggle="d[0]" variant="light">{{ d[0] }}</b-button>
-      <b-collapse visible :id="d[0]">
-        <b-card>{{ d[1] }}</b-card>
-      </b-collapse>-->
       <b-card no-body class="mb-1">
         <b-card-header header-tag="header" class="p-1" role="tab">
           <b-button v-b-toggle="d[0]" variant="light">{{ d[0] }}</b-button>
         </b-card-header>
         <b-collapse :id="d[0]" accordion="my-accordion" role="tabpanel">
           <b-card-body>
-            <b-card-text>{{ d[1] }}</b-card-text>
+            <b-card-text>
+              <pre>{{ d[1] }}</pre>
+            </b-card-text>
           </b-card-body>
         </b-collapse>
       </b-card>
@@ -100,7 +96,7 @@ export default {
       // });
       axios({
         method: "GET",
-        url: this.fullPullName() + "files",
+        url: this.fullPullName() + "/files",
         params: {
           ajax: 1,
           owner: this.$route.params.owner,
