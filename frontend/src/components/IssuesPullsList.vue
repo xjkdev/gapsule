@@ -1,5 +1,5 @@
 <template>
-  <b-container class="dashboard">
+  <div class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
     <b-alert
@@ -34,7 +34,7 @@
       <b-card-body v-if="isIssuePage">no issues</b-card-body>
       <b-card-body v-else>no pulls</b-card-body>
     </b-card>
-  </b-container>
+  </div>
 </template>
 
 <script>

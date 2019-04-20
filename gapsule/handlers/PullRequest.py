@@ -1,81 +1,99 @@
-import json
+import asyncio
 import tornado.web
+from tornado.escape import json_decode
 
-from gapsule.utils.decorators import ajaxquery
+from gapsule.models import git, pullrequest, repo, post
+from gapsule.utils import ajaxquery, authenticated
+from gapsule.utils.viewmodels import ViewModelDict, ViewModelField
 from gapsule.handlers.Base import BaseHandler
+
+
+class CreatePullRequestInput(ViewModelDict):
+    title: str = ViewModelField(required=True, nullable=False)
+    comment: str = ViewModelField(required=True, nullable=False)
 
 
 class CreatePullRequestHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, restpath):
-        compare_information = self.judgeBranch(owner, restpath)
-        for key_state in compare_information.keys():
-            key_judge = False
-            key_judge = (key_state == "base_repository") or(key_state == "base_branch") or(
-                key_state == "base_repository") or(key_state == "head_repository")
-            if not key_judge:
-                self.set_status(400, "Unknown")
-        # TODO: 需要数据库提供接口
-        # 参数compare_information,得到对比的数据
-        request_end = 1
-        if request_end == None:
-            self.set_status(404, "Unknown")
-        self.write(json.dumps(request_end))
+    @authenticated
+    async def get(self, owner, reponame, restpath):
+        compare_info = await self.judgeBranch(owner, reponame, restpath)
 
-    def judgeBranch(self, owner, statepath):
-        compare_dict = {}
-        separate_sign = 0
-        str_path = ''
-        for state in statepath:
-            if state == ':' and separate_sign == 0:
-                compare_dict["base_repository"] = str_path
-                str_path = ''
-                separate_sign = 1
-            if state == '.' and separate_sign == 1:
-                compare_dict["base_branch"] = str_path
-                str_path = ''
-                separate_sign = 2
-            if state == '.' and separate_sign == 0:
-                compare_dict["base_repository"] = owner
-                compare_dict["base_branch"] = str_path
-                str_path = ''
-                separate_sign = 2
-            if str_path == '...' and separate_sign == 2:
-                str_path = ''
-                separate_sign == 3
-            if state == ':' and separate_sign == 3:
-                compare_dict["head_repository"] = str_path
-                str_path = ''
-                separate_sign == 4
-            str_path += state
-        if separate_sign == 4:
-            compare_dict["compare_branch"] = str_path
+        preview = await pullrequest.pull_request_preview(
+            compare_info['base_owner'], reponame, compare_info['base_branch'],
+            compare_info['compare_owner'], reponame, compare_info['compare_branch'])
+
+        preview['state'] = 'ok'
+        self.write(preview)
+
+    @authenticated
+    async def post(self, owner, reponame, restpath):
+        data = CreatePullRequestInput(json_decode(self.request.body))
+        compare_info = await self.judgeBranch(owner, reponame, restpath)
+        pullid, _flag, _conflict = await pullrequest.create_pull_request(
+            compare_info['base_owner'], reponame, compare_info['base_branch'],
+            compare_info['compare_owner'], reponame, compare_info['compare_branch'],
+            data['title'], self.current_user.user,
+            True,
+        )
+        repoid = await repo.get_repo_id(compare_info['base_owner'], reponame)
+        await post.create_new_comment(repoid, pullid, 'text', data['comment'], self.current_user.user)
+        self.write(dict(state='ok', id=pullid))
+
+    async def judgeBranch(self, owner, reponame, statepath):
+        compare_dict = {
+            'base_owner': owner,
+            'compare_owner': owner,
+        }
+        state = 0
+        tmp = ''
+        for ch in statepath:
+            if ch == ':' and state == 0:
+                compare_dict["base_owner"] = owner
+                tmp, state = '', 1
+            elif ch == '.' and state == 0:
+                compare_dict["base_owner"] = owner
+                compare_dict["base_branch"] = tmp
+                tmp, state = '', 2
+            elif ch == '.' and state == 1:
+                compare_dict["base_branch"] = tmp
+                tmp, state = '', 2
+            elif tmp == '...' and state == 2:
+                tmp, state = '', 3
+            elif ch == ':' and state == 3:
+                compare_dict["compare_owner"] = tmp
+                tmp, state = '', 4
+            tmp += ch
+        if state == 4:
+            compare_dict["compare_branch"] = tmp
         else:
-            compare_dict["head_repository"] = owner
-            compare_dict["base_branch"] = str_path
+            compare_dict["compare_owner"] = owner
+            compare_dict["base_branch"] = tmp
+        if 'base_branch' not in compare_dict:
+            compare_dict['base_branch'] = await asyncio.gather(
+                repo.get_default_branch(compare_dict["base_owner"], reponame)
+            )
+        if 'compare_branch' not in compare_dict:
+            compare_dict['compare_branch'] = await asyncio.gather(
+                repo.get_default_branch(
+                    compare_dict["compare_owner"], reponame)
+            )
         return compare_dict
 
 
 class PullCommitsHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, postid):
-        name = self.get_query_argument("name")
+    async def get(self, owner, reponame, postid):
         pull_commits_dict = {
-            "status": "ok",
-            # TODO: 需要数据库提供接口
-            # 参数 owner, reponame, postid（关键码数字）,name
-            "ccommits": {
-                "name": "name",
-                "content": "content",
-            }
+            "state": "ok",
+            "log": await pullrequest.pull_request_log(owner, reponame, postid)
         }
         self.write(pull_commits_dict)
 
 
 class PullChecksHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, postid):
-        name = self.get_query_argument("name")
+    async def get(self, owner, reponame, postid):
         pull_checks_dict = {
             "status": "ok",
             # TODO: 需要数据库提供接口
@@ -90,15 +108,9 @@ class PullChecksHandler(BaseHandler):
 
 class PullFilesHandler(BaseHandler):
     @ajaxquery
-    def get(self, owner, reponame, postid):
-        name = self.get_query_argument("name")
+    async def get(self, owner, reponame, postid):
         pull_files_dict = {
             "status": "ok",
-            # TODO: 需要数据库提供接口
-            # 参数 owner, reponame, postid（关键码数字）,name
-            "files": {
-                "file1": "file1",
-                "file2": "file2",
-            }
+            "diff": await pullrequest.pull_request_diff(owner, reponame, postid)
         }
         self.write(pull_files_dict)

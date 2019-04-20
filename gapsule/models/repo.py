@@ -5,7 +5,7 @@ import chardet
 from gapsule.utils.log_call import log_call
 from gapsule.models import git
 from gapsule.utils.cookie_session import datetime_now
-from gapsule.models.connection import _connection, fetchrow, execute, fetch
+from gapsule.models.connection import fetchrow, execute, fetch
 from gapsule.utils.check_validity import check_username_validity, check_reponame_validity
 from gapsule.models.user import get_uid
 
@@ -385,12 +385,12 @@ def _is_binary_string(bytes):
 
 
 @log_call()
-def get_file_content(owner, reponame, branch, path) -> Optional[str]:
+async def get_file_content(owner, reponame, branch, path) -> Optional[str]:
     """ 查询  对应路径下的某个文件的内容
         如果文件不存在或为目录，会抛出OSError
         如果为二进制文件或大文件，返回空
     """
-    data = git.git_cat_file(owner, reponame, branch, path)
+    data = await git.git_cat_file(owner, reponame, branch, path)
     if len(data) > 204800 or _is_binary_string(data[:20480]):  # big file
         return None
     det = chardet.detect(data)

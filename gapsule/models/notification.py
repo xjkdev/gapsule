@@ -1,5 +1,5 @@
 from gapsule.utils.cookie_session import datetime_now
-from gapsule.models.connection import _connection, fetchrow, execute, fetch
+from gapsule.models.connection import fetchrow, execute, fetch
 
 
 async def create_new_notification(user_id: int, content: str):

@@ -55,7 +55,7 @@ class CodeListHandler(BaseHandler):
             branchNumber=branch,
             releaseNumber=release,
             contributorNumber=contributor,
-            allFiles=files,
+            files=files,
             readme='',
             currentBranch=default_branch
         )
@@ -76,10 +76,10 @@ class FileContentHandler(BaseHandler):
     async def get(self, owner, reponame, branch, restpath):
         try:
             data = await get_file_content(owner, reponame, branch, restpath)
-            self.write(dict(status="ok", content=data))
+            self.write(dict(state="ok", content=data))
         except OSError as e:
             print(e)
-            self.write(dict(status="error", content=None,
+            self.write(dict(state="error", content=None,
                             error='os error occurs.'))
 
 

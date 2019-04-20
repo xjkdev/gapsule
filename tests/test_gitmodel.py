@@ -160,3 +160,17 @@ class GitModelTestCase(TestCase):
     async def test_cat_file(self):
         content = await git.git_cat_file('abcd', 'efgh', 'master', 'test2.txt')
         self.assertTrue(content.decode(), 'testing file2')
+
+    @async_test
+    async def test_diff(self):
+        root = git.get_repo_dirpath('abcd', 'efgh')
+        result = await git.git_diff(root, 'master', 'HEAD^1')
+        self.assertEqual(result[0][0], 'a/test2.txt b/test2.txt')
+
+    @async_test
+    async def test_log_range(self):
+        logs = await git.git_commit_logs('abcd', 'efgh', 'master', base="HEAD^1")
+        for h, _ in logs:
+            self.assertTrue(ishash(h))
+        self.assertEqual(len(logs), 1)
+        self.assertEqual(logs[0][1], 'test commit')

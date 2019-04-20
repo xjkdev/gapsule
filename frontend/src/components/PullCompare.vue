@@ -1,10 +1,10 @@
 <template>
-  <b-container class="dashboard">
+  <div class="dashboard">
     <RepoNav v-if="$route.name != 'Topic'"/>
 
     <h4>Compare changes</h4>
     <p>Compare changes across branches, commits, tags, and more below.</p>
-  </b-container>
+  </div>
 </template>
 
 <script>

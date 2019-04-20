@@ -124,6 +124,17 @@ def _create_instance():
 
 _connection = _create_instance()
 
-fetch = _connection.fetch
-fetchrow = _connection.fetchrow
-execute = _connection.execute
+
+async def fetchrow(*args):
+    global _connection
+    return await _connection.fetchrow(*args)
+
+
+async def fetch(*args):
+    global _connection
+    return await _connection.fetch(*args)
+
+
+async def execute(*args):
+    global _connection
+    return await _connection.execute(*args)

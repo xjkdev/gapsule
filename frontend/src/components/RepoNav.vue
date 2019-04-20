@@ -7,16 +7,13 @@
         <router-link :to="'/'+fullRepoName()">{{ repoName() }}</router-link>
       </h4>
       <b-nav tabs>
-        <b-nav-item
-          :active="$route.name.match(/(Repo|PullCompare|FileContent)/)"
-          :to="'/'+fullRepoName()"
-        >Code</b-nav-item>
+        <b-nav-item :active="$route.name.match(/(Repo|FileContent)/)" :to="'/'+fullRepoName()">Code</b-nav-item>
         <b-nav-item
           :active="$route.name.match(/Issues(List)?/)"
           :to="'/'+fullRepoName()+'/issues'"
         >Issues</b-nav-item>
         <b-nav-item
-          :active="$route.name.match(/Pull(Request|RequestList|Conversion|Commits)/)"
+          :active="$route.name.match(/Pull(Request|Compare|RequestList|Conversion|Commits)/)"
           :to="'/'+fullRepoName()+'/pulls'"
         >Pull request</b-nav-item>
       </b-nav>
