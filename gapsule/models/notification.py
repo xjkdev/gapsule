@@ -47,7 +47,7 @@ async def delete_notification(notification_id: int):
 
 async def create_comment_notification(commenter, content, repoid, postid):
     repoinfo = await repo.get_repo_info(repoid)
-    notification = "{} commented {} to your post {}/{}#{}".format(
+    notification = "{} commented '{}' to your post {}/{}#{}".format(
         commenter, content, repoinfo['username'], repoinfo['reponame'], postid)
     poster = await post.get_postername(repoid, postid)
     await create_new_notification(poster, notification)
