@@ -75,7 +75,7 @@
 import RepoNav from "@/components/RepoNav.vue";
 import axios from "axios";
 import moment from "moment";
-// import MockAdapter from "axios-mock-adapter";
+import MockAdapter from "axios-mock-adapter";
 export default {
   data() {
     return {
@@ -96,42 +96,65 @@ export default {
   },
   watch: {
     $route: "getData",
-    base_branch: "refresh",
-    compare_branch: "refresh"
+    base_branch: "next",
+    compare_branch: "next"
   },
   methods: {
     fromNowTime(time) {
       return moment(time).fromNow();
     },
-    refresh() {
+    fullCompareName() {
+      let param = this.$route.params;
+      return "/" + param.owner + "/" + param.repo + "/compare";
+    },
+    next() {
       // console.log(1);
-      this.$route.go(0);
+      if (this.base_owner == this.$route.params.owner) {
+        this.$router.push(
+          this.fullCompareName() +
+            "/" +
+            this.base_branch +
+            "···" +
+            this.compare_branch
+        );
+      } else {
+        this.$router.push(
+          this.fullCompareName() +
+            "/" +
+            this.base_owner +
+            ":" +
+            this.base_branch +
+            "···" +
+            this.compare_branch
+        );
+      }
     },
     fullRepoName() {
       let param = this.$route.params;
       return "/" + param.owner + "/" + param.repo;
     },
     getData() {
-      // let mock = new MockAdapter(axios);
-      // mock.onGet(this.$route.path).reply(200, {
-      //   state: "ok",
-      //   error: "error",
-      //   log: [
-      //     {
-      //       Author: "Bob",
-      //       Date: "2019-04-17T11:20:29+08:00",
-      //       message: "Merge Pull request"
-      //     },
-      //     {
-      //       Author: "Alice",
-      //       Date: "2019-04-16T20:12:00+0800",
-      //       message: "Merge branch"
-      //     }
-      //   ],
-      //   diff: [["a.vue", "x"], ["b.js", "y"]],
-      //   base_branches: ["develop", "master"],
-      //   compare_branches: ["develop", "master"]
-      // });
+      let mock = new MockAdapter(axios);
+      mock.onGet(this.$route.path).reply(200, {
+        state: "ok",
+        error: "error",
+        log: [
+          {
+            Author: "Bob",
+            Date: "2019-04-17T11:20:29+08:00",
+            message: "Merge Pull request"
+          },
+          {
+            Author: "Alice",
+            Date: "2019-04-16T20:12:00+0800",
+            message: "Merge branch"
+          }
+        ],
+        diff: [["a.vue", "x"], ["b.js", "y"]],
+        base_owner: "Alice",
+        base_branches: ["develop", "master"],
+        compare_branches: ["develop", "master"]
+      });
       axios({
         method: "GET",
         url: this.$route.path,
@@ -144,8 +167,10 @@ export default {
         if (response.data.state == "ok") {
           this.log = response.data.log;
           this.diff = response.data.diff;
+          this.base_owner = response.data.base_owner;
           this.base_branches = response.data.base_branches;
           this.compare_branches = response.data.compare_branches;
+          this.next();
         } else {
           this.error = response.data.error;
           this.hasError = true;
