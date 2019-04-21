@@ -96,16 +96,38 @@ export default {
   },
   watch: {
     $route: "getData",
-    base_branch: "refresh",
-    compare_branch: "refresh"
+    base_branch: "next",
+    compare_branch: "next"
   },
   methods: {
     fromNowTime(time) {
       return moment(time).fromNow();
     },
-    refresh() {
+    fullCompareName() {
+      let param = this.$route.params;
+      return "/" + param.owner + "/" + param.repo + "/compare";
+    },
+    next() {
       // console.log(1);
-      this.$route.go(0);
+      if (this.base_owner == this.$route.params.owner) {
+        this.$router.push(
+          this.fullCompareName() +
+            "/" +
+            this.base_branch +
+            "···" +
+            this.compare_branch
+        );
+      } else {
+        this.$router.push(
+          this.fullCompareName() +
+            "/" +
+            this.base_owner +
+            ":" +
+            this.base_branch +
+            "···" +
+            this.compare_branch
+        );
+      }
     },
     fullRepoName() {
       let param = this.$route.params;
@@ -129,6 +151,7 @@ export default {
       //     }
       //   ],
       //   diff: [["a.vue", "x"], ["b.js", "y"]],
+      //   base_owner: "Alice",
       //   base_branches: ["develop", "master"],
       //   compare_branches: ["develop", "master"]
       // });
@@ -144,8 +167,10 @@ export default {
         if (response.data.state == "ok") {
           this.log = response.data.log;
           this.diff = response.data.diff;
+          this.base_owner = response.data.base_owner;
           this.base_branches = response.data.base_branches;
           this.compare_branches = response.data.compare_branches;
+          this.next();
         } else {
           this.error = response.data.error;
           this.hasError = true;
