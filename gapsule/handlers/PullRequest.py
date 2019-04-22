@@ -18,6 +18,7 @@ class CreatePullRequestHandler(BaseHandler):
     @authenticated
     async def get(self, owner, reponame, restpath):
         compare_info = await self.judgeBranch(owner, reponame, restpath)
+        print(compare_info)
         preview = await pullrequest.pull_request_preview(
             compare_info['base_owner'], reponame, compare_info['base_branch'],
             compare_info['compare_owner'], reponame, compare_info['compare_branch'])
@@ -26,6 +27,7 @@ class CreatePullRequestHandler(BaseHandler):
         preview['base_owner'] = compare_info['base_owner']
         preview['base_branches'] = (await git.git_branches(compare_info['base_owner'], reponame))[1]
         preview['compare_branches'] = (await git.git_branches(compare_info['compare_owner'], reponame))[1]
+        print(compare_info, preview)
         self.write(preview)
 
     @authenticated
@@ -55,6 +57,7 @@ class CreatePullRequestHandler(BaseHandler):
             if ch == ':' and state == 0:
                 compare_dict["base_owner"] = tmp
                 tmp, state = '', 1
+                continue
             elif ch == '.' and (state == 0 or state == 1):
                 compare_dict["base_branch"] = tmp
                 tmp, state = '', 2
@@ -63,6 +66,7 @@ class CreatePullRequestHandler(BaseHandler):
             elif ch == ':' and state == 3:
                 compare_dict["compare_owner"] = tmp
                 tmp, state = '', 4
+                continue
             tmp += ch
         if tmp != '':
             if state == 4:

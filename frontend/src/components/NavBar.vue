@@ -53,7 +53,7 @@
           <b-dropdown-divider></b-dropdown-divider>
           <b-dropdown-item>Help</b-dropdown-item>
           <b-dropdown-item>Settings</b-dropdown-item>
-          <b-dropdown-item to="/signout">Sign out</b-dropdown-item>
+          <b-dropdown-item href="/signout">Sign out</b-dropdown-item>
         </b-dropdown>
       </b-navbar-nav>
     </b-collapse>

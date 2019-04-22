@@ -114,7 +114,7 @@ export default {
           this.fullCompareName() +
             "/" +
             this.base_branch +
-            "···" +
+            "..." +
             this.compare_branch
         );
       } else {
@@ -124,7 +124,7 @@ export default {
             this.base_owner +
             ":" +
             this.base_branch +
-            "···" +
+            "..." +
             this.compare_branch
         );
       }
