@@ -9,6 +9,8 @@ pylint = "*"
 
 [packages]
 tornado = "*"
+asyncpg = "*"
+chardet = "*"
 
 [requires]
 python_version = "3.7"

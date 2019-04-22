@@ -1,11 +1,13 @@
 import tornado.ioloop
 import tornado.web
-from gapsule.urls import routes
 from gapsule import settings
+import gapsule.models
+from gapsule.urls import routes
 
 
 def make_app():
-    return tornado.web.Application(routes, template_path=settings.template_path)
+    app = tornado.web.Application(routes, **settings.settings)
+    return app
 
 
 if __name__ == "__main__":

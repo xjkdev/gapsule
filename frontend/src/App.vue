@@ -1,10 +1,10 @@
 <template>
   <b-container id="app" fluid>
     <b-row>
-      <b-col md="3" lg="2" id="sidebar" class="d-none d-md-block bg-light">
-        <SideBar/>
+      <b-col v-if="showSidebar" md="3" lg="2" id="sidebar" class="d-none d-md-block bg-light">
+        <SideBar ref="sidebar"/>
       </b-col>
-      <b-col md="9" lg="10">
+      <b-col :md="showSidebar?9:12" :lg="showSidebar?10:12">
         <router-view style="margin-top: 1%;"/>
       </b-col>
     </b-row>
@@ -13,11 +13,21 @@
 
 <script>
 import SideBar from "@/components/SideBar.vue";
-
 export default {
   name: "app",
+  data() {
+    return {
+      showSidebar: true
+    };
+  },
   components: {
     SideBar
+  },
+  created() {
+    this.$router.afterEach((to, _from) => {
+      this.showSidebar = !to.name.match(/^Sign|NonExisting|NewRepo/);
+    });
+    this.showSidebar = !this.$route.name.match(/^Sign|NonExisting|NewRepo/);
   }
 };
 </script>
